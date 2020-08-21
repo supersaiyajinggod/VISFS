@@ -1,0 +1,29 @@
+<package format="2">
+	<name> VISFS </name>
+	<version> 1.0.0 </version>
+    <description> VISFS </description>
+	<author> Eddy Zhang </author>
+	<maintainer email="zhanghy@amyrobotics.com">Eddy Zhang</maintainer>
+	
+	<license>TODO</license>
+
+	<!-- wiki -->
+	<!-- <url type="website">http://xxxx</url> -->
+
+	<author email="zhanghy@amyrobotics.com">Eddy Zhang</author>
+
+	<buildtool_depend>catkin</buildtool_depend>
+
+	<depend package="roscpp"/>
+	<depend package="dynamic_reconfigure"/>
+	<depend package="std_msgs"/>
+	<depend package="tf"/>
+	<depend package="tf_conversions"/>
+	<depend package="sensor_msgs"/>
+	<depend package="image_transport"/>
+	<depend package="image_geometry"/>
+	<depend package="cv_bridge"/>
+	<depend package="pcl_conversions"/>
+	<depend package="message_filters"/>
+
+</package>

@@ -5,6 +5,8 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     // srv_(_pnh),
     queueSize_(10) {
 
+    // new VISFS system
+
     bool approxSync = true;
     _pnh.param("approx_sync", approxSync, approxSync);
     _pnh.param("queue_size", queueSize_, queueSize_);

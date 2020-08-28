@@ -14,7 +14,11 @@ namespace VISFS {
 
 struct FeatureBA {
     cv::KeyPoint kpt;
-    double depth;
+    float depth;
+    FeatureBA(const cv::KeyPoint & _kpt, const float _depth) {
+        kpt = _kpt;
+        depth = _depth;
+    }
 };
 
 class Optimizer {
@@ -44,6 +48,7 @@ public:
 
 private:
     int iterations_;
+    int solver_;
     int optimizer_;
     double pixelVariance_;
     double robustKernelDelta_;

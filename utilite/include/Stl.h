@@ -178,6 +178,39 @@ inline std::list<V> uValuesList(const std::map<K, V> & m) {
 	return l;
 }
 
+/** \brief Check if the list contains the specified value.
+  * \param[in] list The list.
+  * \param[in] value The value.
+  * \return True if the value is found in the list, otherwise false.
+  * \author eddy
+  */
+template<typename V>
+inline bool uContains(const std::list<V> & list, const V & value) {
+	return std::find(list.begin(), list.end(), value) != list.end();
+}
+
+/** \brief Check if the map contains the specified value.
+  * \param[in] map The map.
+  * \param[in] key The key.
+  * \return True if the key is found in the map, otherwise false.
+  * \author eddy
+  */
+template<typename K, typename V>
+inline bool uContains(const std::map<K, V> & map, const K & key) {
+	return map.find(key) != map.end();
+}
+
+/** \brief Check if the multimap contains the specified value.
+  * \param[in] map The multimap.
+  * \param[in] key The key.
+  * \return True if the key is found in the map, otherwise false.
+  * \author eddy
+  */
+template<typename K, typename V>
+inline bool uContains(const std::multimap<K, V> & map, const K & key) {
+	return map.find(key) != map.end();
+}
+
 /** \brief Check if a string contains a specified substring.
   * \param[in] The string. 
   * \param[in] The specified substring.  

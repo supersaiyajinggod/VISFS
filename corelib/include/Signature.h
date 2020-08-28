@@ -14,7 +14,7 @@ namespace VISFS {
 class Signature {
 public:
     static std::size_t nextId_;
-
+    Signature();
     Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight);
 
     std::size_t getId() const { return id_; }

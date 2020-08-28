@@ -103,7 +103,7 @@ Eigen::Isometry3d estimateMotion3DTo2D(
     std::vector<std::size_t> & _matchesOut,
     std::vector<std::size_t> & _inliersOut,
 	const Eigen::Isometry3d & _guess) {
-    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    Eigen::Isometry3d transform(Eigen::Matrix4d::Zero());
     std::vector<std::size_t> matches, inliers;
     _covariance = cv::Mat::eye(6, 6, CV_64FC1);
 

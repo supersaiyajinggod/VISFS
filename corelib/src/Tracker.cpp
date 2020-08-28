@@ -8,7 +8,31 @@
 
 namespace VISFS {
 
-// Tracker::Tracker(const ParametersMap & _parameters) : globalFeatureId_(0) {}
+Tracker::Tracker(const ParametersMap & _parameters) :
+    maxFeature_(Parameters::defaultTrackerMaxFeatures()),
+    qualityLevel_(Parameters::defaultTrackerQualityLevel()),
+    minFeatureDistance_(Parameters::defaultTrackerMinDistance()),
+    maxDepth_(Parameters::defaultTrackerMaxDepth()),
+    minDepth_(Parameters::defaultTrackerMinDepth()),
+    flowBack_(Parameters::defaultTrackerFlowBack()),
+    flowWinSize_(Parameters::defaultTrackerFlowWinSize()),
+    flowIterations_(Parameters::defaultTrackerFlowIterations()),
+    flowEps_(Parameters::defaultTrackerFlowEps()),
+    flowMaxLevel_(Parameters::defaultTrackerFlowMaxLevel()),
+    cullByFundationMatrix_(Parameters::defaultTrackerCullByFundationMatrix()),
+    fundationPixelError_(Parameters::defaultTrackerFundationPixelError()),
+    trackingMethod_(TrackingMethod::STEREO),
+    globalFeatureId_(0) {
+    
+    Parameters::parse(_parameters, Parameters::kTrackerMaxFeatures(), maxFeature_);
+    Parameters::parse(_parameters, Parameters::kTrackerQualityLevel(), qualityLevel_);
+    Parameters::parse(_parameters, Parameters::kTrackerMinDistance(), minFeatureDistance_);
+    Parameters::parse(_parameters, Parameters::kTrackerMaxDepth(), maxDepth_);
+    Parameters::parse(_parameters, Parameters::kTrackerMinDepth(), minDepth_);
+    Parameters::parse(_parameters, Parameters::kTrackerFlowBack(), flowBack_);
+    Parameters::parse(_parameters, Parameters::kTrackerFlowWinSize(), flowWinSize_);
+    Parameters::parse(_parameters, Parameters::kTrackerFlowIterations(), flowIterations_);
+}
 
 void Tracker::rejectOutlierWithFundationMatrix(const std::vector<cv::Point2f> & _cornersFrom, const std::vector<cv::Point2f> & _cornersTo, std::vector<unsigned char> & _status) const {
     assert(_cornersFrom.size() == _cornersTo.size());

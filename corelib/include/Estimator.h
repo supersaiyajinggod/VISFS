@@ -12,14 +12,17 @@ class Estimator {
 public:
     Estimator(){}
     void addSignature(const Signature & _signature);
+    void threadProcess();
 
 private:
     const double COVARIANCE_EPSILON = 0.000000001;
     
-    void process(const Signature & _signature);
+    void process(Signature & _signature);
 
     std::queue<Signature> signatureThreadBuf_;
     boost::mutex mutexDataRW_;
+
+    Optimizer * optimizer_;
 
     int minInliers_;
     int pnpIterations_;

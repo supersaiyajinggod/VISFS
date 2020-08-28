@@ -4,6 +4,14 @@ namespace VISFS {
 
 std::size_t Signature::nextId_ = 0;
 
+Signature::Signature() : 
+    id_(0),
+    timestamp_(0.0),
+    cameraLeft_(nullptr),
+    cameraRight_(nullptr),
+    pose_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
+    guess_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) {}
+
 Signature::Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight) :
     timestamp_(_timestamp), imageLeft_(_imageLeft), imageRight_(_imageRight), cameraLeft_(_cameraLeft), cameraRight_(_cameraRight) {
     // Set signature id

@@ -40,9 +40,9 @@ private:
     int maxFeature_;
     double qualityLevel_;
     int minFeatureDistance_;
-    bool flowBack_;
     float maxDepth_;
     float minDepth_;
+    bool flowBack_;
     int flowWinSize_;
     int flowIterations_;
     float flowEps_;

@@ -75,4 +75,37 @@ double uStr2Double(const std::string & str);
 bool uStr2Bool(const char * str);
 bool uStr2Bool(const std::string & str);
 
+/**
+ * Convert a number (unsigned int) to a string.
+ * @param number the number to convert in a string
+ * @return the string
+ */
+std::string uNumber2Str(unsigned int number);
+/**
+ * Convert a number (int) to a string.
+ * @param number the number to convert in a string
+ * @return the string
+ */
+std::string uNumber2Str(int number);
+/**
+ * Convert a number (float) to a string.
+ * @param number the number to convert in a string
+ * @return the string
+ */
+std::string uNumber2Str(float number);
+/**
+ * Convert a number (double) to a string.
+ * @param number the number to convert in a string
+ * @return the string
+ */
+std::string uNumber2Str(double number);
+
+/**
+ * Convert a bool to a string.
+ * The format used is "true" and "false".
+ * @param boolean the boolean to convert in a string
+ * @return the string
+ */
+std::string uBool2Str(bool boolean);
+
 #endif  // CONVERSION_H

@@ -137,6 +137,8 @@ typedef std::pair<std::string, std::string> ParametersPair;
  */
 
 class Parameters {
+    VISFS_PARAM(System,     Display,            bool,   false,  "Display");
+
     VISFS_PARAM(Tracker,    MaxFeatures,        int,    300,    "The maximum number of key points will be generated.");
     VISFS_PARAM(Tracker,    QualityLevel,       double, 0.005,  "");
     VISFS_PARAM(Tracker,    MinDistance,        double, 20,     "");
@@ -152,10 +154,16 @@ class Parameters {
     VISFS_PARAM(Tracker,    FundationPixelError,   float,  1.0,    "Threshold of fundation matrix calculate error.");
 
     VISFS_PARAM(Estimator,  MinInliers,            int,    12,     "Minimal inliers between two images.");
-    VISFS_PARAM(Estimator,  PnPIterations,         int,    100,    "Maximal interation times in ransac.");
+    VISFS_PARAM(Estimator,  PnPIterations,         int,    50,    "Maximal interation times in ransac.");
     VISFS_PARAM(Estimator,  PnPReprojError,        float,  2,      "PnP reprojection error.");
     VISFS_PARAM(Estimator,  PnPFlags,              int,    0,      "PnP flags: 0=Iterative, 1=EPNP, 2=P3P.");
     VISFS_PARAM(Estimator,  RefineIterations,      int,    5,      "Number of iterations used to refine the transformation found by RANSAC. 0 means that the transformation is not refined.");
+
+    VISFS_PARAM(Optimizer,  Iterations,         int,      10,       "Optimization iterations.");
+    VISFS_PARAM(Optimizer,  Solver,             int,       0,       "0=csparse 1=cholmod 2=pcg 3=Eigen");
+    VISFS_PARAM(Optimizer,  Optimizer,          int,       0,       "0=Levenberg 1=GaussNewton");
+    VISFS_PARAM(Optimizer,  PixelVariance,      double,  1.5,       "Pixel variance used for bundle adjustment.");
+    VISFS_PARAM(Optimizer,  RobustKernelDelta,  double,  8.0,       "Robust kernel delta used for bundle adjustment (0 means don't use robust kernel). Observations with chi2 over this threshold will be ignored in the second optimization pass.");
 
 public:
     virtual ~Parameters();

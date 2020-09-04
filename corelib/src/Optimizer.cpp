@@ -22,6 +22,21 @@
 
 namespace VISFS {
 
+Optimizer::Optimizer(const ParametersMap & _parameters) :
+	iterations_(Parameters::defaultOptimizerIterations()),
+	solver_(Parameters::defaultOptimizerSolver()),
+	optimizer_(Parameters::defaultOptimizerOptimizer()),
+	pixelVariance_(Parameters::defaultOptimizerPixelVariance()),
+	robustKernelDelta_(Parameters::defaultOptimizerRobustKernelDelta()) {
+	
+	Parameters::parse(_parameters, Parameters::kOptimizerIterations(), iterations_);
+	Parameters::parse(_parameters, Parameters::kOptimizerSolver(), solver_);
+	Parameters::parse(_parameters, Parameters::kOptimizerOptimizer(), optimizer_);
+	Parameters::parse(_parameters, Parameters::kOptimizerPixelVariance(), pixelVariance_);
+	Parameters::parse(_parameters, Parameters::kOptimizerRobustKernelDelta(), robustKernelDelta_);
+
+}
+
 // class EdgeSE3Expmap : public g2o::BaseBinaryEdge<6, g2o::SE3Quat, g2o::VertexSE3Expmap, g2o::VertexSE3Expmap> {
 // public:
 // 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW;

@@ -9,6 +9,142 @@
 #include <algorithm>
 #include <stdlib.h>
 
+
+/** \brief Split a string into multiple string around the specified separator.
+  * \param[in] str The string.  
+  * \param[in] separator The separator character.
+  * \return The list of strings.
+  * \code
+  * 	std::list<std::string> v = split("Hello the world!", ' '); 	
+  * \endcode
+  * 	The list v will contain {"Hello", "the", "world!"}
+  * \author eddy
+  */
+inline std::list<std::string> uSplit(const std::string & str, char separator = ' ') {
+	std::list<std::string> v;
+	std::string buf;
+	for (unsigned int i=0; i<str.size(); ++i) {
+		if (str[i] != separator) {
+			buf += str[i];
+		}
+		else if (buf.size()) {
+			v.push_back(buf);
+			buf = "";
+		}
+	}
+	if(buf.size()) {
+		v.push_back(buf);
+	}
+	return v;
+}
+
+/** \brief Get the iterator at a specified position in a std::list. If the position is out of range, the result is the end iterator of the list.
+  * \param[in] list The list.  
+  * \param[in] pos The index position in the list.
+  * \return The iterator at the specified index.
+  * \author eddy
+  */
+template<class V>
+inline typename std::list<V>::iterator uIteratorAt(std::list<V> & list, const unsigned int & pos) {
+	typename std::list<V>::iterator iter = list.begin();
+	for (unsigned int i = 0; i<pos && iter != list.end(); ++i) {
+		++iter;
+	}
+	return iter;
+}
+
+/** \brief Get the iterator at a specified position in a std::list. If the position is out of range, the result is the end iterator of the list.
+  * \param[in] list The list.  
+  * \param[in] pos The index position in the list.
+  * \return The iterator at the specified index.
+  * \author eddy
+  */
+template<class V>
+inline typename std::list<V>::const_iterator uIteratorAt(const std::list<V> & list, const unsigned int & pos) {
+	typename std::list<V>::const_iterator iter = list.begin();
+	for (unsigned int i = 0; i<pos && iter != list.end(); ++i) {
+		++iter;
+	}
+	return iter;
+}
+
+/** \brief Get the iterator at a specified position in a std::set. If the position is out of range, the result is the end iterator of the set.
+  * \param[in] set The set.  
+  * \param[in] pos The index position in the set.
+  * \return The iterator at the specified index.
+  * \author eddy
+  */
+template<class V>
+inline typename std::set<V>::iterator uIteratorAt(std::set<V> & set, const unsigned int & pos) {
+	typename std::set<V>::iterator iter = set.begin();
+	for (unsigned int i = 0; i<pos && iter != set.end(); ++i) {
+		++iter;
+	}
+	return iter;
+}
+
+/** \brief Get the iterator at a specified position in a std::set. If the position is out of range, the result is the end iterator of the set.
+  * \param[in] set The set.  
+  * \param[in] pos The index position in the set.
+  * \return The iterator at the specified index.
+  * \author eddy
+  */
+template<class V>
+inline typename std::set<V>::const_iterator uIteratorAt(const std::set<V> & set, const unsigned int & pos)
+{
+	typename std::set<V>::const_iterator iter = set.begin();
+	for (unsigned int i = 0; i<pos && iter != set.end(); ++i ) {
+		++iter;
+	}
+	return iter;
+}
+
+/** \brief Get the iterator at a specified position in a std::vector. If the position is out of range, the result is the end iterator of the vector.
+  * \param[in] vector The vector.  
+  * \param[in] pos The index position in the vector.
+  * \return The iterator at the specified index.
+  * \author eddy
+  */
+template<class V>
+inline typename std::vector<V>::iterator uIteratorAt(std::vector<V> & v, const unsigned int & pos) {
+	return v.begin() + pos;
+}
+
+/** \brief Get the iterator at a specified position in a std::vector. If the position is out of range, the result is the end iterator of the vector.
+  * \param[in] vector The vector.  
+  * \param[in] pos The index position in the vector.
+  * \return The iterator at the specified index.
+  * \author eddy
+  */
+template<class V>
+inline typename std::vector<V>::const_iterator uIteratorAt(const std::vector<V> & v, const unsigned int & pos) {
+	return v.begin() + pos;
+}
+
+/** \brief Get the value at a specified position in a std::list. If the position is out of range, the result is the end iterator of the list.
+  * \param[in] list The vector.  
+  * \param[in] pos The index position in the list.
+  * \return The value at the specified index.
+  * \author eddy
+  */
+template<class V>
+inline V & uValueAt(std::list<V> & list, const unsigned int & pos) {
+	typename std::list<V>::iterator iter = uIteratorAt(list, pos);
+	return *iter;
+}
+
+/** \brief Get the value at a specified position in a std::list. If the position is out of range, the result is the end iterator of the list.
+  * \param[in] list The vector.  
+  * \param[in] pos The index position in the list.
+  * \return The value at the specified index.
+  * \author eddy
+  */
+template<class V>
+inline const V & uValueAt(const std::list<V> & list, const unsigned int & pos) {
+	typename std::list<V>::const_iterator iter = uIteratorAt(list, pos);
+	return *iter;
+}
+
 /** \brief Get unique keys from a std::multimap.
   * \param[in] mm The multimap.  
   * \return The list which contains unique keys.

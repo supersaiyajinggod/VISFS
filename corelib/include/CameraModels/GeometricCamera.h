@@ -25,13 +25,13 @@ public:
 
     ~GeometricCamera() {}
 
-    virtual cv::Mat cvKfloat() const = 0;
-    virtual cv::Mat cvKdouble() const = 0;
-    virtual Eigen::Matrix3f eigenKfloat() const = 0;
-    virtual Eigen::Matrix3d eigenKdouble() const = 0;
-    virtual cv::Mat cvDfloat() const = 0;
-    virtual cv::Mat cvDdouble() const = 0;
-    virtual float getBaseLine() const = 0;
+    virtual cv::Mat cvKfloat() const { return cv::Mat(); }
+    virtual cv::Mat cvKdouble() const { return cv::Mat(); }
+    virtual Eigen::Matrix3f eigenKfloat() const { return Eigen::Matrix3f(); }
+    virtual Eigen::Matrix3d eigenKdouble() const { return Eigen::Matrix3d(); }
+    virtual cv::Mat cvDfloat() const { return cv::Mat(); }
+    virtual cv::Mat cvDdouble() const { return cv::Mat(); }
+    virtual float getBaseLine() const { return 0.f; }
 
     unsigned int getId() { return id_; }
     unsigned int getType() { return type_; }

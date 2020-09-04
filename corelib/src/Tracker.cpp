@@ -8,7 +8,7 @@
 
 namespace VISFS {
 
-Tracker::Tracker(const ParametersMap & _parameters) :
+Tracker::Tracker(Estimator * _estimator, const ParametersMap & _parameters) :
     maxFeature_(Parameters::defaultTrackerMaxFeatures()),
     qualityLevel_(Parameters::defaultTrackerQualityLevel()),
     minFeatureDistance_(Parameters::defaultTrackerMinDistance()),
@@ -22,7 +22,8 @@ Tracker::Tracker(const ParametersMap & _parameters) :
     cullByFundationMatrix_(Parameters::defaultTrackerCullByFundationMatrix()),
     fundationPixelError_(Parameters::defaultTrackerFundationPixelError()),
     trackingMethod_(TrackingMethod::STEREO),
-    globalFeatureId_(0) {
+    globalFeatureId_(0),
+    estimator_(_estimator) {
     
     Parameters::parse(_parameters, Parameters::kTrackerMaxFeatures(), maxFeature_);
     Parameters::parse(_parameters, Parameters::kTrackerQualityLevel(), qualityLevel_);
@@ -32,6 +33,37 @@ Tracker::Tracker(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kTrackerFlowBack(), flowBack_);
     Parameters::parse(_parameters, Parameters::kTrackerFlowWinSize(), flowWinSize_);
     Parameters::parse(_parameters, Parameters::kTrackerFlowIterations(), flowIterations_);
+    Parameters::parse(_parameters, Parameters::kTrackerFlowEps(), flowEps_);
+    Parameters::parse(_parameters, Parameters::kTrackerFlowMaxLevel(), flowMaxLevel_);
+    Parameters::parse(_parameters, Parameters::kTrackerCullByFundationMatrix(), cullByFundationMatrix_);
+    Parameters::parse(_parameters, Parameters::kTrackerFundationPixelError(), fundationPixelError_);
+}
+
+Tracker::~Tracker() {}
+
+void Tracker::inputSignature(const Signature & _signature, const Eigen::Isometry3d & _guessPose) {
+    boost::lock_guard<boost::mutex> lock(mutexDataBuf_);
+    signatureBuf_.emplace(_signature, _guessPose);
+}
+
+void Tracker::threadProcess() {
+    while (1) {
+        Signature signature;
+        Eigen::Isometry3d guessPose;
+        {
+            boost::lock_guard<boost::mutex> lock(mutexDataBuf_);
+            if (!signatureBuf_.empty()) {
+                signature = signatureBuf_.front().first;
+                guessPose = signatureBuf_.front().second;
+                signatureBuf_.pop();
+            }
+        }
+
+        process(lastSignature_, signature, guessPose);
+        estimator_->inputSignature(signature);
+        lastSignature_ = signature;
+        boost::this_thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(5));
+    }
 }
 
 void Tracker::rejectOutlierWithFundationMatrix(const std::vector<cv::Point2f> & _cornersFrom, const std::vector<cv::Point2f> & _cornersTo, std::vector<unsigned char> & _status) const {
@@ -49,7 +81,7 @@ void Tracker::rejectOutlierWithFundationMatrix(const std::vector<cv::Point2f> & 
 	}	
 }
 
-void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eigen::Isometry3d _guess = Eigen::Isometry3d::Identity()) {
+void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eigen::Isometry3d _guess) {
     if (_fromSignature.empty() || _toSignature.empty()) {
         std::cout << "[Error]: The from signature or the to signature is empty."  << std::endl;
         return;
@@ -114,7 +146,6 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
     assert(kptsFrom.size() == kptsFrom3D.size());
 
     // Do a initial estimate of the _toSignature key points' pixel position.
-    std::vector<cv::Point2f> cornersFrom;
     cv::KeyPoint::convert(kptsFrom, cornersFrom);
     std::vector<cv::Point2f> cornersTo;
     bool guessSet = !(_guess.isApprox(Eigen::Isometry3d::Identity()));

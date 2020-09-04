@@ -2,7 +2,7 @@
 
 namespace VISFS {
 
-std::size_t Signature::nextId_ = 0;
+std::size_t Signature::nextId_ = 1;
 
 Signature::Signature() : 
     id_(0),
@@ -37,7 +37,7 @@ void Signature::setPose(const Eigen::Matrix3d & _R, const Eigen::Vector3d & _t) 
 }
 
 bool Signature::empty() const {
-    return imageLeft_.empty() || words_.empty() || words3d_.empty();
+    return imageLeft_.empty() || words_.empty() || words3d_.empty() || id_ < 1;
 }
 
 }   // namespace

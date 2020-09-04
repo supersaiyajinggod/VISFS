@@ -42,6 +42,8 @@ find_package(catkin REQUIRED COMPONENTS
     cv_bridge
     pcl_conversions
     message_filters
+    rtabmap_ros
+    nav_msgs
 )
 
 find_package(Boost 1.65 REQUIRED COMPONENTS
@@ -58,11 +60,22 @@ if(NOT OpenCV_FOUND)
     endif(NOT OpenCV_FOUND)
 endif()
 
+# find_package(RTABMap 0.19.5 REQUIRED)
+
 set(HEAD_FILE ${PROJECT_SOURCE_DIR}/include)
+set(VISFS_HEAD ${PROJECT_SOURCE_DIR}/../../corelib/include)
+set(UTILITE_HEAD ${PROJECT_SOURCE_DIR}/../../utilite/include)
 
 include_directories(
     ${HEAD_FILE}
     ${catkin_INCLUDE_DIRS}
+    ${VISFS_HEAD}
+    ${UTILITE_HEAD}
+)
+
+set(LIB_DIR ${PROJECT_SOURCE_DIR}/../../lib)
+link_directories(
+    ${LIB_DIR}
 )
 
 add_library(VISFSInterfaceROS src/InterfaceROS.cpp)
@@ -77,4 +90,6 @@ rosbuild_add_executable(VISFSInterfaceROSNode src/InterfaceROSNode.cpp)
 target_link_libraries(VISFSInterfaceROSNode
     VISFSInterfaceROS
     ${Boost_LIBRARIES}
+    VISFS_corelib
+    # VISFS_utilite
 )

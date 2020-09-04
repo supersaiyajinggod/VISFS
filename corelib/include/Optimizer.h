@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include "Parameters.h"
 #include "CameraModels/GeometricCamera.h"
 
 namespace VISFS {
@@ -23,7 +24,7 @@ struct FeatureBA {
 
 class Optimizer {
 public:
-    Optimizer(){}
+    Optimizer(const ParametersMap & _parameters = ParametersMap());
     ~Optimizer(){}
 
     /** \brief Optimize the poses and points with bundle adjustment.

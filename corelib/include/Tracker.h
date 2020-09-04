@@ -1,14 +1,17 @@
 #ifndef VISFS_TRACKER
 #define VISFS_TRACKER
 
+#include <boost/thread.hpp>
+
 #include "Parameters.h"
 #include "Signature.h"
+#include "Estimator.h"
 
 namespace VISFS {
 
 class Tracker {
 public:
-    Tracker(const ParametersMap & _parameters = ParametersMap());
+    Tracker(Estimator * _estimator, const ParametersMap & _parameters = ParametersMap());
     ~Tracker();
 
     enum TrackingMethod {
@@ -16,6 +19,9 @@ public:
         STEREO,
         RGBD        
     };
+
+    void inputSignature(const Signature & _signature, const Eigen::Isometry3d & _guessPose = Eigen::Isometry3d::Identity());
+    void threadProcess(void);
 
 private:
 
@@ -52,6 +58,12 @@ private:
 
     TrackingMethod trackingMethod_;
     std::size_t globalFeatureId_;
+
+    boost::mutex mutexDataBuf_;
+    std::queue<std::pair<Signature, Eigen::Isometry3d>> signatureBuf_;
+
+    Estimator * estimator_;
+
 };
 
 }   // namespace

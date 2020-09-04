@@ -86,3 +86,37 @@ bool uStr2Bool(const char * str) {
 bool uStr2Bool(const std::string & str) {
 	return !(uStrContains(uToLowerCase(str), "false") || str.compare("0") == 0);
 }
+
+std::string uNumber2Str(unsigned int number) {
+	std::stringstream s;
+	s << number;
+	return s.str();
+}
+
+std::string uNumber2Str(int number) {
+	std::stringstream s;
+	s << number;
+	return s.str();
+}
+
+std::string uNumber2Str(float number) {
+	std::stringstream s;
+	s << number;
+	return s.str();
+}
+
+std::string uNumber2Str(double number) {
+	std::stringstream s;
+	s << number;
+	return s.str();
+}
+
+std::string uBool2Str(bool boolean) {
+	std::string s;
+	if (boolean) {
+		s = "true";
+	} else {
+		s = "false";
+	}
+	return s;
+}

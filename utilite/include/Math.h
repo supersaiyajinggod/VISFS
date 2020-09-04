@@ -2,7 +2,8 @@
 #define MATH_H
 
 #include <cmath>
-
+#include <vector>
+#include <list>
 #include <Eigen/Core>
 
 
@@ -41,7 +42,7 @@ inline T uMean(const T * _v, unsigned int _size) {
         for (unsigned int i = 0; i < _size; ++i) {
             buf += _v[i];
         }
-        buf /= size;
+        buf /= _size;
     }
     return buf;
 }
@@ -105,7 +106,7 @@ inline T uVariance(const std::list<T> & _list, const T & _mean) {
     T buf = 0;
     if (_list.size() > 1) {
         double sum = 0;
-        for (typename std::list<T>::const_iterator i = _list.begin(), i != _list.end(); ++i) {
+        for (typename std::list<T>::const_iterator i = _list.begin(); i != _list.end(); ++i) {
             sum += (*i-_mean)*(*i-_mean);
         }
         buf = sum/(_list.size() - 1);
@@ -255,6 +256,6 @@ inline std::vector<T> uNormlize(const std::vector<T> & _v) {
   * \return The angle between two vectors.
   * \author eddy
   */
-inline float getAngle3D (const Eigen::Vector4f & _v1, const Eigen::Vector4f & _v2, const bool _inDegree = false);
+float getAngle3D(const Eigen::Vector4f & _v1, const Eigen::Vector4f & _v2, const bool _inDegree = false);
 
 #endif  // MATH_H

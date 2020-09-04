@@ -16,20 +16,29 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <nav_msgs/Odometry.h>
+#include <rtabmap_ros/OdomInfo.h>
 #include <boost/shared_ptr.hpp>
+
+#include "System.h"
+#include "Conversion.h"
 
 class VISFSInterfaceROS {
 public:
     VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pnh);
     ~VISFSInterfaceROS();
 
+    void publishMessage();
+
 private:
+    void parametersInit(ros::NodeHandle & _pnh);
+
 	/** \brief Callback for process stereo image coming. 
       * \param[in] Left image. 
       * \param[in] Right iamge.
 	  * \author eddy
       */
-    void stereoImageCallback(const sensor_msgs::ImageConstPtr & _leftImage, const sensor_msgs::ImageConstPtr & rightImage);
+    void stereoImageCallback(const sensor_msgs::ImageConstPtr & _leftImage, const sensor_msgs::ImageConstPtr & _rightImage);
 
 	/** \brief Dynamic reconfigure callback. 
       * \param[in] Dynamic reconfigure object. 
@@ -49,12 +58,15 @@ private:
     message_filters::Synchronizer<ImageApproxSyncPolicy> * approxSync_;
     typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image> ImageExactSyncPolicy;
     message_filters::Synchronizer<ImageExactSyncPolicy> * exactSync_;
+	ros::Publisher odomPub_;
+	ros::Publisher odomInfoPub_;
 
     int queueSize_;
     std::string cameraFrameId_;
     std::string robotFrameId_;
 
     VISFS::System * system_;
+    VISFS::ParametersMap parameters_;
 
 };
 

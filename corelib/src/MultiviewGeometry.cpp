@@ -166,8 +166,8 @@ Eigen::Isometry3d estimateMotion3DTo2D(
                         cv::Point3f newPoint = transformPoint(iter->second, transform);
                         errSqrdDists[oi] = uNormSquared(objPoint.x-newPoint.x, objPoint.y-newPoint.y, objPoint.z-newPoint.z);
 
-                        Eigen::Vector4f v1(objPoint.x-transform.linear().x(), objPoint.y-transform.linear().y(), objPoint.z-transform.linear().z(), 0);
-                        Eigen::Vector4f v2(newPoint.x-transform.linear().x(), newPoint.y-transform.linear().y(), newPoint.z-transform.linear().z(), 0);
+                        Eigen::Vector4f v1(objPoint.x-transform.translation().x(), objPoint.y-transform.translation().y(), objPoint.z-transform.translation().z(), 0);
+                        Eigen::Vector4f v2(newPoint.x-transform.translation().x(), newPoint.y-transform.translation().y(), newPoint.z-transform.translation().z(), 0);
                         errSqrdAngles[oi++] = getAngle3D(v1, v2);
                     }
                 }
@@ -228,8 +228,8 @@ void solvePnPRansac(
 	int _minInliersCount,
 	std::vector<std::size_t> & _inliers,
 	int _flags,
-	int _refineIterations = 1,
-	float _refineSigma = 3.0f) {
+	int _refineIterations,
+	float _refineSigma) {
     if (_minInliersCount < 4) {
         _minInliersCount = 4;
     }

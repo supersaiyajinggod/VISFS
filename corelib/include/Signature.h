@@ -2,6 +2,7 @@
 #define VISFS_SIGNATURE
 
 #include <map>
+#include <vector>
 #include <boost/shared_ptr.hpp>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -10,6 +11,82 @@
 #include "CameraModels/GeometricCamera.h"
 
 namespace VISFS {
+
+class TrackInfo {
+public:
+    TrackInfo() :
+    trackTime(0.0),
+    inliers(0),
+    inlierMeanDistance(0.f),
+    inlierDistribution(0.f),
+    matches(0) {}
+
+    double trackTime;
+    std::size_t inliers;
+    float inlierMeanDistance;
+    float inlierDistribution;
+    std::vector<std::size_t> inliersIDs;
+    std::size_t matches;
+    std::vector<std::size_t> matchesIDs;
+    std::vector<std::size_t> projectedIDs;  // "From" IDs
+};
+
+class EstimateInfo {
+public:
+    EstimateInfo() :
+    lost(false),
+    features(0),
+    localMapSize(0),
+    localScanMapSize(0),
+    localKeyFrames(0),
+    localBundleOutliers(0),
+    localBundleConstraints(0),
+    localBundleTime(0.f),
+    keyFrameAdded(false),
+    timeEstimation(0.f),
+    timeParticleFiltering(0.f),
+    stamp(0.0),
+    interval(0.0),
+    estimateTime(0.0),
+    distanceTravelled(0.0),
+    memoryUsage(0),
+    gravityRollError(0.0),
+    gravityPitchError(0.0) {}
+
+	bool lost;
+	int features;
+	int localMapSize;
+	int localScanMapSize;
+	int localKeyFrames;
+	int localBundleOutliers;
+	int localBundleConstraints;
+	float localBundleTime;
+	std::map<std::size_t, Eigen::Isometry3d> localBundlePoses;
+	std::map<std::size_t, GeometricCamera> localBundleModels;
+	bool keyFrameAdded;
+	float timeEstimation;
+	float timeParticleFiltering;
+	double stamp;
+	double interval;
+    double estimateTime;
+    cv::Mat covariance;
+	Eigen::Isometry3d transform;
+	Eigen::Isometry3d transformFiltered;
+	Eigen::Isometry3d transformGroundTruth;
+	Eigen::Isometry3d guessVelocity;
+	float distanceTravelled;
+	int memoryUsage; //MB
+	double gravityRollError;
+	double gravityPitchError;
+
+	int type;
+	std::map<std::size_t, cv::KeyPoint> words;
+	std::map<std::size_t, cv::Point3f> localMap;
+
+	std::vector<cv::Point2f> refCorners;
+	std::vector<cv::Point2f> newCorners;
+	std::vector<std::size_t> cornerInliers;
+};
 
 class Signature {
 public:
@@ -51,6 +128,12 @@ public:
     const GeometricCamera & getCameraModelRight() const { return *cameraRight_; }
 
 
+    TrackInfo & getTrackInfo() { return trackInfo_; }
+    void setTrackInfo(const TrackInfo & _trackInfo) { trackInfo_ = _trackInfo; }
+    EstimateInfo & getEstimateInfo() { return estimateInfo_; }
+    void setEstimateInfo(const EstimateInfo & _estimateInfo) { estimateInfo_ = _estimateInfo; }
+
+
 private:
     std::size_t id_;
     double timestamp_;
@@ -72,6 +155,9 @@ private:
     std::map<std::size_t, cv::KeyPoint> keyPointsNewExtracted_;   // new keypoints in this signature
     std::map<std::size_t, cv::KeyPoint> keyPointsMatchesImageRight_;  // all keypoints, (keyPointsMatchesFormer_ +  keyPointsNewExtracted_) also keeping the order, matches in right image.
     std::vector<unsigned char> leftRightPairStatus_;    // all keypoints' match status in left and right image.
+
+    TrackInfo trackInfo_;
+    EstimateInfo estimateInfo_;
 
 };
 

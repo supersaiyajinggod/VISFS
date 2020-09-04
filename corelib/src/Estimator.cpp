@@ -1,14 +1,53 @@
 #include "Estimator.h"
-#include "Optimizer.h"
 #include "MultiviewGeometry.h"
+#include "ProcessInfo.h"
+#include "Math.h"
 
 #include <opencv2/core/eigen.hpp>
+#include <pcl/common/eigen.h>
+#include <pcl/common/common.h>
 
 namespace VISFS {
 
-void Estimator::addSignature(const Signature & _signature) {
+Estimator::Estimator(const ParametersMap & _parameters) :
+    previousStamps_(0.0),
+    minInliers_(Parameters::defaultEstimatorMinInliers()),
+    pnpIterations_(Parameters::defaultEstimatorPnPIterations()),
+    pnpReprojError_(Parameters::defaultEstimatorPnPReprojError()),
+    pnpFlags_(Parameters::defaultEstimatorPnPFlags()),
+    refineIterations_(Parameters::defaultEstimatorRefineIterations()) {
+
+    Parameters::parse(_parameters, Parameters::kEstimatorMinInliers(), minInliers_);
+    Parameters::parse(_parameters, Parameters::kEstimatorPnPIterations(), pnpIterations_);
+    Parameters::parse(_parameters, Parameters::kEstimatorPnPReprojError(), pnpReprojError_);
+    Parameters::parse(_parameters, Parameters::kEstimatorPnPFlags(), pnpFlags_);
+    Parameters::parse(_parameters, Parameters::kEstimatorRefineIterations(), refineIterations_);
+
+    optimizer_ = new Optimizer(_parameters);
+}
+
+Estimator::~Estimator() {
+    delete optimizer_;
+}
+
+void Estimator::inputSignature(const Signature & _signature) {
     boost::lock_guard<boost::mutex> lock(mutexDataRW_);
     signatureThreadBuf_.emplace(_signature);
+}
+
+void Estimator::outputSignature(const Signature & _signature) {
+    boost::lock_guard<boost::mutex> lock(mutexResultRW_);
+    processResultBuf_.emplace(_signature);
+}
+
+Signature Estimator::getEstimatedSignature() {
+    Signature signature;
+    boost::lock_guard<boost::mutex> lock(mutexResultRW_);
+    if (!processResultBuf_.empty()) {
+        signature = processResultBuf_.front();
+        processResultBuf_.pop();
+    }
+    return signature;
 }
 
 void Estimator::threadProcess() {
@@ -24,11 +63,14 @@ void Estimator::threadProcess() {
         process(signature);
 
         //publish process result
+        outputSignature(signature);
         boost::this_thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(5));
     }
 }
 
 void Estimator::process(Signature & _signature) {
+    TrackInfo & trackInfo = _signature.getTrackInfo();
+    EstimateInfo & estimateInfo = _signature.getEstimateInfo();
     Eigen::Isometry3d transform;
     cv::Mat covariance = cv::Mat::eye(6, 6, CV_64FC1);
     std::vector<std::size_t> matches;
@@ -133,6 +175,55 @@ void Estimator::process(Signature & _signature) {
             _signature.setPose(transform);
         }
     }
+
+    trackInfo.inliersIDs = inliers;
+    trackInfo.matchesIDs = matches;
+    estimateInfo.covariance = covariance;
+    for (auto iter = _signature.getCovisibleWords3d().begin(); iter != _signature.getCovisibleWords3d().end(); ++iter) {
+        estimateInfo.localMap.emplace(iter->first, transformPoint(iter->second, transform));
+    }
+    estimateInfo.localMapSize = _signature.getCovisibleWords3d().size();
+    estimateInfo.words = _signature.getWords();
+    transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) ? estimateInfo.lost = true : estimateInfo.lost = false;
+    estimateInfo.features = _signature.getWords().size();
+    estimateInfo.transform = transform;
+    pose_ = pose_ * transform;
+    Eigen::Vector3d translation = transform.translation();
+    estimateInfo.distanceTravelled = static_cast<float>(uNorm(translation.x(), translation.y(), translation.z()));
+    estimateInfo.stamp = _signature.getTimeStamp();
+    // estimateInfo.memoryUsage = UProcessInfo::getMemoryUsage()/(1024*1024);
+
+    const double dt = _signature.getTimeStamp() - previousStamps_;
+    estimateInfo.interval = dt;
+    previousStamps_ = _signature.getTimeStamp();
+    Eigen::Isometry3d velocity =  guessVelocity(transform, dt);
+    estimateInfo.guessVelocity = velocity;
+
+    _signature.setTrackInfo(trackInfo);
+    _signature.setEstimateInfo(estimateInfo);
+    _signature.setPose(pose_);
+}
+
+
+Eigen::Isometry3d Estimator::guessVelocity(const Eigen::Isometry3d & _t, const double _dt) {
+    double vx, vy, vz, vroll, vpitch, vyaw;
+    if (_dt > 0) {
+        pcl::getTranslationAndEulerAngles(_t, vx, vy, vz, vroll, vpitch, vyaw);
+        vx /= _dt;
+        vy /= _dt;
+        vz /= _dt;
+        vroll /= _dt;
+        vpitch /= _dt;
+        vyaw /= _dt;
+        Eigen::Affine3d velocity;
+        pcl::getTransformation(vx, vy, vz, vroll, vpitch, vyaw, velocity);
+        velocityGuess_ = Eigen::Isometry3d(velocity.matrix());
+        return velocityGuess_;
+    } else {
+        std::cout << "Error with value dt: " << _dt << std::endl;
+    }
+
+    return Eigen::Isometry3d::Identity();
 }
 
 }   // namespace

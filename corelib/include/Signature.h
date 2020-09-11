@@ -113,6 +113,7 @@ public:
     void setCovisibleWords3d(const std::map<std::size_t, cv::Point3f> & _words3d) { covisibleWords3d_ = _words3d; } 
     const std::map<std::size_t, cv::KeyPoint> & getKeyPointsMatchesFormer() const { return keyPointsMatchesFormer_; }
     void setkeyPointsMatchesFormer(const std::map<std::size_t, cv::KeyPoint> & _kpts) { keyPointsMatchesFormer_ = _kpts; }
+    const std::map<std::size_t, cv::KeyPoint> & getKeyPointsNewExtract() const { return keyPointsNewExtracted_; }
     void setKeyPointsNewExtract(const std::map<std::size_t, cv::KeyPoint> & _kpts) { keyPointsNewExtracted_ = _kpts; }
     const std::map<std::size_t, cv::KeyPoint> & getKeyPointsMatchesImageRight() const { return keyPointsMatchesImageRight_; }
     void setKeyPointMatchesImageRight(const std::map<std::size_t, cv::KeyPoint> & _kpts) { keyPointsMatchesImageRight_ = _kpts; }

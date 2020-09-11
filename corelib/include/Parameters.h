@@ -137,7 +137,8 @@ typedef std::pair<std::string, std::string> ParametersPair;
  */
 
 class Parameters {
-    VISFS_PARAM(System,     Display,            bool,   false,  "Display");
+    VISFS_PARAM(System,     Sensor,             int,    0,      "System use sensor type: 0 stereo, 1 rgbd.");
+    VISFS_PARAM(System,     Monitor,            bool,   false,  "Monitor");
 
     VISFS_PARAM(Tracker,    MaxFeatures,        int,    300,    "The maximum number of key points will be generated.");
     VISFS_PARAM(Tracker,    QualityLevel,       double, 0.005,  "");

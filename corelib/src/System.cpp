@@ -4,14 +4,42 @@
 
 namespace VISFS {
 
-System::System(const ParametersMap & _parameters) {
+System::System(const ParametersMap & _parameters) :
+    tracker_(nullptr),
+    threadTracker_(nullptr),
+    estimator_(nullptr),
+    threadEstimator_(nullptr),
+    monitor_(nullptr),
+    threadMonitor_(nullptr),
+    cameraLeft_(nullptr),
+    cameraRight_(nullptr),
+    velocityGuess_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
+    previousTimeStamp_(0.0),
+    monitorSwitch_(Parameters::defaultSystemMonitor()) {
+    
+    Parameters::parse(_parameters, Parameters::kSystemMonitor(), monitorSwitch_);
+
     estimator_ = new Estimator(_parameters);
     tracker_ = new Tracker(estimator_, _parameters);
+
+    if (monitorSwitch_) {
+        monitor_ = new Monitor(_parameters);
+        tracker_->setMonitor(monitor_);
+        threadMonitor_ = new boost::thread(boost::bind(&Monitor::threadProcess, monitor_));
+    }
+
     threadTracker_ = new boost::thread(boost::bind(&Tracker::threadProcess, tracker_));
     threadEstimator_ = new boost::thread(boost::bind(&Estimator::threadProcess, estimator_));
 }
 
 System::~System() {
+    if (monitorSwitch_) {
+        threadMonitor_->interrupt();
+        threadMonitor_->join();
+        delete monitor_;
+        monitor_ = nullptr;
+    }
+
     threadTracker_->interrupt();
     threadEstimator_->interrupt();
     threadTracker_->join();
@@ -35,7 +63,7 @@ void System::init(const double fxl, const double fyl, const double cxl, const do
     GeometricCamera * cameraRight = new PinholeModel(Kr, baseline);
     boost::shared_ptr<GeometricCamera> spcameraRight(cameraRight);
     cameraLeft_ = spcameraLeft;
-    cameraRight_ = cameraRight_;
+    cameraRight_ = spcameraRight;
 }
 
 Eigen::Isometry3d System::getGuessPose(const Eigen::Isometry3d & _guessVelocity, const double _dt) {
@@ -59,15 +87,21 @@ Eigen::Isometry3d System::getGuessPose(const Eigen::Isometry3d & _guessVelocity,
 void System::inputStereoImage(const double time_, const cv::Mat & imageLeft_, const cv::Mat & imageRight_) {
     // Construct signature.
     Signature signature(time_, imageLeft_, imageRight_, cameraLeft_, cameraRight_);
-    Eigen::Isometry3d guessPose = getGuessPose(velocityGuess_, time_ - previousTimeStamp_);
+    Eigen::Isometry3d guessPose;
+    if (!velocityGuess_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
+        guessPose = getGuessPose(velocityGuess_, time_ - previousTimeStamp_);
+    } else {
+        guessPose = Eigen::Isometry3d::Identity();
+    }
     tracker_->inputSignature(signature, guessPose);
     previousTimeStamp_ = time_;
 }
 
-bool System::outputOdometryInfo(Eigen::Isometry3d & _pose, TrackInfo & _trackInfo, EstimateInfo & _estimateInfo) {
+bool System::outputOdometryInfo(double & _stamp, Eigen::Isometry3d & _pose, TrackInfo & _trackInfo, EstimateInfo & _estimateInfo) {
     Signature signature;
     signature = estimator_->getEstimatedSignature();
     if (!signature.empty()) {
+        _stamp = signature.getTimeStamp();
         _pose = signature.getPose();
         _trackInfo = signature.getTrackInfo();
         _estimateInfo = signature.getEstimateInfo();

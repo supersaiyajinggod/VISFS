@@ -8,12 +8,10 @@ int main(int argc, char ** argv) {
 
 	VISFSInterfaceROS a(n, pnh);
 
-	// ros::spin();
 	while(ros::ok()) {
 		ros::spinOnce();
+		a.publishMessage();
 		loopRate.sleep();
-
-		//
   	}
 
   return 0;

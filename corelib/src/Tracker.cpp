@@ -23,7 +23,8 @@ Tracker::Tracker(Estimator * _estimator, const ParametersMap & _parameters) :
     fundationPixelError_(Parameters::defaultTrackerFundationPixelError()),
     trackingMethod_(TrackingMethod::STEREO),
     globalFeatureId_(0),
-    estimator_(_estimator) {
+    estimator_(_estimator),
+    monitor_(nullptr) {
     
     Parameters::parse(_parameters, Parameters::kTrackerMaxFeatures(), maxFeature_);
     Parameters::parse(_parameters, Parameters::kTrackerQualityLevel(), qualityLevel_);
@@ -50,18 +51,22 @@ void Tracker::threadProcess() {
     while (1) {
         Signature signature;
         Eigen::Isometry3d guessPose;
-        {
-            boost::lock_guard<boost::mutex> lock(mutexDataBuf_);
-            if (!signatureBuf_.empty()) {
+
+        if (!signatureBuf_.empty()) {
+            {
+                boost::lock_guard<boost::mutex> lock(mutexDataBuf_);
                 signature = signatureBuf_.front().first;
                 guessPose = signatureBuf_.front().second;
-                signatureBuf_.pop();
+                signatureBuf_.pop(); 
             }
+            process(lastSignature_, signature, guessPose);
+            // estimator_->inputSignature(signature);
+            if (monitor_) {
+                monitor_->addSignature(signature);
+            }
+            lastSignature_ = signature;
         }
 
-        process(lastSignature_, signature, guessPose);
-        estimator_->inputSignature(signature);
-        lastSignature_ = signature;
         boost::this_thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(5));
     }
 }
@@ -95,7 +100,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
 
     if (_fromSignature.getWords().empty()) {
         std::map<std::size_t, cv::KeyPoint> words;
-        cv::goodFeaturesToTrack(imageFrom, cornersFrom, maxFeature_, qualityLevel_, minFeatureDistance_);
+        cv::goodFeaturesToTrack(imageFrom, cornersFrom, maxFeature_, qualityLevel_, static_cast<double>(minFeatureDistance_));
         for (auto corner : cornersFrom) {
             cv::KeyPoint tempkpt(corner, 1.f);
             kptsFrom.emplace_back(tempkpt);
@@ -112,8 +117,10 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
     // Generate the _fromSignature keypoints in 3d.
     std::vector<cv::Point3f> kptsFrom3D;
     if (kptsFrom.size() == _fromSignature.getWords3d().size()) {
+        std::cout << "Generate the kptsFrom3D from Old signature." << std::endl;
         kptsFrom3D = uValues(_fromSignature.getWords3d());
     } else {
+        std::cout << "Generate the kptsFrom3D new calculate.  kptsFrom.size(): " << kptsFrom.size() << " ,_fromSignature.getWords3d().size(): " << _fromSignature.getWords3d().size() << std::endl;
         if (trackingMethod_ == STEREO) {
             // opticalFlow fromSignatrue right image to match corners.
             std::vector<unsigned char> status;
@@ -131,6 +138,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
             // _fromSignature.setKeyPointMatchesImageRight(kptsFromRight);
             // _fromSignature.setLeftRightPairStatus(status);
             // generate3DPoints
+            std::cout << "From signature, cornersFrom size: " << kptsFrom.size() << " , cornersFromRight: " << kptsFromRight.size() << " , status: " << status.size() << std::endl;
             kptsFrom3D = generateKeyPoints3DStereo(kptsFrom, kptsFromRight, _fromSignature.getCameraModelLeft(), _fromSignature.getCameraModelRight(), minDepth_, maxDepth_);
             assert(orignalWordsFromIds.size() == kptsFrom3D.size());
             std::map<std::size_t, cv::Point3f> words3d;
@@ -213,6 +221,11 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
     kptsTo.resize(index);
     kptsFrom3DKept.resize(index);
     cornersToKept.resize(index);
+
+    if (kptsTo.size() < 2) {
+        std::cout << "After Reduce feature vector, kptsTo.size(): " << kptsTo.size() << std::endl;
+        std::cout << "Lost tracking !!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+    }
     
     std::map<std::size_t, cv::KeyPoint> covisibleWords;
     std::map<std::size_t, cv::Point3f> covisibleWords3d;
@@ -252,7 +265,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
     // Stereo
     std::map<std::size_t, cv::KeyPoint> wordsToRight;
     std::vector<std::size_t> wordsToIds;
-    if (trackingMethod_ == STEREO && !_toSignature.getImageRight().empty() && kptsTo.size() > 0) {
+    if (trackingMethod_ == STEREO && !_toSignature.getImageRight().empty() && wordsTo.size() > 0) {
         wordsToIds = uKeys(wordsTo);
         std::vector<cv::Point2f> allCornersInLeft;
         cv::KeyPoint::convert(uValues(wordsTo), allCornersInLeft);

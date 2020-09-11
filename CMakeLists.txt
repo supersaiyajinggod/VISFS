@@ -18,6 +18,10 @@ if(NOT ROS_BUILD_TYPE)
 endif(NOT ROS_BUILD_TYPE)
 message("Build type: " ${ROS_BUILD_TYPE})
 
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -fpermissive")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -w -fpermissive")
+set(CMAKE_CXX_FLAGS "-fPIC")
+
 # Check C++17, C++11 or C++0x support
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)

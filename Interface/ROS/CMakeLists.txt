@@ -52,6 +52,8 @@ find_package(Boost 1.65 REQUIRED COMPONENTS
     # unit_test_framework
 )
 
+find_package(PCL REQUIRED)
+
 find_package(OpenCV 3.2 REQUIRED)
 if(NOT OpenCV_FOUND)
     find_package(OpenCV 2.4.3 REQUIRED)
@@ -82,14 +84,14 @@ add_library(VISFSInterfaceROS src/InterfaceROS.cpp)
 target_link_libraries(VISFSInterfaceROS
     # ${Boost_LIBRARIES}
     ${OpenCV_LIBRARIES}
-    # ${PCL_LIBRARIES}
+    ${PCL_LIBRARIES}
     ${catkin_LIBRARIES}
+    VISFS_utilite
+    VISFS_corelib
 )
 
 rosbuild_add_executable(VISFSInterfaceROSNode src/InterfaceROSNode.cpp)
 target_link_libraries(VISFSInterfaceROSNode
     VISFSInterfaceROS
     ${Boost_LIBRARIES}
-    VISFS_corelib
-    # VISFS_utilite
 )

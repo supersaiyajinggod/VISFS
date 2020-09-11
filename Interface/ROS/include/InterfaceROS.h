@@ -23,6 +23,8 @@
 #include "System.h"
 #include "Conversion.h"
 
+#define BAD_COVARIANCE 9999
+
 class VISFSInterfaceROS {
 public:
     VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pnh);
@@ -32,6 +34,30 @@ public:
 
 private:
     void parametersInit(ros::NodeHandle & _pnh);
+
+    inline double timestampFromROS(const ros::Time & _stamp) { return double(_stamp.sec) + double(_stamp.nsec)/1000000000.0; }
+
+    void transformToGeometryMsg(const Eigen::Isometry3d & _transform, geometry_msgs::Transform & _msg);
+
+    void odomInfoToROS(const VISFS::TrackInfo & _trackInfo, const VISFS::EstimateInfo & _estimateInfo, rtabmap_ros::OdomInfo & _msg);
+
+    cv::KeyPoint keypointFromROS(const rtabmap_ros::KeyPoint & _msg);
+
+    void keypointToROS(const cv::KeyPoint & _kpt, rtabmap_ros::KeyPoint & _msg);
+
+    void keypointsToROS(const std::vector<cv::KeyPoint> & _kpts, std::vector<rtabmap_ros::KeyPoint> & _msg);
+
+    void point2fToROS(const cv::Point2f & _kpt, rtabmap_ros::Point2f & _msg);
+
+    void points2fToROS(const std::vector<cv::Point2f> & _kpts, std::vector<rtabmap_ros::Point2f> & _msg);
+
+    void point3fToROS(const cv::Point3f & _kpt, rtabmap_ros::Point3f & _msg);
+
+    void points3fToROS(const std::vector<cv::Point3f> & _kpts, std::vector<rtabmap_ros::Point3f> & _msg);
+
+    std::vector<cv::KeyPoint> keypointsFromROS(const std::vector<rtabmap_ros::KeyPoint> & _msg);
+
+    cv::Mat getImageFromROS(const sensor_msgs::ImageConstPtr & _imageMsg);
 
 	/** \brief Callback for process stereo image coming. 
       * \param[in] Left image. 

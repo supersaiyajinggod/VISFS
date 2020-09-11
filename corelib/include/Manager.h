@@ -1,5 +1,5 @@
-#ifndef VISFS_SIGNATURE
-#define VISFS_SIGNATURE
+#ifndef VISFS_MANAGER
+#define VISFS_MANAGER
 
 #include "Signature.h"
 #include "Parameters.h"
@@ -13,4 +13,4 @@ public:
 
 }   // namespace
 
-#endif  // VISFS_SIGNATURE
+#endif  // VISFS_MANAGER

@@ -6,6 +6,7 @@
 #include "Parameters.h"
 #include "Signature.h"
 #include "Estimator.h"
+#include "Monitor.h"
 
 namespace VISFS {
 
@@ -22,6 +23,9 @@ public:
 
     void inputSignature(const Signature & _signature, const Eigen::Isometry3d & _guessPose = Eigen::Isometry3d::Identity());
     void threadProcess(void);
+
+    void setMonitor(Monitor * _monitor) { monitor_ = _monitor; }
+    Monitor * getMonitor() const { return monitor_; }
 
 private:
 
@@ -63,6 +67,7 @@ private:
     std::queue<std::pair<Signature, Eigen::Isometry3d>> signatureBuf_;
 
     Estimator * estimator_;
+    Monitor * monitor_;
 
 };
 

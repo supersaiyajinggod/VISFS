@@ -10,6 +10,7 @@
 #include "Parameters.h"
 #include "Tracker.h"
 #include "Estimator.h"
+#include "Monitor.h"
 #include "CameraModels/PinholeModel.h"
 
 namespace VISFS {
@@ -32,7 +33,7 @@ public:
       */    
     void inputStereoImage(const double _time, const cv::Mat & _imageLeft, const cv::Mat & _imageRight);
 
-    bool outputOdometryInfo(Eigen::Isometry3d & _pose, TrackInfo & _trackInfo, EstimateInfo & _estimateInfo);
+    bool outputOdometryInfo(double & _stamp, Eigen::Isometry3d & _pose, TrackInfo & _trackInfo, EstimateInfo & _estimateInfo);
 
 
 private:
@@ -42,6 +43,8 @@ private:
     boost::thread * threadTracker_;
     Estimator * estimator_;
     boost::thread * threadEstimator_;
+    Monitor * monitor_;
+    boost::thread * threadMonitor_;
 
     boost::shared_ptr<GeometricCamera> cameraLeft_;
     boost::shared_ptr<GeometricCamera> cameraRight_;
@@ -49,6 +52,8 @@ private:
     // state
     Eigen::Isometry3d velocityGuess_;
     double previousTimeStamp_;
+
+    bool monitorSwitch_;
 
 };
 

@@ -53,17 +53,18 @@ Signature Estimator::getEstimatedSignature() {
 void Estimator::threadProcess() {
     while (1) {
         Signature signature;
-        {
-            boost::lock_guard<boost::mutex> lock(mutexDataRW_);
-            if (!signatureThreadBuf_.empty()) {
+
+        if (!signatureThreadBuf_.empty()) {
+            {
+                boost::lock_guard<boost::mutex> lock(mutexDataRW_);
                 signature = signatureThreadBuf_.front();
                 signatureThreadBuf_.pop();
             }
+            process(signature);
+            //publish process result
+            outputSignature(signature);
         }
-        process(signature);
-
-        //publish process result
-        outputSignature(signature);
+        
         boost::this_thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(5));
     }
 }
@@ -83,6 +84,7 @@ void Estimator::process(Signature & _signature) {
                                             pnpReprojError_, pnpFlags_, refineIterations_, words3dTo, covariance, matches, inliers,
                                             _signature.getGuessPose());
     } else {
+        transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
         std::cout << "Not enough features in images, old=" << words3dFrom.size() << ", new=" << wordsTo.size() << ", min=" << minInliers_ << "." << std::endl;
     }
     
@@ -172,7 +174,6 @@ void Estimator::process(Signature & _signature) {
             _signature.setWords3d(cpyWords3dTo);           
         } else {
             transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
-            _signature.setPose(transform);
         }
     }
 
@@ -184,24 +185,30 @@ void Estimator::process(Signature & _signature) {
     }
     estimateInfo.localMapSize = _signature.getCovisibleWords3d().size();
     estimateInfo.words = _signature.getWords();
-    transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) ? estimateInfo.lost = true : estimateInfo.lost = false;
     estimateInfo.features = _signature.getWords().size();
     estimateInfo.transform = transform;
-    pose_ = pose_ * transform;
-    Eigen::Vector3d translation = transform.translation();
-    estimateInfo.distanceTravelled = static_cast<float>(uNorm(translation.x(), translation.y(), translation.z()));
     estimateInfo.stamp = _signature.getTimeStamp();
-    // estimateInfo.memoryUsage = UProcessInfo::getMemoryUsage()/(1024*1024);
-
     const double dt = _signature.getTimeStamp() - previousStamps_;
     estimateInfo.interval = dt;
-    previousStamps_ = _signature.getTimeStamp();
-    Eigen::Isometry3d velocity =  guessVelocity(transform, dt);
-    estimateInfo.guessVelocity = velocity;
 
+    if (transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
+        estimateInfo.lost = true;
+        pose_ = pose_ * transform;
+        estimateInfo.guessVelocity = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
+        _signature.setPose(pose_);
+    } else {
+        estimateInfo.lost = false;
+        pose_ = pose_ * transform;
+        Eigen::Vector3d translation = transform.translation();
+        estimateInfo.distanceTravelled = static_cast<float>(uNorm(translation.x(), translation.y(), translation.z()));
+        // estimateInfo.memoryUsage = UProcessInfo::getMemoryUsage()/(1024*1024);
+        Eigen::Isometry3d velocity =  guessVelocity(transform, dt);
+        estimateInfo.guessVelocity = velocity;
+        _signature.setPose(pose_);
+    }
     _signature.setTrackInfo(trackInfo);
     _signature.setEstimateInfo(estimateInfo);
-    _signature.setPose(pose_);
+    
 }
 
 

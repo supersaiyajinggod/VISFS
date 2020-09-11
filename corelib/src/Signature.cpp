@@ -37,7 +37,7 @@ void Signature::setPose(const Eigen::Matrix3d & _R, const Eigen::Vector3d & _t) 
 }
 
 bool Signature::empty() const {
-    return imageLeft_.empty() || words_.empty() || words3d_.empty() || id_ < 1;
+    return imageLeft_.empty() || id_ < 1;
 }
 
 }   // namespace

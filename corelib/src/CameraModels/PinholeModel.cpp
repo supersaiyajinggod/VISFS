@@ -9,7 +9,7 @@ PinholeModel::PinholeModel(const std::vector<double> & _parameters) : GeometricC
     type_ = CAM_PINHOLE;
 }
 
-PinholeModel::PinholeModel(const Eigen::Matrix3d & _K, const double & _baseline) {
+PinholeModel::PinholeModel(const Eigen::Matrix3d & _K, const double & _baseline) : GeometricCamera() {
     id_ = nNextId++;
     type_ = CAM_PINHOLE;
 

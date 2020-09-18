@@ -2,6 +2,7 @@ set(SRC_FILES
     src/Conversion.cpp
     src/Math.cpp
     src/ProcessInfo.cpp
+    src/Timer.cpp
 )
 
 set(INCLUDE_DIRS

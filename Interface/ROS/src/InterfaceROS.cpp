@@ -8,13 +8,28 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     // srv_(_pnh),
     queueSize_(10),
     cameraFrameId_("camera_link"),
-    robotFrameId_("base_link") {
+    robotFrameId_("base_link"),
+    odomFrameId_("odom"),
+    publishTf_(false) {
 
     bool approxSync = true;
+    double baseLine = 0.05;
+
     _pnh.param("approx_sync", approxSync, approxSync);
     _pnh.param("queue_size", queueSize_, queueSize_);
     _pnh.param("camera_frame_id", cameraFrameId_, cameraFrameId_);
     _pnh.param("robot_frame_id", robotFrameId_, robotFrameId_);
+    _pnh.param("odom_frame_id", odomFrameId_, odomFrameId_);
+    _pnh.param("publish_tf", publishTf_, publishTf_);
+    _pnh.param("base_line", baseLine, baseLine);
+
+    ROS_INFO("VISFS_ROS_INTERFACE: approx_sync              = %s", approxSync ? "true" : "false");
+    ROS_INFO("VISFS_ROS_INTERFACE: queue_size               = %d", queueSize_);
+    ROS_INFO("VISFS_ROS_INTERFACE: camera_frame_id          = %s", cameraFrameId_.c_str());
+    ROS_INFO("VISFS_ROS_INTERFACE: robot_frame_id           = %s", robotFrameId_.c_str());
+    ROS_INFO("VISFS_ROS_INTERFACE: odom_frame_id            = %s", odomFrameId_.c_str());
+    ROS_INFO("VISFS_ROS_INTERFACE: publish_tf               = %s", publishTf_ ? "true" : "false");
+    ROS_INFO("VISFS_ROS_INTERFACE: base_line                = %lf", baseLine);
 
     // Dynamic reconfigure
 
@@ -39,8 +54,6 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
 
     parametersInit(pnh_);
 
-    double baseLine = 0.05;
-    pnh_.param("base_line", baseLine, baseLine);
     system_ = new VISFS::System(parameters_);
     system_->init(cameraModelLeft_.fx(), cameraModelLeft_.fy(), cameraModelLeft_.cx(), cameraModelLeft_.cy(), 
                     cameraModelRight_.fx(), cameraModelRight_.fy(), cameraModelRight_.cx(), cameraModelRight_.cy(), baseLine);
@@ -130,10 +143,14 @@ void VISFSInterfaceROS::publishMessage() {
 
         if (!pose.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
             geometry_msgs::TransformStamped poseMsg;
-            poseMsg.child_frame_id = cameraFrameId_;
-            poseMsg.header.frame_id = robotFrameId_;
+            poseMsg.child_frame_id = robotFrameId_;
+            poseMsg.header.frame_id = odomFrameId_;
             poseMsg.header.stamp = stamp;        
             transformToGeometryMsg(pose, poseMsg.transform);
+
+            if (publishTf_) {
+                tfBroadcaster_.sendTransform(poseMsg);
+            }
             
             // Publish the odometry message over ROS
             if (odomPub_.getNumSubscribers()) {
@@ -216,18 +233,15 @@ void VISFSInterfaceROS::publishMessage() {
  
 }
 
-void VISFSInterfaceROS::transformToGeometryMsg(const Eigen::Isometry3d & _transform, geometry_msgs::Transform & _msg)
-{
+void VISFSInterfaceROS::transformToGeometryMsg(const Eigen::Isometry3d & _transform, geometry_msgs::Transform & _msg) {
 	if (!_transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
         tf::StampedTransform transformMsg;
 		tf::transformEigenToTF(_transform, transformMsg);
-        transformTFToMsg(transformMsg, _msg);
 		// make sure the quaternion is normalized
-		long double recipNorm = 1.0 / sqrt(_msg.rotation.x * _msg.rotation.x + _msg.rotation.y * _msg.rotation.y + _msg.rotation.z * _msg.rotation.z + _msg.rotation.w * _msg.rotation.w);
-		_msg.rotation.x *= recipNorm;
-		_msg.rotation.y *= recipNorm;
-		_msg.rotation.z *= recipNorm;
-		_msg.rotation.w *= recipNorm;
+        tf::Quaternion q = transformMsg.getRotation();
+        q.normalize();
+        transformMsg.setRotation(q);
+        transformTFToMsg(transformMsg, _msg);
 	} else {
 		_msg = geometry_msgs::Transform();
 	}

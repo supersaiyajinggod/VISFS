@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 #include "Conversion.h"
-#include "Stl.h"
 
 std::string uReplaceChar(const std::string & str, char before, char after) {
 	std::string result = str;
@@ -119,4 +118,22 @@ std::string uBool2Str(bool boolean) {
 		s = "false";
 	}
 	return s;
+}
+
+std::vector<int> uUlVector2Int(const std::vector<std::size_t> & vector) {
+	std::vector<int> vectorInt;
+	vectorInt.resize(vector.size());
+	for (std::size_t i = 0; i < vector.size(); ++i) {
+		vectorInt[i] = static_cast<int>(vector[i]);
+	}
+	return vectorInt;
+}
+
+std::vector<std::size_t> uIntVector2Ul(const std::vector<int> & vector) {
+	std::vector<std::size_t> vectorUl;
+	vectorUl.resize(vector.size());
+	for (std::size_t i = 0; i < vector.size(); ++i) {
+		vectorUl[i] = static_cast<int>(vector[i]);
+	}
+	return vectorUl;
 }

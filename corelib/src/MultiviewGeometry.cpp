@@ -6,6 +6,7 @@
 #include "MultiviewGeometry.h"
 #include "Math.h"
 #include "Stl.h"
+#include "Conversion.h"
 
 namespace VISFS {
 
@@ -31,7 +32,7 @@ std::vector<float> computeReprojErrors(
 	const cv::Mat & _rvec,
 	const cv::Mat & _tvec,
 	const float _reProjErrorThreshold,
-	std::vector<std::size_t> _inliers) {
+	std::vector<std::size_t> & _inliers) {
     assert(_objectPoints.size() == _imagePoints.size());
     std::size_t cnt = _objectPoints.size();
     std::vector<cv::Point2f> projPoints;
@@ -140,7 +141,7 @@ Eigen::Isometry3d estimateMotion3DTo2D(
         cv::Mat tvec = (cv::Mat_<double>(1,3) << eigent.x(), eigent.y(), eigent.z());
 
         // Calculate
-        VISFS::solvePnPRansac(objectPoints, imagePoints, K, D, rvec, tvec, true, _iterations, _reProjError, _minInliers, inliers, _flagPnP, _refineIterations);
+        VISFS::solvePnPRansac(objectPoints, imagePoints, K, D, rvec, tvec, false, _iterations, _reProjError, _minInliers, inliers, _flagPnP, _refineIterations);
 
         if (static_cast<int>(inliers.size()) >= _minInliers) {
             cv::Rodrigues(rvec, R);
@@ -233,13 +234,15 @@ void solvePnPRansac(
     if (_minInliersCount < 4) {
         _minInliersCount = 4;
     }
+    std::vector<int> inliersInt;
     cv::solvePnPRansac(_objectPoints, _imagePoints, _cameraMatrix, _distCoeffs, _rvec, _tvec,
-                        _useExtrinsicGuess, _iterationsCount, _refineIterations, 0.99, _inliers, _flags);
+                        _useExtrinsicGuess, _iterationsCount, _reprojectionError, 0.99, inliersInt, _flags);
     float inlierThreshold = _reprojectionError;
-    if (static_cast<int>(_inliers.size()) >= _minInliersCount && _refineIterations > 0) {
+    if (static_cast<int>(inliersInt.size()) >= _minInliersCount && _refineIterations > 0) {
         float errorThreshold = inlierThreshold;
         int refineIterations = 0;
         bool inlierChanged = false, oscillating = false;
+        _inliers = uIntVector2Ul(inliersInt);
         std::vector<std::size_t> newInliers, prevInliers = _inliers, inliersSizes;
         cv::Mat newModelRvec = _rvec;
         cv::Mat newModelTvec = _tvec;

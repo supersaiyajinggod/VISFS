@@ -157,7 +157,7 @@ class Parameters {
     VISFS_PARAM(Estimator,  MinInliers,            int,    12,     "Minimal inliers between two images.");
     VISFS_PARAM(Estimator,  PnPIterations,         int,    50,    "Maximal interation times in ransac.");
     VISFS_PARAM(Estimator,  PnPReprojError,        float,  2,      "PnP reprojection error.");
-    VISFS_PARAM(Estimator,  PnPFlags,              int,    0,      "PnP flags: 0=Iterative, 1=EPNP, 2=P3P.");
+    VISFS_PARAM(Estimator,  PnPFlags,              int,    1,      "PnP flags: 0=Iterative, 1=EPNP, 2=P3P.");
     VISFS_PARAM(Estimator,  RefineIterations,      int,    5,      "Number of iterations used to refine the transformation found by RANSAC. 0 means that the transformation is not refined.");
 
     VISFS_PARAM(Optimizer,  Iterations,         int,      10,       "Optimization iterations.");

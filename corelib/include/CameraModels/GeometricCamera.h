@@ -2,6 +2,7 @@
 #define CAMERAMODELS_GEOMETRIC_CAMERA
 
 #include <vector>
+#include <iostream>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -11,13 +12,13 @@ namespace VISFS {
 
 class GeometricCamera {
 public:
-    GeometricCamera() {
+    GeometricCamera() : tansformFromImageToRobot_(Eigen::Isometry3d::Identity()) {
         Eigen::Matrix3d R;
         R << 0.0, 0.0, 1.0, -1.0, 0.0, 0.0, 0.0, -1.0, 0.0;
         tansformFromImageToRobot_.prerotate(R);
     }
 
-    GeometricCamera(const std::vector<double> & _parameters) : parameters_(_parameters) {
+    GeometricCamera(const std::vector<double> & _parameters) : parameters_(_parameters), tansformFromImageToRobot_(Eigen::Isometry3d::Identity()) {
         Eigen::Matrix3d R;
         R << 0.0, 0.0, 1.0, -1.0, 0.0, 0.0, 0.0, -1.0, 0.0;
         tansformFromImageToRobot_.prerotate(R);

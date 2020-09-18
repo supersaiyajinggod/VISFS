@@ -2,6 +2,7 @@
 #define CONVERSION_H
 
 #include <string>
+#include "Stl.h"
 
 /** \brief Replace old characters in a string to new ones.
   * \param[in] str The string. 
@@ -75,37 +76,53 @@ double uStr2Double(const std::string & str);
 bool uStr2Bool(const char * str);
 bool uStr2Bool(const std::string & str);
 
-/**
- * Convert a number (unsigned int) to a string.
- * @param number the number to convert in a string
- * @return the string
- */
+/** \brief Convert a number (unsigned int) to a string. 
+  * \param[in] number the number to convert in a string. 
+  * \return The string.
+  * \author eddy
+  */
 std::string uNumber2Str(unsigned int number);
-/**
- * Convert a number (int) to a string.
- * @param number the number to convert in a string
- * @return the string
- */
+
+/** \brief Convert a number (int) to a string. 
+  * \param[in] number the number to convert in a string. 
+  * \return The string.
+  * \author eddy
+  */
 std::string uNumber2Str(int number);
-/**
- * Convert a number (float) to a string.
- * @param number the number to convert in a string
- * @return the string
- */
+
+/** \brief Convert a number (float) to a string. 
+  * \param[in] number the number to convert in a string. 
+  * \return The string.
+  * \author eddy
+  */
 std::string uNumber2Str(float number);
-/**
- * Convert a number (double) to a string.
- * @param number the number to convert in a string
- * @return the string
- */
+
+/** \brief Convert a number (double) to a string. 
+  * \param[in] number the number to convert in a string. 
+  * \return The string.
+  * \author eddy
+  */
 std::string uNumber2Str(double number);
 
-/**
- * Convert a bool to a string.
- * The format used is "true" and "false".
- * @param boolean the boolean to convert in a string
- * @return the string
- */
+/** \brief Convert a bool to a string. The format used is "true" and "false".
+  * \param[in] number the number to convert in a string. 
+  * \return The string.
+  * \author eddy
+  */
 std::string uBool2Str(bool boolean);
+
+/** \brief Convert std::size_t type vector to int type vector.
+  * \param[in] vector The std::size_t type vector.
+  * \return The int type vector.
+  * \author eddy
+  */
+std::vector<int> uUlVector2Int(const std::vector<std::size_t> & vector);
+
+/** \brief Convert int type vector to std::size_t type vector.
+  * \param[in] vector The int type vector.
+  * \return The std::size_t type vector.
+  * \author eddy
+  */
+std::vector<std::size_t> uIntVector2Ul(const std::vector<int> & vector);
 
 #endif  // CONVERSION_H

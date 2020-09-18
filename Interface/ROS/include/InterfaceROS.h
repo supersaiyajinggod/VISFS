@@ -11,6 +11,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <dynamic_reconfigure/server.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <message_filters/subscriber.h>
@@ -86,10 +87,13 @@ private:
     message_filters::Synchronizer<ImageExactSyncPolicy> * exactSync_;
 	ros::Publisher odomPub_;
 	ros::Publisher odomInfoPub_;
+    tf2_ros::TransformBroadcaster tfBroadcaster_;
 
     int queueSize_;
     std::string cameraFrameId_;
     std::string robotFrameId_;
+    std::string odomFrameId_;
+    bool publishTf_;
 
     VISFS::System * system_;
     VISFS::ParametersMap parameters_;

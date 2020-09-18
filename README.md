@@ -22,6 +22,9 @@ queue_size
 base_line
 camera_frame_id
 robot_frame_id
+publish_tf
 
 algorithm param
 Parameters.h
+
+<node pkg="VISFS" type="VISFSInterfaceROSNode" name="VISFSInterfaceROSNode" output="screen" launch-prefix="gdb -ex run --args">

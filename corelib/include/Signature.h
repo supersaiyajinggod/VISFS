@@ -127,6 +127,9 @@ public:
     const GeometricCamera & getCameraModel() const { return *cameraLeft_; }
     const GeometricCamera & getCameraModelLeft() const { return *cameraLeft_; }
     const GeometricCamera & getCameraModelRight() const { return *cameraRight_; }
+    const boost::shared_ptr<GeometricCamera> & getCameraModelPtr() const { return cameraLeft_; }
+    const boost::shared_ptr<GeometricCamera> & getCameraModelLeftPtr() const { return cameraLeft_; }
+    const boost::shared_ptr<GeometricCamera> & getCameraModelRightPtr() const { return cameraRight_; }
 
 
     TrackInfo & getTrackInfo() { return trackInfo_; }

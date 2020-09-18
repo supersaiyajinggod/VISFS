@@ -149,7 +149,7 @@ std::vector<float> computeReprojErrors(
 	const cv::Mat & _rvec,
 	const cv::Mat & _tvec,
 	const float _reProjErrorThreshold,
-	std::vector<std::size_t> _inliers
+	std::vector<std::size_t> & _inliers
 );
 
 }   // VISFS

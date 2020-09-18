@@ -67,7 +67,7 @@ void System::init(const double fxl, const double fyl, const double cxl, const do
 }
 
 Eigen::Isometry3d System::getGuessPose(const Eigen::Isometry3d & _guessVelocity, const double _dt) {
-    if (!_guessVelocity.isApprox(Eigen::Isometry3d::Identity()) && ! _dt > 0) {
+    if (!_guessVelocity.isApprox(Eigen::Isometry3d::Identity()) && ! (_dt > 0.0)) {
         return Eigen::Isometry3d::Identity();
     } else {
         double vx, vy, vz, vroll, vpitch, vyaw;
@@ -88,7 +88,7 @@ void System::inputStereoImage(const double time_, const cv::Mat & imageLeft_, co
     // Construct signature.
     Signature signature(time_, imageLeft_, imageRight_, cameraLeft_, cameraRight_);
     Eigen::Isometry3d guessPose;
-    if (!velocityGuess_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
+    if (!velocityGuess_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && !(previousTimeStamp_ == 0.0)) {
         guessPose = getGuessPose(velocityGuess_, time_ - previousTimeStamp_);
     } else {
         guessPose = Eigen::Isometry3d::Identity();

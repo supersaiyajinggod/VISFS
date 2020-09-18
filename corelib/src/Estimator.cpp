@@ -2,6 +2,7 @@
 #include "MultiviewGeometry.h"
 #include "ProcessInfo.h"
 #include "Math.h"
+#include "Timer.h"
 
 #include <opencv2/core/eigen.hpp>
 #include <pcl/common/eigen.h>
@@ -10,6 +11,8 @@
 namespace VISFS {
 
 Estimator::Estimator(const ParametersMap & _parameters) :
+    pose_(Eigen::Isometry3d::Identity()),
+    velocityGuess_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
     previousStamps_(0.0),
     minInliers_(Parameters::defaultEstimatorMinInliers()),
     pnpIterations_(Parameters::defaultEstimatorPnPIterations()),
@@ -60,7 +63,10 @@ void Estimator::threadProcess() {
                 signature = signatureThreadBuf_.front();
                 signatureThreadBuf_.pop();
             }
+            // UTimer timer;
             process(signature);
+            // timer.elapsed("Estimator");
+
             //publish process result
             outputSignature(signature);
         }
@@ -92,7 +98,7 @@ void Estimator::process(Signature & _signature) {
     if (!transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && inliers.size() > minInliers_) {
         std::map<std::size_t, Eigen::Isometry3d> poses;
         std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> links;
-        std::vector<GeometricCamera> cameraModels;
+        std::vector<boost::shared_ptr<GeometricCamera>> cameraModels;
         std::map<std::size_t, Eigen::Vector3d> points3D;
         std::map<std::size_t, std::map<std::size_t, FeatureBA>> wordReferences;
         std::set<std::size_t> outliers;
@@ -118,8 +124,9 @@ void Estimator::process(Signature & _signature) {
 
         //camera model
         Eigen::Isometry3d transformRobotToImage = _signature.getCameraModel().getTansformImageToRobot().inverse();
-        cameraModels.emplace_back(_signature.getCameraModelLeft());
-        cameraModels.emplace_back(_signature.getCameraModelRight());
+        cameraModels.push_back(_signature.getCameraModelLeftPtr());
+        cameraModels.push_back(_signature.getCameraModelRightPtr());
+        // std::cout << "Estimate camera K : \n" << cameraModels[0]->eigenKdouble() << "  \n baselne : " << cameraModels[0]->getBaseLine() << std::endl;
 
         for (std::size_t i = 0; i < inliers.size(); ++i) {
             std::size_t wordId = inliers[i];
@@ -142,6 +149,10 @@ void Estimator::process(Signature & _signature) {
         std::map<std::size_t, Eigen::Isometry3d> optimizedPoses;
         std::set<std::size_t> sbaOutliers;
         optimizedPoses = optimizer_->poseOptimize(1, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
+        // std::cout << "sbaOutliers.size(): " << sbaOutliers.size() << std::endl;
+        // for (auto iter = optimizedPoses.begin(); iter != optimizedPoses.end(); ++ iter) {
+        //     std::cout << "optimizedPoses id : " << iter->first << "  pose is :\n" << iter->second.matrix() << std::endl;
+        // }
 
         // Update BA result
         if (optimizedPoses.size() == 2 && !optimizedPoses.begin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))
@@ -193,9 +204,8 @@ void Estimator::process(Signature & _signature) {
 
     if (transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
         estimateInfo.lost = true;
-        pose_ = pose_ * transform;
         estimateInfo.guessVelocity = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
-        _signature.setPose(pose_);
+        _signature.setPose(transform);
     } else {
         estimateInfo.lost = false;
         pose_ = pose_ * transform;
@@ -208,6 +218,7 @@ void Estimator::process(Signature & _signature) {
     }
     _signature.setTrackInfo(trackInfo);
     _signature.setEstimateInfo(estimateInfo);
+    previousStamps_ = _signature.getTimeStamp();
     
 }
 

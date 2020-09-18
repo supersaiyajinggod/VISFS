@@ -5,6 +5,7 @@
 #include "MultiviewGeometry.h"
 #include "Stl.h"
 #include "Math.h"
+#include "Timer.h"
 
 namespace VISFS {
 
@@ -59,8 +60,11 @@ void Tracker::threadProcess() {
                 guessPose = signatureBuf_.front().second;
                 signatureBuf_.pop(); 
             }
+            // UTimer timer;
             process(lastSignature_, signature, guessPose);
-            // estimator_->inputSignature(signature);
+            // timer.elapsed("Tracker");
+            
+            estimator_->inputSignature(signature);
             if (monitor_) {
                 monitor_->addSignature(signature);
             }
@@ -117,7 +121,6 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
     // Generate the _fromSignature keypoints in 3d.
     std::vector<cv::Point3f> kptsFrom3D;
     if (kptsFrom.size() == _fromSignature.getWords3d().size()) {
-        std::cout << "Generate the kptsFrom3D from Old signature." << std::endl;
         kptsFrom3D = uValues(_fromSignature.getWords3d());
     } else {
         std::cout << "Generate the kptsFrom3D new calculate.  kptsFrom.size(): " << kptsFrom.size() << " ,_fromSignature.getWords3d().size(): " << _fromSignature.getWords3d().size() << std::endl;
@@ -243,7 +246,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
     // Make up new corners.
     std::vector<cv::Point2f> newCornersInTo;
     int backUpCornersCnt = maxFeature_ - static_cast<int>(kptsTo.size());
-    if (backUpCornersCnt > 0 && !_fromSignature.getImage().empty()) {
+    if (backUpCornersCnt > 0 && !_toSignature.getImage().empty()) {
         // Set mask
         cv::Mat mask = cv::Mat(imageTo.rows, imageTo.cols, CV_8UC1, cv::Scalar(255));
         for (auto kpt : kptsTo) {
@@ -259,8 +262,9 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
             ++globalFeatureId_;
         }
         _toSignature.setKeyPointsNewExtract(wordsToNewExtract);
-        _toSignature.setWords(wordsTo);
     }
+    
+    _toSignature.setWords(wordsTo);
 
     // Stereo
     std::map<std::size_t, cv::KeyPoint> wordsToRight;

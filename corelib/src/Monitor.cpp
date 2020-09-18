@@ -60,8 +60,9 @@ void Monitor::process(Signature & _signature) {
             if (jter != words3d.end()) {
                 if (std::isfinite(jter->second.z)) {
                     std::stringstream ss;
+                    ss.precision(4);
                     std::string text;
-                    ss << jter->second.z;
+                    ss << jter->second.x;
                     ss >> text;
                     cv::putText(stitch, text, iter->second.pt, cv::FONT_HERSHEY_COMPLEX_SMALL, 1, cv::Scalar(0, 255, 0), 2);
                 }

@@ -156,8 +156,8 @@ void VISFSInterfaceROS::publishMessage() {
             if (odomPub_.getNumSubscribers()) {
                 nav_msgs::Odometry odom;
                 odom.header.stamp = stamp;
-                odom.header.frame_id = robotFrameId_;
-                odom.child_frame_id = cameraFrameId_;
+                odom.header.frame_id = odomFrameId_;
+                odom.child_frame_id = robotFrameId_;
 
                 // Set the position
                 odom.pose.pose.position.x = poseMsg.transform.translation.x;

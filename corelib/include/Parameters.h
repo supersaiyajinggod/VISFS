@@ -159,6 +159,7 @@ class Parameters {
     VISFS_PARAM(Estimator,  PnPReprojError,        float,  2,      "PnP reprojection error.");
     VISFS_PARAM(Estimator,  PnPFlags,              int,    1,      "PnP flags: 0=Iterative, 1=EPNP, 2=P3P.");
     VISFS_PARAM(Estimator,  RefineIterations,      int,    5,      "Number of iterations used to refine the transformation found by RANSAC. 0 means that the transformation is not refined.");
+    VISFS_PARAM(Estimator,  Force3DoF,             bool,   false,  "Force 3 degrees-of-freedom transform (3Dof: x,y and yaw). Parameters z, roll and pitch will be set to 0.");
 
     VISFS_PARAM(Optimizer,  Iterations,         int,      10,       "Optimization iterations.");
     VISFS_PARAM(Optimizer,  Solver,             int,       0,       "0=csparse 1=cholmod 2=pcg 3=Eigen");

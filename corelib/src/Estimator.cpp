@@ -18,13 +18,15 @@ Estimator::Estimator(const ParametersMap & _parameters) :
     pnpIterations_(Parameters::defaultEstimatorPnPIterations()),
     pnpReprojError_(Parameters::defaultEstimatorPnPReprojError()),
     pnpFlags_(Parameters::defaultEstimatorPnPFlags()),
-    refineIterations_(Parameters::defaultEstimatorRefineIterations()) {
+    refineIterations_(Parameters::defaultEstimatorRefineIterations()),
+    force3D_(Parameters::defaultEstimatorForce3DoF()) {
 
     Parameters::parse(_parameters, Parameters::kEstimatorMinInliers(), minInliers_);
     Parameters::parse(_parameters, Parameters::kEstimatorPnPIterations(), pnpIterations_);
     Parameters::parse(_parameters, Parameters::kEstimatorPnPReprojError(), pnpReprojError_);
     Parameters::parse(_parameters, Parameters::kEstimatorPnPFlags(), pnpFlags_);
     Parameters::parse(_parameters, Parameters::kEstimatorRefineIterations(), refineIterations_);
+    Parameters::parse(_parameters, Parameters::kEstimatorForce3DoF(), force3D_);
 
     optimizer_ = new Optimizer(_parameters);
 }
@@ -186,6 +188,14 @@ void Estimator::process(Signature & _signature) {
         } else {
             transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
         }
+    }
+
+    if (force3D_) {
+        double x, y, z, roll, pitch, yaw;
+        pcl::getTranslationAndEulerAngles(transform, x, y, z, roll, pitch, yaw);
+        Eigen::Affine3d pose;
+        pcl::getTransformation(x, y, 0, 0, 0, yaw, pose);
+        transform = Eigen::Isometry3d(pose.matrix());
     }
 
     trackInfo.inliersIDs = inliers;

@@ -10,7 +10,22 @@
 <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_local">
     <rosparam command="load" file="/home/eddy/Documents/VISFS/Interface/ROS/params/ekf_fuse.yaml"/>
     <remap from="odometry/filtered" to="/odom/filtered"/>
-    <remap from="set_pose" to="initialpose"/>
+    <!-- <remap from="set_pose" to="initialpose"/> -->
+</node>
+
+<node pkg="nodelet" type="nodelet" name="stereo_sync" args="standalone rtabmap_ros/stereo_sync" output="screen">
+    <remap from="left/image_rect"       to="/camera/infra1/image_rect_raw"/>
+    <remap from="right/image_rect"      to="/camera/infra2/image_rect_raw"/>
+    <remap from="left/camera_info"      to="/camera/infra1/camera_info"/>
+    <remap from="right/camera_info"     to="/camera/infra2/camera_info"/>
+    <param name="left/image_transport" 	type="string"       value="compressed"/>
+	<param name="right/image_transport" type="string"       value="compressed"/>
+
+    <remap from="rgbd_image"       to="rgbd_image"/> <!-- output -->
+
+    <!-- Should be true for not synchronized camera topics 
+        (e.g., false for kinectv2, zed, realsense, true for xtion, kinect360)-->
+    <param name="approx_sync"       value="false"/> 
 </node>
 
 <node pkg="VISFS" type="VISFSInterfaceROSNode" name="VISFSInterfaceROSNode" output="screen">
@@ -35,14 +50,16 @@
     <param name="Tracker/FlowBack"      type="bool"         value="false"/>
     <param name="Estimator/PnPFlags"    type="int"          value="1"/>
     <param name="Estimator/PnPReprojError"  type="double"   value="2"/>
+    <param name="Estimator/Force3DoF"   type="bool"         value="true"/>
 </node>
 
 <node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="--delete_db_on_start">
-    <param name="subscribe_stereo"      type="bool"     value="true"/>
+    <param name="subscribe_stereo"      type="bool"     value="false"/>
     <param name="subscribe_depth"       type="bool"     value="false"/>
     <param name="subscribe_scan"        type="bool"     value="true"/>
     <param name="subscribe_odom_info"   type="bool"     value="false"/>
     <param name="subscribe_odom"        type="bool"     value="true"/>
+    <param name="subscribe_rgbd"        type="bool"     value="true"/>
     <param name="stereo_to_depth"       type="bool"         value="false"/>
 
     <param name="frame_id"              type="string"   value="base_link"/>
@@ -50,25 +67,13 @@
     <param name="odom_frame_id"            type="string" value="odom"/>
     <param name="odom_tf_linear_variance"  type="double" value="0.001"/>
     <param name="odom_tf_angular_variance" type="double" value="0.001"/>
+    <param name="publish_tf"            type="bool"     value="true"/>
 
     <param name="approx_sync" type="bool" value="true"/>
     <param name="queue_size" type="int" value="500"/>
 	<param name="wait_for_transform" type="bool" value="true"/>
 
-    <remap from="left/image_rect"       to="/camera/infra1/image_rect_raw"/>
-    <remap from="right/image_rect"      to="/camera/infra2/image_rect_raw"/>
-    <remap from="left/camera_info"      to="/camera/infra1/camera_info"/>
-    <remap from="right/camera_info"     to="/camera/infra2/camera_info"/>
-    <param name="left/image_transport" 	type="string"       value="compressed"/>
-	<param name="right/image_transport" type="string"       value="compressed"/>
-
-	<!-- <remap from="rgb/image"       to="/camera/infra1/image_rect_raw"/>
-  	<remap from="rgb/camera_info" to="/camera/infra1/camera_info"/>
-    <remap from="depth/image"     to="/camera/infra2/image_rect_raw"/>
-    
-	<param name="rgb/image_transport"   type="string" value="compressed"/>
-    <param name="depth/image_transport" type="string" value="compressed"/> -->
-
+    <remap from="rgbd_image"        to="/rgbd_image"/>
 
     <remap from="odom"            to="/odom/filtered"/>
     <remap from="scan"            to="/scan"/>
@@ -103,7 +108,6 @@
     <param name="left/image_transport" 	type="string"       value="compressed"/>
 	<param name="right/image_transport" type="string"       value="compressed"/>
 
-    <remap from="odom_info"             to="/VISFSInterfaceROSNode/odom_info"/>
     <remap from="odom"                  to="/odom/filtered"/>
     <remap from="mapData"               to="mapData"/>
     <remap from="scan"                  to="/scan"/>

@@ -1,0 +1,85 @@
+frequency: 20 
+two_d_mode: true
+
+# X, Y, Z
+# roll, pitch, yaw
+# X vel, Y vel, Z vel
+# roll vel, pitch vel, yaw vel
+# X accel, Y accel, Z accel
+
+#Odometry input config 
+odom0: /odom
+odom0_config: [false, false, false, 
+                false, false, false, 
+                true, true, false, 
+                false, false, true,
+                false, false, false] 
+odom0_differential: false 
+odom0_relative: false
+
+
+#Visual Odometry input config 
+odom1: /VISFSInterfaceROSNode/odom
+odom1_config: [false, false, false, 
+                false, false, false, 
+                true, true, false, 
+                false, false, true,
+                false, false, false] 
+odom1_differential: false 
+odom1_relative: false
+
+
+#IMU input config 
+imu0: /imu
+imu0_config: [false, false, false,
+                true, true, true,
+                false, false, false,
+                true, true, true,
+                false, false, false]
+imu0_differential: false 
+imu0_relative: false 
+imu0_remove_gravitational_acceleration: false
+
+
+#Frames config 
+odom_frame: odom 
+base_link_frame: base_link 
+world_frame: odom
+
+dynamic_process_noise_covariance: true
+
+#debug: true
+#debug_out_file: /home/fliesfaries/catkin_ws/data/ekf_log.txt
+
+
+process_noise_covariance: [1.00e-9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                            0,1.00e-9,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                            0,0,1.00e-9,0,0,0,0,0,0,0,0,0,0,0,0,
+                            0,0,0,1.00e+2,0,0,0,0,0,0,0,0,0,0,0,
+                            0,0,0,0,1.00e+2,0,0,0,0,0,0,0,0,0,0,
+                            0,0,0,0,0,1.00e+2,0,0,0,0,0,0,0,0,0,
+                            0,0,0,0,0,0,1.00e+2,0,0,0,0,0,0,0,0,
+                            0,0,0,0,0,0,0,1.00e+2,0,0,0,0,0,0,0,
+                            0,0,0,0,0,0,0,0,1.00e+2,0,0,0,0,0,0,
+                            0,0,0,0,0,0,0,0,0,1.00e+2,0,0,0,0,0,
+                            0,0,0,0,0,0,0,0,0,0,1.00e+2,0,0,0,0,
+                            0,0,0,0,0,0,0,0,0,0,0,1.00e+2,0,0,0,
+                            0,0,0,0,0,0,0,0,0,0,0,0,1.00e+1,0,0,
+                            0,0,0,0,0,0,0,0,0,0,0,0,0,1.00e+1,0,
+                            0,0,0,0,0,0,0,0,0,0,0,0,0,0,1.00e+1]
+
+initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    1e-9, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    1e-1, 0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    1e-1, 0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    1e-1, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    1e-1, 0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    1e-1, 0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    1e-1, 0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    1e-9,  0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     1e-9,  0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     1e-9,  0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1e-9, 0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1e-9, 0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1e-9]

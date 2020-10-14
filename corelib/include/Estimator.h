@@ -42,6 +42,7 @@ private:
 	float pnpReprojError_;
 	int pnpFlags_;
 	int refineIterations_;
+    bool force3D_;
 };
 
 }   // namespace

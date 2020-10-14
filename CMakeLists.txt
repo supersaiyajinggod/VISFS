@@ -13,10 +13,10 @@ set(PROJECT_PATCH_VERSION ${VISFS_PATCH_VERSION})
 
 option(BUILD_SHARED_LIBS "Set to OFF to build static libraries" ON)
 
-if(NOT ROS_BUILD_TYPE)
-    set(ROS_BUILD_TYPE Release) 
-endif(NOT ROS_BUILD_TYPE)
-message("Build type: " ${ROS_BUILD_TYPE})
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release) 
+endif(NOT CMAKE_BUILD_TYPE)
+message("Build type: " ${CMAKE_BUILD_TYPE})
 
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -fpermissive")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -w -fpermissive")

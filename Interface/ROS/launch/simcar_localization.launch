@@ -1,6 +1,11 @@
 <launch>
 
-<param name="use_sim_time" type="bool" value="false"/>
+<param name="use_sim_time" type="bool" value="true"/>
+
+<node pkg="tf" type="static_transform_publisher" name="camera_tf_broadcaster" args="0 0 0 0 0 0 base_link camera_link 50" />
+<!-- <node pkg="tf" type="static_transform_publisher" name="odom_tf_broadcaster" args="0 0 0 0 0 0 odom base_link 100" /> -->
+<node pkg="tf" type="static_transform_publisher" name="imu_tf_broadcaster" args="0 0 0 0 0 0 base_link sensor_imu_link 5" />
+<node pkg="tf" type="static_transform_publisher" name="laser_tf_broadcaster" args="0 0 0 0 0 0 base_link sick_laser_link 50" />
 
 <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_local">
     <rosparam command="load" file="/home/eddy/Documents/VISFS/Interface/ROS/params/ekf_fuse.yaml"/>
@@ -13,8 +18,8 @@
     <remap from="right/image"           to="/camera/infra2/image_rect_raw"/>
 	<remap from="left/info"				to="/camera/infra1/camera_info"/>
     <remap from="right/info"           	to="/camera/infra2/camera_info"/>
-    <param name="left/image_transport" 	type="string"       value="raw"/>
-	<param name="right/image_transport" type="string"       value="raw"/>
+    <param name="left/image_transport" 	type="string"       value="compressed"/>
+	<param name="right/image_transport" type="string"       value="compressed"/>
 
     <param name="approx_sync"           type="bool"			value="true"/>
 	<param name="queue_size"			type="int"			value="10"/>
@@ -49,15 +54,15 @@
     <param name="publish_tf"            type="bool"     value="false"/>
 
     <param name="approx_sync" type="bool" value="true"/>
-    <param name="queue_size" type="int" value="100"/>
+    <param name="queue_size" type="int" value="500"/>
 	<param name="wait_for_transform" type="bool" value="true"/>
 
     <remap from="left/image_rect"       to="/camera/infra1/image_rect_raw"/>
     <remap from="right/image_rect"      to="/camera/infra2/image_rect_raw"/>
     <remap from="left/camera_info"      to="/camera/infra1/camera_info"/>
     <remap from="right/camera_info"     to="/camera/infra2/camera_info"/>
-    <param name="left/image_transport" 	type="string"       value="raw"/>
-	<param name="right/image_transport" type="string"       value="raw"/>
+    <param name="left/image_transport" 	type="string"       value="compressed"/>
+	<param name="right/image_transport" type="string"       value="compressed"/>
 
     <remap from="odom"            to="/odom/filtered"/>
     <remap from="scan"            to="/scan"/>
@@ -77,8 +82,12 @@
    
 </node>
 
+<!-- <node name="map_server" pkg="map_server" type="map_server" args="/home/eddy/Documents/amyRotbot/bagfile/2020-09-22/mymap.yaml" output="screen">
+	<param name="frame_id" value="map"/>
+</node> -->
+
 <node pkg="amcl" type="amcl" name="amcl" output="screen">
-	<rosparam file="$(find teb_local_planner_tutorials)/cfg/a_l/amcl_params.yaml" command="load" />
+	<rosparam file="/home/eddy/Documents/VISFS/Interface/ROS/params/amcl.yaml" command="load" />
     <remap from="map"         to="/grid_map"/>
     <remap from="initialpose" to="/localization_pose"/>
     <remap from="scan"            to="/scan"/>

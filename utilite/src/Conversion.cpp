@@ -1,6 +1,7 @@
 #include <sstream>
 #include <string.h>
 #include <stdlib.h>
+#include <cmath>
 
 #include "Conversion.h"
 
@@ -136,4 +137,19 @@ std::vector<std::size_t> uIntVector2Ul(const std::vector<int> & vector) {
 		vectorUl[i] = static_cast<int>(vector[i]);
 	}
 	return vectorUl;
+}
+
+boost::posix_time::ptime uTimeDouble2Boost(const double time) {
+	int64_t sec64 = static_cast<int64_t>(floor(time));
+    if (sec64 < 0 || sec64 > std::numeric_limits<uint32_t>::max())
+    	std::cout << "Time is out of dual 32-bit range" << std::endl;
+    uint32_t sec = static_cast<uint32_t>(sec64);
+	uint32_t nsec = static_cast<uint32_t>(round((time-sec) * 1e9));
+	sec += (nsec / 1000000000ul);
+    nsec %= 1000000000ul;
+#if defined(BOOST_DATE_TIME_HAS_NANOSECONDS)
+    return boost::posix_time::from_time_t(sec) + boost::posix_time::nanoseconds(nsec);
+#else
+    return boost::posix_time::from_time_t(sec) + boost::posix_time::microseconds(nsec/1000);
+#endif
 }

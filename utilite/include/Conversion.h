@@ -3,6 +3,7 @@
 
 #include <string>
 #include "Stl.h"
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 /** \brief Replace old characters in a string to new ones.
   * \param[in] str The string. 
@@ -124,5 +125,12 @@ std::vector<int> uUlVector2Int(const std::vector<std::size_t> & vector);
   * \author eddy
   */
 std::vector<std::size_t> uIntVector2Ul(const std::vector<int> & vector);
+
+/** \brief Convert double type time to boost type time.
+  * \param[in] time The double type time.
+  * \return The boost type time.
+  * \author eddy
+  */
+boost::posix_time::ptime uTimeDouble2Boost(const double time);
 
 #endif  // CONVERSION_H

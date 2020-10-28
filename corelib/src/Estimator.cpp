@@ -19,6 +19,8 @@ Estimator::Estimator(const ParametersMap & _parameters) :
     pnpReprojError_(Parameters::defaultEstimatorPnPReprojError()),
     pnpFlags_(Parameters::defaultEstimatorPnPFlags()),
     refineIterations_(Parameters::defaultEstimatorRefineIterations()),
+    toleranceTranslation_(Parameters::defaultEstimatorToleranceTranslation()),
+    toleranceRotation_(Parameters::defaultEstimatorToleranceRotation()),
     force3D_(Parameters::defaultEstimatorForce3DoF()) {
 
     Parameters::parse(_parameters, Parameters::kEstimatorMinInliers(), minInliers_);
@@ -158,7 +160,7 @@ void Estimator::process(Signature & _signature) {
 
         // Update BA result
         if (optimizedPoses.size() == 2 && !optimizedPoses.begin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))
-                && !optimizedPoses.rbegin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))){
+                && !optimizedPoses.rbegin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
             if (sbaOutliers.size()) {
                 std::vector<std::size_t> newInliers(inliers.size());
                 std::size_t oi = 0;
@@ -188,6 +190,28 @@ void Estimator::process(Signature & _signature) {
         } else {
             transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
         }
+    }
+
+    Eigen::Isometry3d wheelOdom;
+    if (_signature.getWheelOdomPose(wheelOdom)) {
+        // std::cout << "Signatrue id: " << _signature.getId() << ", estimator get wheel odom: \n" << wheelOdom.matrix() << std::endl;
+        // std::cout << "BA transform: \n" << transform.matrix() << std::endl;
+        double wheelX, wheelY, wheelZ, wheelRoll, wheelPitch, wheelYaw, visualX, visualY, visualZ, visualRoll, visualPitch, visualYaw;
+        pcl::getTranslationAndEulerAngles(wheelOdom, wheelX, wheelY, wheelZ, wheelRoll, wheelPitch, wheelYaw);
+        pcl::getTranslationAndEulerAngles(transform, visualX, visualY, visualZ, visualRoll, visualPitch, visualYaw);
+        const double deltaX = wheelX - visualX;
+        const double deltaY = wheelY - visualY;
+        const double deltaZ = wheelZ - visualZ;
+        const double deltaRoll = wheelRoll - visualRoll;
+        const double deltaPitch = wheelPitch - visualPitch;
+        const double deltaYaw = wheelYaw - visualYaw;
+        if ((deltaX*deltaX + deltaY*deltaY) > toleranceTranslation_*toleranceTranslation_ ) {
+            std::cout << "Signatrue id : " << _signature.getId() << " has a large Translation. deltaX: " << deltaX << " deltaY: " << deltaY << std::endl;
+            transform = wheelOdom;
+        }
+        // if (deltaYaw*deltaYaw > toleranceRotation_*toleranceRotation_) {
+        //     std::cout << "Signatrue id : " << _signature.getId() << " has a large rotation. deltaYaw: " << deltaYaw << std::endl;
+        // }
     }
 
     if (force3D_) {

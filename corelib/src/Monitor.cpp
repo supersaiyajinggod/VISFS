@@ -4,9 +4,9 @@
 namespace VISFS {
 
 Monitor::Monitor(const ParametersMap & _parameters) :
-    sensorType_(Parameters::defaultSystemSensor()) {
+    sensorStrategy_(Parameters::defaultSystemSensorStrategy()) {
     
-    Parameters::parse(_parameters, Parameters::kSystemSensor(), sensorType_);
+    Parameters::parse(_parameters, Parameters::kSystemSensorStrategy(), sensorStrategy_);
 }
 
 void Monitor::addSignature(const Signature & _signature) {
@@ -33,7 +33,7 @@ void Monitor::threadProcess() {
 }
 
 void Monitor::process(Signature & _signature) {
-    if (sensorType_ == 0) {                 // Stereo
+    if (sensorStrategy_ == 0 || sensorStrategy_ == 2) {                 // Stereo && Stereo + wheel
         cv::Mat imageLeft = _signature.getImageLeft();
         cv::Mat imageRight = _signature.getImageRight();
         std::vector<cv::KeyPoint> kptsMatchesFormer = uValues(_signature.getKeyPointsMatchesFormer());
@@ -73,7 +73,7 @@ void Monitor::process(Signature & _signature) {
         cv::imshow("Monitor", stitch);
         cv::waitKey(5);
 
-    } else if (sensorType_ == 1) {          // RGBD
+    } else if (sensorStrategy_ == 1) {          // RGBD
 
     }
 }

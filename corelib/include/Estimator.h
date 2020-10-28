@@ -42,6 +42,8 @@ private:
 	float pnpReprojError_;
 	int pnpFlags_;
 	int refineIterations_;
+    double toleranceTranslation_;
+    double toleranceRotation_;
     bool force3D_;
 };
 

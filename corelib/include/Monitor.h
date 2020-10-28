@@ -18,7 +18,7 @@ public:
 private:
     void process(Signature & _signature);
 
-    int sensorType_;    // 0: stereo, 1: rgbd.
+    int sensorStrategy_;    // 0: stereo, 1: rgbd.
 
     std::queue<Signature> signatureBuf_;
     boost::mutex mutexDataRW_;

@@ -137,35 +137,38 @@ typedef std::pair<std::string, std::string> ParametersPair;
  */
 
 class Parameters {
-    VISFS_PARAM(System,     Sensor,             int,    0,      "System use sensor type: 0 stereo, 1 rgbd.");
-    VISFS_PARAM(System,     Monitor,            bool,   false,  "Monitor");
+    VISFS_PARAM(System,     SensorStrategy,         int,    0,      "System use sensors type: 0 stereo, 1 rgbd, 2 stereo + wheel.");
+    VISFS_PARAM(System,     WheelOdometryFreq,      int,    100,    "The frequence of wheel odometry.");
+    VISFS_PARAM(System,     Monitor,                bool,   false,  "Monitor");
 
-    VISFS_PARAM(Tracker,    MaxFeatures,        int,    300,    "The maximum number of key points will be generated.");
-    VISFS_PARAM(Tracker,    QualityLevel,       double, 0.005,  "");
-    VISFS_PARAM(Tracker,    MinDistance,        double, 20,     "");
-    VISFS_PARAM(Tracker,    FlowBack,           bool,   true,   "Perform backward optical flow to improve feature tracking accuracy.");
-    VISFS_PARAM(Tracker,    MinParallax,        float,  10.0,   "Keyframe selection threshold (pixel).");
-    VISFS_PARAM(Tracker,    MaxDepth,           float,  10.0,   "Max depth of the features (0 means no limit).");
-    VISFS_PARAM(Tracker,    MinDepth,           float,  0.2,    "Min depth of the features (0 means no limit).");
-    VISFS_PARAM(Tracker,    FlowWinSize,        int,    18,     "Size of the search window at each pyramid level.");
-    VISFS_PARAM(Tracker,    FlowIterations,     int,    30,     "Termination criteria of the max interation times.");
-    VISFS_PARAM(Tracker,    FlowEps,            float,  0.01,   "Termination criteria of the search window moves by less than criteria.epsilon");
-    VISFS_PARAM(Tracker,    FlowMaxLevel,       int,    3,      "Maximal pyramid level number; if set to 0, pyramids are not used (single level)");
-    VISFS_PARAM(Tracker,    CullByFundationMatrix,  bool,  false,  "Use fundation matrix to cull out the outliers in the result of feature match.");
-    VISFS_PARAM(Tracker,    FundationPixelError,   float,  1.0,    "Threshold of fundation matrix calculate error.");
+    VISFS_PARAM(Tracker,    MaxFeatures,            int,    300,    "The maximum number of key points will be generated.");
+    VISFS_PARAM(Tracker,    QualityLevel,           double, 0.005,  "");
+    VISFS_PARAM(Tracker,    MinDistance,            double, 20,     "");
+    VISFS_PARAM(Tracker,    FlowBack,               bool,   true,   "Perform backward optical flow to improve feature tracking accuracy.");
+    VISFS_PARAM(Tracker,    MinParallax,            float,  10.0,   "Keyframe selection threshold (pixel).");
+    VISFS_PARAM(Tracker,    MaxDepth,               float,  10.0,   "Max depth of the features (0 means no limit).");
+    VISFS_PARAM(Tracker,    MinDepth,               float,  0.2,    "Min depth of the features (0 means no limit).");
+    VISFS_PARAM(Tracker,    FlowWinSize,            int,    18,     "Size of the search window at each pyramid level.");
+    VISFS_PARAM(Tracker,    FlowIterations,         int,    30,     "Termination criteria of the max interation times.");
+    VISFS_PARAM(Tracker,    FlowEps,                float,  0.01,   "Termination criteria of the search window moves by less than criteria.epsilon");
+    VISFS_PARAM(Tracker,    FlowMaxLevel,           int,    3,      "Maximal pyramid level number; if set to 0, pyramids are not used (single level)");
+    VISFS_PARAM(Tracker,    CullByFundationMatrix,  bool,  false,   "Use fundation matrix to cull out the outliers in the result of feature match.");
+    VISFS_PARAM(Tracker,    FundationPixelError,    float,  1.0,    "Threshold of fundation matrix calculate error.");
 
-    VISFS_PARAM(Estimator,  MinInliers,            int,    12,     "Minimal inliers between two images.");
-    VISFS_PARAM(Estimator,  PnPIterations,         int,    50,    "Maximal interation times in ransac.");
-    VISFS_PARAM(Estimator,  PnPReprojError,        float,  2,      "PnP reprojection error.");
-    VISFS_PARAM(Estimator,  PnPFlags,              int,    1,      "PnP flags: 0=Iterative, 1=EPNP, 2=P3P.");
-    VISFS_PARAM(Estimator,  RefineIterations,      int,    5,      "Number of iterations used to refine the transformation found by RANSAC. 0 means that the transformation is not refined.");
-    VISFS_PARAM(Estimator,  Force3DoF,             bool,   false,  "Force 3 degrees-of-freedom transform (3Dof: x,y and yaw). Parameters z, roll and pitch will be set to 0.");
+    VISFS_PARAM(Estimator,  MinInliers,             int,    12,     "Minimal inliers between two images.");
+    VISFS_PARAM(Estimator,  PnPIterations,          int,    50,     "Maximal interation times in ransac.");
+    VISFS_PARAM(Estimator,  PnPReprojError,         float,  2,      "PnP reprojection error.");
+    VISFS_PARAM(Estimator,  PnPFlags,               int,    1,      "PnP flags: 0=Iterative, 1=EPNP, 2=P3P.");
+    VISFS_PARAM(Estimator,  RefineIterations,       int,    5,      "Number of iterations used to refine the transformation found by RANSAC. 0 means that the transformation is not refined.");
+    VISFS_PARAM(Estimator,  ToleranceTranslation,   double, 0.03,   "The max translation difference between all sensors.");
+    VISFS_PARAM(Estimator,  ToleranceRotation,      double, 0.0175, "The max rotation difference between all sensors. Default is 1 degree.");
+    VISFS_PARAM(Estimator,  Force3DoF,              bool,   false,  "Force 3 degrees-of-freedom transform (3Dof: x,y and yaw). Parameters z, roll and pitch will be set to 0.");
 
-    VISFS_PARAM(Optimizer,  Iterations,         int,      10,       "Optimization iterations.");
-    VISFS_PARAM(Optimizer,  Solver,             int,       0,       "0=csparse 1=cholmod 2=pcg 3=Eigen");
-    VISFS_PARAM(Optimizer,  Optimizer,          int,       0,       "0=Levenberg 1=GaussNewton");
-    VISFS_PARAM(Optimizer,  PixelVariance,      double,  1.5,       "Pixel variance used for bundle adjustment.");
-    VISFS_PARAM(Optimizer,  RobustKernelDelta,  double,  8.0,       "Robust kernel delta used for bundle adjustment (0 means don't use robust kernel). Observations with chi2 over this threshold will be ignored in the second optimization pass.");
+    VISFS_PARAM(Optimizer,  Iterations,             int,      10,   "Optimization iterations.");
+    VISFS_PARAM(Optimizer,  Solver,                 int,       0,   "0=csparse 1=cholmod 2=pcg 3=Eigen");
+    VISFS_PARAM(Optimizer,  Optimizer,              int,       0,   "0=Levenberg 1=GaussNewton");
+    VISFS_PARAM(Optimizer,  PixelVariance,          double,  1.5,   "Pixel variance used for bundle adjustment.");
+    VISFS_PARAM(Optimizer,  RobustKernelDelta,      double,  8.0,   "Robust kernel delta used for bundle adjustment (0 means don't use robust kernel). Observations with chi2 over this threshold will be ignored in the second optimization pass.");
 
 public:
     virtual ~Parameters();

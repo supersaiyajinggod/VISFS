@@ -60,6 +60,8 @@ private:
 
     cv::Mat getImageFromROS(const sensor_msgs::ImageConstPtr & _imageMsg);
 
+    void wheelOdometryCallback(const nav_msgs::Odometry & _wheelOdom);
+
 	/** \brief Callback for process stereo image coming. 
       * \param[in] Left image. 
       * \param[in] Right iamge.
@@ -75,6 +77,7 @@ private:
 	// void reconfigureCallback(obstacle_detector::DynamicParamConfig & _config, uint32_t _level); 
 
     ros::NodeHandle pnh_;
+    ros::Subscriber wheelOdomSub_;
     image_transport::SubscriberFilter imageLeftSub_;
     image_transport::SubscriberFilter imageRightSub_;
     image_geometry::PinholeCameraModel cameraModelLeft_;

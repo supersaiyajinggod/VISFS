@@ -12,9 +12,11 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     odomFrameId_("odom"),
     publishTf_(false) {
 
+    bool subscribeWheelOdometry = false;
     bool approxSync = true;
     double baseLine = 0.05;
 
+    _pnh.param("subscribe_wheel_odom", subscribeWheelOdometry, subscribeWheelOdometry);
     _pnh.param("approx_sync", approxSync, approxSync);
     _pnh.param("queue_size", queueSize_, queueSize_);
     _pnh.param("camera_frame_id", cameraFrameId_, cameraFrameId_);
@@ -23,6 +25,7 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     _pnh.param("publish_tf", publishTf_, publishTf_);
     _pnh.param("base_line", baseLine, baseLine);
 
+    ROS_INFO("VISFS_ROS_INTERFACE: subscribe_wheel_odom     = %s", subscribeWheelOdometry ? "true" : "false");
     ROS_INFO("VISFS_ROS_INTERFACE: approx_sync              = %s", approxSync ? "true" : "false");
     ROS_INFO("VISFS_ROS_INTERFACE: queue_size               = %d", queueSize_);
     ROS_INFO("VISFS_ROS_INTERFACE: camera_frame_id          = %s", cameraFrameId_.c_str());
@@ -57,6 +60,11 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     system_ = new VISFS::System(parameters_);
     system_->init(cameraModelLeft_.fx(), cameraModelLeft_.fy(), cameraModelLeft_.cx(), cameraModelLeft_.cy(), 
                     cameraModelRight_.fx(), cameraModelRight_.fy(), cameraModelRight_.cx(), cameraModelRight_.cy(), baseLine);
+
+    // Get wheel odom
+    if (subscribeWheelOdometry) {
+        wheelOdomSub_ = _n.subscribe("wheel_odom", 10, &VISFSInterfaceROS::wheelOdometryCallback, this, ros::TransportHints().tcpNoDelay());
+    }
 
     // Get stereo image and register callback 
     image_transport::ImageTransport leftIT(leftImageNodeHandle);
@@ -113,6 +121,25 @@ VISFSInterfaceROS::~VISFSInterfaceROS() {
     delete system_;
 }
 
+void VISFSInterfaceROS::wheelOdometryCallback(const nav_msgs::Odometry & _wheelOdom) {
+    // ROS_INFO("Odom received.");
+    // ROS_INFO("%lf, time", _wheelOdom.header.stamp.toSec());
+    // ROS_INFO("%f, %f, %f.", _wheelOdom.pose.pose.position.x, _wheelOdom.twist.twist.linear.x, _wheelOdom.twist.twist.angular.z);
+    Eigen::Isometry3d wheelPose(Eigen::Isometry3d::Identity());
+    Eigen::Isometry3d wheelVelocity(Eigen::Matrix4d::Zero());
+    
+    Eigen::Quaterniond q = Eigen::Quaterniond(_wheelOdom.pose.pose.orientation.w, _wheelOdom.pose.pose.orientation.x, _wheelOdom.pose.pose.orientation.y, _wheelOdom.pose.pose.orientation.z);
+    wheelPose.rotate(q);
+    wheelPose.pretranslate(Eigen::Vector3d(_wheelOdom.pose.pose.position.x, _wheelOdom.pose.pose.position.y, _wheelOdom.pose.pose.position.z));
+
+    Eigen::Affine3d wheelVelocityAffine;
+    pcl::getTransformation(_wheelOdom.twist.twist.linear.x, _wheelOdom.twist.twist.linear.y, _wheelOdom.twist.twist.linear.z, _wheelOdom.twist.twist.angular.x, _wheelOdom.twist.twist.angular.y, _wheelOdom.twist.twist.angular.z, wheelVelocityAffine);
+    wheelVelocity = Eigen::Isometry3d(wheelVelocityAffine.matrix());
+
+    system_->inputWheelOdometry(_wheelOdom.header.stamp.toSec(), wheelPose, wheelVelocity);
+}
+
+
 void VISFSInterfaceROS::stereoImageCallback(const sensor_msgs::ImageConstPtr & _leftImage, const sensor_msgs::ImageConstPtr & _rightImage) {
     cv::Mat cvImageLeft, cvImageRight;
     try {
@@ -129,7 +156,7 @@ void VISFSInterfaceROS::stereoImageCallback(const sensor_msgs::ImageConstPtr & _
         ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
-    ros::Time::now();
+
     system_->inputStereoImage(_leftImage->header.stamp.toSec(), cvImageLeft, cvImageRight);
 }
 

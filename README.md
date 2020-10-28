@@ -1,3 +1,4 @@
+dependence
 opencv
 eigen
 g2o
@@ -8,6 +9,7 @@ left/image
 right/image
 left/info
 right/info
+wheel_odom
 
 output
 odom
@@ -27,4 +29,5 @@ publish_tf
 algorithm param
 Parameters.h
 
+debug
 <node pkg="VISFS" type="VISFSInterfaceROSNode" name="VISFSInterfaceROSNode" output="screen" launch-prefix="gdb -ex run --args">

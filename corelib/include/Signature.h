@@ -93,6 +93,7 @@ public:
     static std::size_t nextId_;
     Signature();
     Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight);
+    Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight, const Eigen::Isometry3d & _guessPose, const Eigen::Isometry3d & _wheelOdom);
 
     std::size_t getId() const { return id_; }
     double getTimeStamp() const { return timestamp_; }
@@ -101,6 +102,9 @@ public:
     void setPose(const Eigen::Matrix3d & _R, const Eigen::Vector3d & _t);
     Eigen::Isometry3d getGuessPose() const { return guess_; }
     void setGuessPose(const Eigen::Isometry3d & _guess) { guess_ = _guess; }
+    bool getWheelOdomPose(Eigen::Isometry3d & _wheelOdom) const { _wheelOdom= wheelOdom_; return wheelOdom_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) ? false : true; }
+    void setWheelOdomPose(const Eigen::Isometry3d & _wheelOdom) { wheelOdom_ = _wheelOdom; }
+
     const std::map<std::size_t, cv::KeyPoint> & getWords() const { return words_; }
     void setWords(const std::map<std::size_t, cv::KeyPoint> & _words) { words_ = _words; }
     const std::map<std::size_t, cv::Point3f> & getWords3d() const { return words3d_; }
@@ -147,6 +151,7 @@ private:
     boost::shared_ptr<GeometricCamera> cameraRight_;
     Eigen::Isometry3d pose_;
     Eigen::Isometry3d guess_;
+    Eigen::Isometry3d wheelOdom_;
 
     std::map<std::size_t, cv::KeyPoint> words_;
     std::map<std::size_t, cv::Point3f> words3d_; // word in robot/base_link

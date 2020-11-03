@@ -250,6 +250,23 @@ inline std::vector<T> uNormlize(const std::vector<T> & _v) {
     }
 }
 
+/** \brief Convert a small rotation at omega angular velocity to a quaternion.
+  * \param[in] omega The angular velocity.
+  * \return The quaternion.
+  * \author eddy
+  */
+template <typename Derived>
+Eigen::Quaternion<typename Derived::Scalar> deltaQ(const Eigen::MatrixBase<Derived> & _omega) {
+	Eigen::Quaternion<Derived::Scalar> dq;
+	Eigen::Matrix<Derived::Scalar, 3, 1> halfTheta = _omega;
+	halfTheta /= static_cast<typename Derived::Scalar>(2.0);
+	dq.w() = static_cast<typename Derived::Scalar>(1.0);
+	dq.x() = halfTheta.x();
+	dq.y() = halfTheta.y();
+	dq.z() = halfTheta.z();
+	return dq;
+}
+
 /** \brief Calculate the angle between two vectors.
   * \param[in] _v1 The first vector.
   * \param[in] _v2 The second vector.

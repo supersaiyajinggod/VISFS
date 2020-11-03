@@ -97,6 +97,12 @@ void Estimator::process(Signature & _signature) {
         transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
         std::cout << "Not enough features in images, old=" << words3dFrom.size() << ", new=" << wordsTo.size() << ", min=" << minInliers_ << "." << std::endl;
     }
+
+        Eigen::Isometry3d wheelOdom;
+    //     if (_signature.getWheelOdomPose(wheelOdom)) {
+    //         transform = wheelOdom;
+    //     }
+    // std::cout << "_signature id : " << _signature.getId() << "  pose 3d->2d pnp is :\n" << transform.matrix() << std::endl;
     
     // If motion of guess > threshold, do bundle adjustment.
     if (!transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && inliers.size() > minInliers_) {
@@ -124,7 +130,7 @@ void Estimator::process(Signature & _signature) {
 			covariance.at<double>(5, 5) = COVARIANCE_EPSILON; 
         Eigen::MatrixXd m(covariance.rows, covariance.cols);
         cv::cv2eigen(covariance, m);
-        links.insert(std::make_pair(1, std::make_tuple(1, 2, transform, m.inverse())));
+        // links.insert(std::make_pair(1, std::make_tuple(1, 2, transform, m.inverse())));
 
         //camera model
         Eigen::Isometry3d transformRobotToImage = _signature.getCameraModel().getTansformImageToRobot().inverse();
@@ -192,7 +198,7 @@ void Estimator::process(Signature & _signature) {
         }
     }
 
-    Eigen::Isometry3d wheelOdom;
+    // Eigen::Isometry3d wheelOdom;
     if (_signature.getWheelOdomPose(wheelOdom)) {
         // std::cout << "Signatrue id: " << _signature.getId() << ", estimator get wheel odom: \n" << wheelOdom.matrix() << std::endl;
         // std::cout << "BA transform: \n" << transform.matrix() << std::endl;
@@ -205,6 +211,7 @@ void Estimator::process(Signature & _signature) {
         const double deltaRoll = wheelRoll - visualRoll;
         const double deltaPitch = wheelPitch - visualPitch;
         const double deltaYaw = wheelYaw - visualYaw;
+
         if ((deltaX*deltaX + deltaY*deltaY) > toleranceTranslation_*toleranceTranslation_ ) {
             std::cout << "Signatrue id : " << _signature.getId() << " has a large Translation. deltaX: " << deltaX << " deltaY: " << deltaY << std::endl;
             transform = wheelOdom;

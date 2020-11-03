@@ -178,11 +178,11 @@ Eigen::Isometry3d estimateMotion3DTo2D(
                 if (errSqrdDists.size()) {
                     std::sort(errSqrdDists.begin(), errSqrdDists.end());
                     // divide by 4 instead of 2 to ignore very very far features (stereo)
-                    double medianErrSqr = 2.1981 * static_cast<double>(errSqrdDists[errSqrdDists.size() >> 2]);
+                    double medianErrSqr = 200.1981 * static_cast<double>(errSqrdDists[errSqrdDists.size() >> 2]);
                     assert(uIsFinite(medianErrSqr));
                     _covariance(cv::Range(0, 3), cv::Range(0, 3)) *= medianErrSqr;
                     std::sort(errSqrdAngles.begin(), errSqrdAngles.end());
-                    medianErrSqr = 2.1981 * static_cast<double>(errSqrdAngles[errSqrdAngles.size() >> 2]);
+                    medianErrSqr = 200.1981 * static_cast<double>(errSqrdAngles[errSqrdAngles.size() >> 2]);
                     assert(uIsFinite(medianErrSqr));
                     _covariance(cv::Range(3, 6), cv::Range(3, 6)) *= medianErrSqr;
                 } else {

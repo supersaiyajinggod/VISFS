@@ -404,7 +404,7 @@ void System::inputStereoImage(const double _time, const cv::Mat & _imageLeft, co
                 guessPose = Eigen::Isometry3d::Identity();
                 deltaOdomPose = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
             }
-            previousWheelOdom_ = std::get<1>(lastOdom);
+            previousWheelOdom_ = globalWheelPose;
 
             signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose, guessPose);
         } else {

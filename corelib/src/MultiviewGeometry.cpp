@@ -177,12 +177,11 @@ Eigen::Isometry3d estimateMotion3DTo2D(
 
                 if (errSqrdDists.size()) {
                     std::sort(errSqrdDists.begin(), errSqrdDists.end());
-                    // divide by 4 instead of 2 to ignore very very far features (stereo)
-                    double medianErrSqr = 200.1981 * static_cast<double>(errSqrdDists[errSqrdDists.size() >> 2]);
+                    double medianErrSqr = 2.1981 * static_cast<double>(errSqrdDists[errSqrdDists.size() >> 1]);
                     assert(uIsFinite(medianErrSqr));
                     _covariance(cv::Range(0, 3), cv::Range(0, 3)) *= medianErrSqr;
                     std::sort(errSqrdAngles.begin(), errSqrdAngles.end());
-                    medianErrSqr = 200.1981 * static_cast<double>(errSqrdAngles[errSqrdAngles.size() >> 2]);
+                    medianErrSqr = 2.1981 * static_cast<double>(errSqrdAngles[errSqrdAngles.size() >> 1]);
                     assert(uIsFinite(medianErrSqr));
                     _covariance(cv::Range(3, 6), cv::Range(3, 6)) *= medianErrSqr;
                 } else {
@@ -312,6 +311,60 @@ void solvePnPRansac(
         _tvec = newModelTvec;
     }
 
+}
+
+cv::Mat computeCovariance(
+	const std::map<std::size_t, cv::Point3f> & _pointsInCoor1,
+	const std::map<std::size_t, cv::Point3f> & _pointsInCoor2,
+	const Eigen::Isometry3d & _transformCoor2ToCoor1,
+	const std::vector<std::size_t> & _inliers) {
+        cv::Mat covariance = cv::Mat::eye(6, 6, CV_64FC1);
+    if (_inliers.empty()) {
+        std::cout << "[Error]: The corresponding index is empty. return huge covariance." << std::endl;
+        covariance *= 9999.0;
+        return covariance;
+    } else if (_pointsInCoor1.empty() || _pointsInCoor2.empty()) {
+        std::cout << "[Error]: The input points are empty. return huge covariance." << std::endl;
+        covariance *= 9999.0;
+        return covariance;
+    } else {
+        std::vector<float> errSqrdDists(_inliers.size());
+        std::vector<float> errSqrdAngles(_inliers.size());
+        std::size_t oi = 0;
+        for (std::size_t i = 0; i < _inliers.size(); ++i) {
+            std::map<std::size_t, cv::Point3f>::const_iterator iter1 = _pointsInCoor1.find(_inliers[i]);
+            std::map<std::size_t, cv::Point3f>::const_iterator iter2 = _pointsInCoor2.find(_inliers[i]);
+            if (iter1 != _pointsInCoor1.end() && isFinite(iter1->second) && iter2 != _pointsInCoor2.end() && isFinite(iter2->second)) {
+                const cv::Point3f & ptCoor1 = iter1->second;
+                const cv::Point3f & ptCoor2Proj = transformPoint(iter2->second, _transformCoor2ToCoor1);
+                errSqrdDists[oi] = uNormSquared(ptCoor1.x - ptCoor2Proj.x, ptCoor1.y - ptCoor2Proj.y, ptCoor1.z- ptCoor2Proj.z);
+
+                auto translationCoor2TtoCoor1 = _transformCoor2ToCoor1.translation();
+                Eigen::Vector4f v1(ptCoor1.x- translationCoor2TtoCoor1.x(), ptCoor1.y - translationCoor2TtoCoor1.y(), ptCoor1.z - translationCoor2TtoCoor1.z(), 0);
+                Eigen::Vector4f v2(ptCoor2Proj.x - translationCoor2TtoCoor1.x(), ptCoor2Proj.y - translationCoor2TtoCoor1.y(), ptCoor2Proj.z - translationCoor2TtoCoor1.z(), 0);
+                errSqrdAngles[oi++] = getAngle3D(v1, v2);
+            }
+        }
+        errSqrdDists.resize(oi);
+        errSqrdAngles.resize(oi);
+
+        if (errSqrdDists.size()) {
+            std::sort(errSqrdDists.begin(), errSqrdDists.end());
+            double medianErrSqr = 2.1981 * static_cast<double>(errSqrdDists[errSqrdDists.size() >> 1]);
+            assert(uIsFinite(medianErrSqr));
+            covariance(cv::Range(0, 3), cv::Range(0, 3)) *= medianErrSqr;
+            std::sort(errSqrdAngles.begin(), errSqrdAngles.end());
+            medianErrSqr = 2.1981 * static_cast<double>(errSqrdAngles[errSqrdAngles.size() >> 1]);
+            assert(uIsFinite(medianErrSqr));
+            covariance(cv::Range(3, 6), cv::Range(3, 6)) *= medianErrSqr;
+        } else {
+            std::cout << "Not enough close points to compute covariance!" << std::endl;
+        }
+
+        if (static_cast<float>(oi) / static_cast<float>(_inliers.size()) < 0.2f) {
+            std::cout << "A very low number of inliers have valid depth " << oi << " / " << _inliers.size() << " , the transform returned may be wrong!" << std::endl;
+        }
+    }
 }
 
 }   // namespace

@@ -129,7 +129,7 @@ void solvePnPRansac(
 	int _refineIterations = 1,
 	float _refineSigma = 3.0f);
 
-/** \brief Compute .
+/** \brief Compute reproject errors.
   * \param[in] objectPoint The 3d points in first image.
   * \param[in] imagePoints The 2d points in the second image.
   * \param[in] cameraModel The intrinsic of camera model.
@@ -150,6 +150,21 @@ std::vector<float> computeReprojErrors(
 	const cv::Mat & _tvec,
 	const float _reProjErrorThreshold,
 	std::vector<std::size_t> & _inliers
+);
+
+/** \brief Compute covariance between two point clusters.
+  * \param[in] pointsInCoor1 The 3d points in first coordinate.
+  * \param[in] pointsInCoor2 The 3d points in the second coordinate.
+  * \param[in] transformCoor2ToCoor1 The transform from coordinate2 to coordinate1.
+  * \param[int] inliers The ids of corresponding points bwtween two coordinates.
+  * \return The covariance of all inliers.
+  * \author eddy
+  */
+cv::Mat computeCovariance(
+	const std::map<std::size_t, cv::Point3f> & _pointsInCoor1,
+	const std::map<std::size_t, cv::Point3f> & _pointsInCoor2,
+	const Eigen::Isometry3d & _transformCoor2ToCoor1,
+	const std::vector<std::size_t> & _inliers
 );
 
 }   // VISFS

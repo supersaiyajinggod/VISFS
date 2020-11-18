@@ -5,6 +5,7 @@ set(SRC_FILES
     src/Monitor.cpp
     src/MultiviewGeometry.cpp
     src/Optimizer.cpp
+    src/OptimizeTypeDefine.cpp
     src/Parameters.cpp
     src/Signature.cpp
     src/System.cpp

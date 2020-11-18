@@ -7,8 +7,8 @@ two_d_mode: true
 # roll vel, pitch vel, yaw vel
 # X accel, Y accel, Z accel
 
-#Odometry input config 
-odom0: /odom
+#Visual Odometry input config 
+odom0: /VISFSInterfaceROSNode/odom
 odom0_config: [false, false, false, 
                 false, false, false, 
                 true, true, false, 
@@ -18,16 +18,15 @@ odom0_differential: false
 odom0_relative: false
 
 
-#Visual Odometry input config 
-odom1: /VISFSInterfaceROSNode/odom
-odom1_config: [false, false, false, 
-                false, false, false, 
-                true, true, false, 
-                false, false, true,
-                false, false, false] 
-odom1_differential: false 
-odom1_relative: false
-
+#Odometry input config 
+# odom1: /odom
+# odom1_config: [false, false, false, 
+#                 false, false, false, 
+#                 true, true, false, 
+#                 false, false, true,
+#                 false, false, false] 
+# odom1_differential: false 
+# odom1_relative: false
 
 #IMU input config 
 imu0: /imu

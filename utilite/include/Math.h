@@ -267,6 +267,58 @@ Eigen::Quaternion<typename Derived::Scalar> deltaQ(const Eigen::MatrixBase<Deriv
 	return dq;
 }
 
+/** \brief Convert a 3 dimension vector to skew symmetric matrix.
+  * \param[in] q The 3 dimension vector.
+  * \return The skew symmetric matrix.
+  * \author eddy
+  */
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 3, 3> skewSymmetric(const Eigen::MatrixBase<Derived> & _q) {
+	Eigen::Matrix<typename Derived::Scalar, 3, 3> ans;
+	ans << typename Derived::Scalar(0), -_q(2), _q(1),
+		_q(2), typename Derived::Scalar(0), -_q(0),
+		-_q(1), _q(0), typename Derived::Scalar(0);
+	return ans;
+}
+
+/** \brief Check a quaternion is positive.
+  * \param[in] q A quaternion.
+  * \return A positive quaternion.
+  * \author eddy
+  */
+template <typename Derived>
+Eigen::Quaternion<typename Derived::Scalar> QuaternionPositify(const Eigen::QuaternionBase<Derived> & _q) {
+	return _q;
+}
+
+/** \brief Calculate left multiplication operator of quaternion.
+  * \param[in] q The quaternion.
+  * \return The left multiplication operator.
+  * \author eddy
+  */
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 4, 4> QuaternionLeft(const Eigen::QuaternionBase<Derived> & _q) {
+	Eigen::Quaternion<typename Derived::Scalar> pq = QuaternionPositify(_q);
+	Eigen::Matrix<typename Derived::Scalar, 4, 4> ans;
+	ans(0, 0) = pq.w(), ans.template block<1, 3>(0, 1) = -pq.vec().transpose();
+	ans.template block<3, 1>(1, 0) = pq.vec(), ans.template block<3, 3>(1, 1) = pq.w() * Eigen::Matrix<typename Derived::Scalar, 3, 3>::Identity() + skewSymmetric(pq.vec());
+	return ans;
+}
+
+/** \brief Calculate right multiplication operator of quaternion.
+  * \param[in] q The quaternion.
+  * \return The right multiplication operator.
+  * \author eddy
+  */
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 4, 4> QuaternionRight(const Eigen::QuaternionBase<Derived> & _q) {
+	Eigen::Quaternion<typename Derived::Scalar> pq = QuaternionPositify(_q);
+	Eigen::Matrix<typename Derived::Scalar, 4, 4> ans;
+	ans(0, 0) = pq.w(), ans.template block<1, 3>(0, 1) = -pq.vec().transpose();
+	ans.template block<3, 1>(1, 0) = pq.vec(), ans.template block<3, 3>(1, 1) = pq.w() * Eigen::Matrix<typename Derived::Scalar, 3, 3>::Identity() - skewSymmetric(pq.vec());
+	return ans;
+}
+
 /** \brief Calculate the angle between two vectors.
   * \param[in] _v1 The first vector.
   * \param[in] _v2 The second vector.

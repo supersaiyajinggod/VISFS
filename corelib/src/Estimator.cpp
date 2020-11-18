@@ -3,6 +3,7 @@
 #include "ProcessInfo.h"
 #include "Math.h"
 #include "Timer.h"
+#include "Stl.h"
 
 #include <opencv2/core/eigen.hpp>
 #include <pcl/common/eigen.h>
@@ -28,6 +29,8 @@ Estimator::Estimator(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kEstimatorPnPReprojError(), pnpReprojError_);
     Parameters::parse(_parameters, Parameters::kEstimatorPnPFlags(), pnpFlags_);
     Parameters::parse(_parameters, Parameters::kEstimatorRefineIterations(), refineIterations_);
+    Parameters::parse(_parameters, Parameters::kEstimatorToleranceTranslation(), toleranceTranslation_);
+    Parameters::parse(_parameters, Parameters::kEstimatorToleranceRotation(), toleranceRotation_);
     Parameters::parse(_parameters, Parameters::kEstimatorForce3DoF(), force3D_);
 
     optimizer_ = new Optimizer(_parameters);
@@ -89,21 +92,32 @@ void Estimator::process(Signature & _signature) {
     std::map<std::size_t, cv::Point3f> words3dFrom = _signature.getCovisibleWords3d();
     std::map<std::size_t, cv::KeyPoint> wordsTo = _signature.getKeyPointsMatchesFormer();
     std::map<std::size_t, cv::Point3f> words3dTo = _signature.getWords3d();
-    if (words3dFrom.size() >= minInliers_ && wordsTo.size() >= minInliers_) {
-        transform = estimateMotion3DTo2D(words3dFrom, wordsTo, _signature.getCameraModel(), minInliers_, pnpIterations_,
-                                            pnpReprojError_, pnpFlags_, refineIterations_, words3dTo, covariance, matches, inliers,
-                                            _signature.getGuessPose());
-    } else {
-        transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
-        std::cout << "Not enough features in images, old=" << words3dFrom.size() << ", new=" << wordsTo.size() << ", min=" << minInliers_ << "." << std::endl;
-    }
 
-        Eigen::Isometry3d wheelOdom;
-    //     if (_signature.getWheelOdomPose(wheelOdom)) {
-    //         transform = wheelOdom;
-    //     }
-    // std::cout << "_signature id : " << _signature.getId() << "  pose 3d->2d pnp is :\n" << transform.matrix() << std::endl;
-    
+    Eigen::Isometry3d wheelOdom;
+    if (_signature.getWheelOdomPose(wheelOdom)) {
+		covariance.at<double>(0, 0) = 0.01;
+		covariance.at<double>(1, 1) = 0.01;
+		covariance.at<double>(2, 2) = 0;
+		covariance.at<double>(3, 3) = 0;
+		covariance.at<double>(4, 4) = 0;
+		covariance.at<double>(5, 5) = 0.06;
+        matches = findCorrespondences(words3dFrom, wordsTo);
+        inliers = matches;
+        // std::cout << "wheelOdom: \n" << wheelOdom.matrix() << std::endl;
+        transform = wheelOdom;
+    } else {
+        if (words3dFrom.size() >= minInliers_ && wordsTo.size() >= minInliers_) {
+            transform = estimateMotion3DTo2D(words3dFrom, wordsTo, _signature.getCameraModel(), minInliers_, pnpIterations_,
+                                                pnpReprojError_, pnpFlags_, refineIterations_, words3dTo, covariance, matches, inliers,
+                                                _signature.getGuessPose());
+        } else {
+            transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
+            std::cout << "Not enough features in images, old=" << words3dFrom.size() << ", new=" << wordsTo.size() << ", min=" << minInliers_ << "." << std::endl;
+        }
+        std::cout << "_signature id : " << _signature.getId() << "  pose 3d->2d pnp is :\n" << transform.matrix() << std::endl;
+    }
+    // std::cout << "_signature id : " << _signature.getId() << " matches: " << matches.size() <<" inliers: " << inliers.size() << std::endl;
+
     // If motion of guess > threshold, do bundle adjustment.
     if (!transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && inliers.size() > minInliers_) {
         std::map<std::size_t, Eigen::Isometry3d> poses;
@@ -130,7 +144,7 @@ void Estimator::process(Signature & _signature) {
 			covariance.at<double>(5, 5) = COVARIANCE_EPSILON; 
         Eigen::MatrixXd m(covariance.rows, covariance.cols);
         cv::cv2eigen(covariance, m);
-        // links.insert(std::make_pair(1, std::make_tuple(1, 2, transform, m.inverse())));
+        links.insert(std::make_pair(1, std::make_tuple(1, 2, wheelOdom, m.inverse())));
 
         //camera model
         Eigen::Isometry3d transformRobotToImage = _signature.getCameraModel().getTansformImageToRobot().inverse();
@@ -185,23 +199,28 @@ void Estimator::process(Signature & _signature) {
                 transform = optimizedPoses.rbegin()->second;
             }
 
+            covariance = computeCovariance(words3dFrom, _signature.getWords3d(), transform, inliers);
+            // std::cout << "covariance: \n" << covariance << std::endl;
+
             // Update 3d points in signture.
+            // TODO: cull ba outliers.
             std::map<std::size_t, cv::Point3f> cpyWords3dTo = _signature.getWords3d();
             Eigen::Isometry3d invT = transform.inverse();
             for (auto iter = points3D.begin(); iter != points3D.end(); ++iter) {
                 if (cpyWords3dTo.find(iter->first) != cpyWords3dTo.end())
                     cpyWords3dTo.find(iter->first)->second = transformPoint(cv::Point3f(iter->second[0], iter->second[1], iter->second[2]), invT);
             }
-            _signature.setWords3d(cpyWords3dTo);           
+            _signature.setWords3d(cpyWords3dTo);
+                      
         } else {
-            transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
+            // transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
+            std::cout << "BA failed, use default transform." << std::endl;
         }
     }
 
-    // Eigen::Isometry3d wheelOdom;
     if (_signature.getWheelOdomPose(wheelOdom)) {
-        // std::cout << "Signatrue id: " << _signature.getId() << ", estimator get wheel odom: \n" << wheelOdom.matrix() << std::endl;
-        // std::cout << "BA transform: \n" << transform.matrix() << std::endl;
+        //TODO: calculate pnp to do some abnormal process work.
+        std::cout << "BA transform: \n" << transform.matrix() << std::endl;
         double wheelX, wheelY, wheelZ, wheelRoll, wheelPitch, wheelYaw, visualX, visualY, visualZ, visualRoll, visualPitch, visualYaw;
         pcl::getTranslationAndEulerAngles(wheelOdom, wheelX, wheelY, wheelZ, wheelRoll, wheelPitch, wheelYaw);
         pcl::getTranslationAndEulerAngles(transform, visualX, visualY, visualZ, visualRoll, visualPitch, visualYaw);
@@ -211,14 +230,25 @@ void Estimator::process(Signature & _signature) {
         const double deltaRoll = wheelRoll - visualRoll;
         const double deltaPitch = wheelPitch - visualPitch;
         const double deltaYaw = wheelYaw - visualYaw;
-
-        if ((deltaX*deltaX + deltaY*deltaY) > toleranceTranslation_*toleranceTranslation_ ) {
-            std::cout << "Signatrue id : " << _signature.getId() << " has a large Translation. deltaX: " << deltaX << " deltaY: " << deltaY << std::endl;
+        
+        // std::cout << "wheel - visual, deltaX: " << deltaX << " deltaY:" << deltaY << " Tolerance:" << toleranceTranslation_ << std::endl;
+        if (wheelX > 0.0 && wheelY > 0.0) {
+            if ((deltaX*deltaX + deltaY*deltaY) / (wheelX*wheelX + wheelY*wheelY) > toleranceTranslation_ ) {
+                std::cout << "Signatrue id : " << _signature.getId() << " has a large Translation. deltaX: " << deltaX << " deltaY: " << deltaY << std::endl;
+                transform = wheelOdom;
+            }
+        } else {
             transform = wheelOdom;
         }
-        // if (deltaYaw*deltaYaw > toleranceRotation_*toleranceRotation_) {
+
+        // if (deltaYaw/wheelYaw > toleranceRotation_) {
         //     std::cout << "Signatrue id : " << _signature.getId() << " has a large rotation. deltaYaw: " << deltaYaw << std::endl;
         // }
+
+        tempWheel = tempWheel + Eigen::Vector3d(wheelX, wheelY, wheelYaw);
+        tempVisual = tempVisual + Eigen::Vector3d(visualX, visualY, visualYaw);
+        std::cout << "Signatrue id: " << _signature.getId() << "  wheel Odom: " << tempWheel.transpose() << std::endl;
+        std::cout << "Signatrue id: " << _signature.getId() << "  visual Odom: " << tempVisual.transpose() << std::endl;
     }
 
     if (force3D_) {
@@ -283,6 +313,23 @@ Eigen::Isometry3d Estimator::guessVelocity(const Eigen::Isometry3d & _t, const d
     }
 
     return Eigen::Isometry3d::Identity();
+}
+
+std::vector<std::size_t> Estimator::findCorrespondences(const std::map<std::size_t, cv::Point3f> & _words3dFrom, const std::map<std::size_t, cv::KeyPoint> & _words2dTo) {
+    std::vector<std::size_t> matches;
+    std::vector<size_t> ids = uKeys(_words2dTo);
+    std::size_t oi = 0;
+    
+    matches.resize(ids.size());
+    for (std::size_t i = 0; i < ids.size(); ++i) {
+        std::map<std::size_t, cv::Point3f>::const_iterator iter = _words3dFrom.find(ids[i]);
+        if (iter != _words3dFrom.end() && isFinite(iter->second)) {
+            matches[oi++] = ids[i];
+        }
+    }
+    matches.resize(oi);
+
+    return matches;
 }
 
 }   // namespace

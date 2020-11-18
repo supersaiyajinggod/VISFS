@@ -24,6 +24,7 @@ private:
     void process(Signature & _signature);
     void outputSignature(const Signature & _signature);
     Eigen::Isometry3d guessVelocity(const Eigen::Isometry3d & _t, const double _dt);
+    std::vector<std::size_t> findCorrespondences(const std::map<std::size_t, cv::Point3f> & _words3dFrom, const std::map<std::size_t, cv::KeyPoint> & _words2dTo);
 
     std::queue<Signature> signatureThreadBuf_;
     boost::mutex mutexDataRW_;
@@ -45,6 +46,9 @@ private:
     double toleranceTranslation_;
     double toleranceRotation_;
     bool force3D_;
+
+    Eigen::Vector3d tempWheel = Eigen::Vector3d(0.0, 0.0 ,0.0);
+    Eigen::Vector3d tempVisual = Eigen::Vector3d(0.0, 0.0, 0.0);
 };
 
 }   // namespace

@@ -21,7 +21,7 @@ public:
         RGBD        
     };
 
-    void inputSignature(const Signature & _signature, const Eigen::Isometry3d & _guessPose = Eigen::Isometry3d::Identity());
+    void inputSignature(const Signature & _signature);
     void threadProcess(void);
 
     void setMonitor(Monitor * _monitor) { monitor_ = _monitor; }
@@ -43,7 +43,7 @@ private:
      * \param[in] guess The guess motion between fromSignature and toSignature. (from wheel odom or imu)
      * \author eddy
      */    
-    void process(Signature & _fromSignature, Signature & _toSignature, Eigen::Isometry3d _guess = Eigen::Isometry3d::Identity());
+    void process(Signature & _fromSignature, Signature & _toSignature);
 
     Signature lastSignature_;
 
@@ -59,12 +59,13 @@ private:
     int flowMaxLevel_;
     bool cullByFundationMatrix_;
     float fundationPixelError_;
+    int minInliers_;
 
     TrackingMethod trackingMethod_;
     std::size_t globalFeatureId_;
 
     boost::mutex mutexDataBuf_;
-    std::queue<std::pair<Signature, Eigen::Isometry3d>> signatureBuf_;
+    std::queue<Signature> signatureBuf_;
 
     Estimator * estimator_;
     Monitor * monitor_;

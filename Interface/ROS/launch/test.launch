@@ -8,7 +8,7 @@
 <node pkg="tf" type="static_transform_publisher" name="laser_tf_broadcaster" args="0 0 0 0 0 0 base_link sick_laser_link 50" />
 
 <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_local">
-    <rosparam command="load" file="/home/eddy/Documents/VISFS/Interface/ROS/params/ekf_fuse.yaml"/>
+    <rosparam command="load" file="$(find VISFS)/params/ekf_fuse.yaml"/>
     <remap from="odometry/filtered" to="/odom/filtered"/>
     <remap from="set_pose" to="initialpose"/>
 </node>

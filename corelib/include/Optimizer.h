@@ -1,5 +1,5 @@
-#ifndef OPTIMIZER_H
-#define OPTIMIZER_H
+#ifndef VISFS_OPTIMIZER_H
+#define VISFS_OPTIMIZER_H
 
 #include <map>
 #include <set>
@@ -59,4 +59,4 @@ private:
 
 }   // namespace
 
-#endif  // OPTIMIZER_H
+#endif  // VISFS_OPTIMIZER_H

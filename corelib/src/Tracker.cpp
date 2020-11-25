@@ -22,6 +22,7 @@ Tracker::Tracker(Estimator * _estimator, const ParametersMap & _parameters) :
     flowMaxLevel_(Parameters::defaultTrackerFlowMaxLevel()),
     cullByFundationMatrix_(Parameters::defaultTrackerCullByFundationMatrix()),
     fundationPixelError_(Parameters::defaultTrackerFundationPixelError()),
+    minInliers_(Parameters::defaultEstimatorMinInliers()),
     trackingMethod_(TrackingMethod::STEREO),
     globalFeatureId_(0),
     estimator_(_estimator),
@@ -39,13 +40,14 @@ Tracker::Tracker(Estimator * _estimator, const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kTrackerFlowMaxLevel(), flowMaxLevel_);
     Parameters::parse(_parameters, Parameters::kTrackerCullByFundationMatrix(), cullByFundationMatrix_);
     Parameters::parse(_parameters, Parameters::kTrackerFundationPixelError(), fundationPixelError_);
+    Parameters::parse(_parameters, Parameters::kEstimatorMinInliers(), minInliers_);
 }
 
 Tracker::~Tracker() {}
 
-void Tracker::inputSignature(const Signature & _signature, const Eigen::Isometry3d & _guessPose) {
+void Tracker::inputSignature(const Signature & _signature) {
     boost::lock_guard<boost::mutex> lock(mutexDataBuf_);
-    signatureBuf_.emplace(_signature, _guessPose);
+    signatureBuf_.emplace(_signature);
 }
 
 void Tracker::threadProcess() {
@@ -56,12 +58,11 @@ void Tracker::threadProcess() {
         if (!signatureBuf_.empty()) {
             {
                 boost::lock_guard<boost::mutex> lock(mutexDataBuf_);
-                signature = signatureBuf_.front().first;
-                guessPose = signatureBuf_.front().second;
+                signature = signatureBuf_.front();
                 signatureBuf_.pop(); 
             }
             // UTimer timer;
-            process(lastSignature_, signature, guessPose);
+            process(lastSignature_, signature);
             // timer.elapsed("Tracker");
             
             estimator_->inputSignature(signature);
@@ -90,7 +91,7 @@ void Tracker::rejectOutlierWithFundationMatrix(const std::vector<cv::Point2f> & 
 	}	
 }
 
-void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eigen::Isometry3d _guess) {
+void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
     if (_fromSignature.empty() || _toSignature.empty()) {
         std::cout << "[Error]: The from signature or the to signature is empty."  << std::endl;
         return;
@@ -159,11 +160,11 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
     // Do a initial estimate of the _toSignature key points' pixel position.
     cv::KeyPoint::convert(kptsFrom, cornersFrom);
     std::vector<cv::Point2f> cornersTo;
-    bool guessSet = !(_guess.isApprox(Eigen::Isometry3d::Identity()));
+    // bool guessSet = !(_guess.isApprox(Eigen::Isometry3d::Identity()));
+    bool guessSet = !_toSignature.getDeltaPoseGuess().isApprox(Eigen::Isometry3d::Identity());
     if (guessSet && !kptsFrom3D.empty()) {
-        _toSignature.setGuessPose(_guess);
         Eigen::Isometry3d Tri = _fromSignature.getCameraModel().getTansformImageToRobot();
-        Eigen::Isometry3d guessCameraRef = (_guess * Tri).inverse();
+        Eigen::Isometry3d guessCameraRef = (_toSignature.getDeltaPoseGuess() * Tri).inverse();
         Eigen::Matrix3d eigenR = guessCameraRef.rotation();
 		cv::Mat R = (cv::Mat_<double>(3,3) <<
 				guessCameraRef(0, 0), guessCameraRef(0, 1), guessCameraRef(0, 2),
@@ -225,9 +226,10 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature, Eige
     kptsFrom3DKept.resize(index);
     cornersToKept.resize(index);
 
-    if (kptsTo.size() < 2) {
+    if (kptsTo.size() < minInliers_) {
         std::cout << "After Reduce feature vector, kptsTo.size(): " << kptsTo.size() << std::endl;
         std::cout << "Lost tracking !!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+        return;
     }
     
     std::map<std::size_t, cv::KeyPoint> covisibleWords;

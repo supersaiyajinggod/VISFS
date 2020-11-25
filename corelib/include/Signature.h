@@ -92,7 +92,7 @@ class Signature {
 public:
     static std::size_t nextId_;
     Signature();
-    Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight);
+    Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight, const Eigen::Isometry3d & _guessPose);
     Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight, const Eigen::Isometry3d & _guessPose, const Eigen::Isometry3d & _wheelOdom);
 
     std::size_t getId() const { return id_; }
@@ -100,8 +100,8 @@ public:
     Eigen::Isometry3d getPose() const { return pose_; }
     void setPose(const Eigen::Isometry3d & _pose) { pose_ = _pose; } 
     void setPose(const Eigen::Matrix3d & _R, const Eigen::Vector3d & _t);
-    Eigen::Isometry3d getGuessPose() const { return guess_; }
-    void setGuessPose(const Eigen::Isometry3d & _guess) { guess_ = _guess; }
+    Eigen::Isometry3d getDeltaPoseGuess() const { return deltaGuess_; }
+    void setDeltaPoseGuess(const Eigen::Isometry3d & _guess) { deltaGuess_ = _guess; }
     bool getWheelOdomPose(Eigen::Isometry3d & _wheelOdom) const { _wheelOdom= wheelOdom_; return wheelOdom_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) ? false : true; }
     void setWheelOdomPose(const Eigen::Isometry3d & _wheelOdom) { wheelOdom_ = _wheelOdom; }
 
@@ -149,9 +149,9 @@ private:
     cv::Mat imageRight_;
     boost::shared_ptr<GeometricCamera> cameraLeft_;
     boost::shared_ptr<GeometricCamera> cameraRight_;
-    Eigen::Isometry3d pose_;
-    Eigen::Isometry3d guess_;
-    Eigen::Isometry3d wheelOdom_;
+    Eigen::Isometry3d pose_;    // signature's global pose.
+    Eigen::Isometry3d deltaGuess_;  // The guess of Tk,k+1.
+    Eigen::Isometry3d wheelOdom_;   // The measurement of wheel at the timestamp of this signature.
 
     std::map<std::size_t, cv::KeyPoint> words_;
     std::map<std::size_t, cv::Point3f> words3d_; // word in robot/base_link

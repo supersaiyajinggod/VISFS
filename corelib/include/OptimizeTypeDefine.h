@@ -1,5 +1,5 @@
-#ifndef OPTIMIZER_TYPE_DEFINE_H
-#define OPTIMIZER_TYPE_DEFINE_H
+#ifndef VISFS_OPTIMIZER_TYPE_DEFINE_H
+#define VISFS_OPTIMIZER_TYPE_DEFINE_H
 
 #include <g2o/core/base_vertex.h>
 #include <g2o/core/base_binary_edge.h>

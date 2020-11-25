@@ -8,7 +8,7 @@
 <node pkg="tf" type="static_transform_publisher" name="laser_tf_broadcaster" args="0.09375 0 0.0711 0 0 0 base_link sick_laser_link 50" />
 
 <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_local">
-    <rosparam command="load" file="/home/eddy/Documents/VISFS/Interface/ROS/params/ekf_fuse.yaml"/>
+    <rosparam command="load" file="$(find VISFS)/params/ekf_fuse.yaml"/>
     <remap from="odometry/filtered" to="/odom/filtered"/>
     <!-- <remap from="set_pose" to="initialpose"/> -->
 </node>
@@ -58,10 +58,10 @@
     <param name="Optimizer/Solver"                  type="int"          value="0"/>
     <param name="Optimizer/PixelVariance"           type="double"       value="1.5"/>
     <param name="Optimizer/Iterations"              type="int"          value="10"/>
-    <param name="Optimizer/RobustKernelDelta"       type="double"       value="3.0"/>
+    <param name="Optimizer/RobustKernelDelta"       type="double"       value="4.0"/>
 </node>
 
-<node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="--delete_db_on_start">
+<node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="--Rtabmap/ImagesAlreadyRectified false --delete_db_on_start">
     <param name="subscribe_stereo"      type="bool"     value="false"/>
     <param name="subscribe_depth"       type="bool"     value="false"/>
     <param name="subscribe_scan"        type="bool"     value="true"/>

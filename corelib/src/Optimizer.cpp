@@ -198,7 +198,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 		}
 
 		// Optimize
-		optimizer.setVerbose(true);
+		optimizer.setVerbose(false);
 		optimizer.initializeOptimization();
 		assert(optimizer.verifyInformationMatrices());
 

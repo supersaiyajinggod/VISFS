@@ -1,7 +1,6 @@
 set(SRC_FILES
     src/CameraModels/PinholeModel.cpp
     src/Estimator.cpp
-    src/Manager.cpp
     src/Monitor.cpp
     src/MultiviewGeometry.cpp
     src/Optimizer.cpp

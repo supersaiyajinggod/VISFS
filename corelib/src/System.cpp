@@ -353,7 +353,7 @@ void System::inputStereoImage(const double _time, const cv::Mat & _imageLeft, co
         } else {
             guessPose = Eigen::Isometry3d::Identity();
         }
-        signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_);
+        signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose);
     } else if (sensorStrategy_ == 2) {      // stereo + wheel
         if (!wheelOdometryBuf_.empty() && wheelOdometryBuf_.size() > 2) {
             // get wheel odometry
@@ -406,7 +406,7 @@ void System::inputStereoImage(const double _time, const cv::Mat & _imageLeft, co
             }
             previousWheelOdom_ = globalWheelPose;
 
-            signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose, guessPose);
+            signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose, globalWheelPose);
         } else {
             // Error no odom, use pure stereo.
             std::cout << "Error: Strategy is stereo + wheel, but there is no wheel odom recieved." << std::endl;  
@@ -415,11 +415,11 @@ void System::inputStereoImage(const double _time, const cv::Mat & _imageLeft, co
             } else {
                 guessPose = Eigen::Isometry3d::Identity();
             }
-            signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_);
+            signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose);
         }
     }
     previousTimeStamp_ = _time;
-    tracker_->inputSignature(signature, guessPose);
+    tracker_->inputSignature(signature);
 }
 
 void System::inputWheelOdometry(const double _time, const Eigen::Isometry3d & _pose, const Eigen::Isometry3d & _velocity) {

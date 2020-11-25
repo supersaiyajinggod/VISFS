@@ -35,6 +35,7 @@ private:
 
     double previousStamps_;
     Eigen::Isometry3d pose_;
+    Eigen::Isometry3d previousWheelOdom_;
     Eigen::Isometry3d velocityGuess_;
     
 

@@ -35,4 +35,10 @@ private:
     boost::posix_time::ptime timeStop_;
 };
 
+/** \brief Get the current human readable time.
+  * \return The string with type YYYYMMDDTHHMMSS.
+  * \author eddy
+  */
+std::string getCurrentReadableTime();
+
 #endif  // TIMER_H

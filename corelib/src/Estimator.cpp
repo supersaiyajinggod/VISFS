@@ -35,10 +35,12 @@ Estimator::Estimator(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kEstimatorForce3DoF(), force3D_);
 
     optimizer_ = new Optimizer(_parameters);
+    localMap_ = new LocalMap(_parameters);
 }
 
 Estimator::~Estimator() {
     delete optimizer_;
+    delete localMap_;
 }
 
 void Estimator::inputSignature(const Signature & _signature) {
@@ -104,15 +106,17 @@ void Estimator::process(Signature & _signature) {
 		covariance.at<double>(4, 4) = 0;
 		covariance.at<double>(5, 5) = 0.06;
         transform = previousWheelOdom_.inverse() * wheelOdom;
-        std::cout << "deltaWheelOdom: \n" << transform.matrix() << std::endl;
+        // std::cout << "deltaWheelOdom: \n" << transform.matrix() << std::endl;
         matches = findCorrespondences(words3dFrom, wordsTo);
         inliers = matches;
+        _signature.setPose(pose_ * transform);
 
     } else {
         if (words3dFrom.size() >= minInliers_ && wordsTo.size() >= minInliers_) {
             transform = estimateMotion3DTo2D(words3dFrom, wordsTo, _signature.getCameraModel(), minInliers_, pnpIterations_,
                                                 pnpReprojError_, pnpFlags_, refineIterations_, words3dTo, covariance, matches, inliers,
                                                 _signature.getDeltaPoseGuess());
+            _signature.setPose(pose_ * transform);
         } else {
             transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
             std::cout << "Not enough features in images, old=" << words3dFrom.size() << ", new=" << wordsTo.size() << ", min=" << minInliers_ << "." << std::endl;
@@ -120,6 +124,13 @@ void Estimator::process(Signature & _signature) {
         std::cout << "_signature id : " << _signature.getId() << "  pose 3d->2d pnp is :\n" << transform.matrix() << std::endl;
     }
     // std::cout << "_signature id : " << _signature.getId() << " matches: " << matches.size() <<" inliers: " << inliers.size() << std::endl;
+
+    if (transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
+        std::cout << "Error: transform is Zero. The initial estimate failed." << std::endl;
+    } else {
+        localMap_->insertSignature(_signature, transform.translation());
+    }
+
 
     // If motion of guess > threshold, do bundle adjustment.
     if (!transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && inliers.size() > minInliers_) {
@@ -226,7 +237,7 @@ void Estimator::process(Signature & _signature) {
 
     if (_signature.getWheelOdomPose(wheelOdom)) {
         //TODO: calculate pnp to do some abnormal process work.
-        std::cout << "BA transform: \n" << transform.matrix() << std::endl;
+        // std::cout << "BA transform: \n" << transform.matrix() << std::endl;
         Eigen::Isometry3d deltaWheelOdom = previousWheelOdom_.inverse() * wheelOdom;
         double wheelX, wheelY, wheelZ, wheelRoll, wheelPitch, wheelYaw, visualX, visualY, visualZ, visualRoll, visualPitch, visualYaw;
         pcl::getTranslationAndEulerAngles(deltaWheelOdom, wheelX, wheelY, wheelZ, wheelRoll, wheelPitch, wheelYaw);
@@ -258,8 +269,8 @@ void Estimator::process(Signature & _signature) {
 
         tempWheel = tempWheel + Eigen::Vector3d(wheelX, wheelY, wheelYaw);
         tempVisual = tempVisual + Eigen::Vector3d(visualX, visualY, visualYaw);
-        std::cout << "Signatrue id: " << _signature.getId() << "  wheel Odom: " << tempWheel.transpose() << std::endl;
-        std::cout << "Signatrue id: " << _signature.getId() << "  visual Odom: " << tempVisual.transpose() << std::endl;
+        // std::cout << "Signatrue id: " << _signature.getId() << "  wheel Odom: " << tempWheel.transpose() << std::endl;
+        // std::cout << "Signatrue id: " << _signature.getId() << "  visual Odom: " << tempVisual.transpose() << std::endl;
     }
 
     if (force3D_) {
@@ -301,6 +312,8 @@ void Estimator::process(Signature & _signature) {
     _signature.setTrackInfo(trackInfo);
     _signature.setEstimateInfo(estimateInfo);
     previousStamps_ = _signature.getTimeStamp();
+
+    localMap_->removeSignature();
     
 }
 

@@ -6,6 +6,7 @@
 
 #include "Signature.h"
 #include "Optimizer.h"
+#include "LocalMap.h"
 
 namespace VISFS {
 
@@ -32,6 +33,7 @@ private:
     boost::mutex mutexResultRW_;
 
     Optimizer * optimizer_;
+    LocalMap * localMap_;
 
     double previousStamps_;
     Eigen::Isometry3d pose_;

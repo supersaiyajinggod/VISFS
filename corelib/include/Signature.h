@@ -153,8 +153,8 @@ private:
     Eigen::Isometry3d deltaGuess_;  // The guess of Tk,k+1.
     Eigen::Isometry3d wheelOdom_;   // The measurement of wheel at the timestamp of this signature.
 
-    std::map<std::size_t, cv::KeyPoint> words_;
-    std::map<std::size_t, cv::Point3f> words3d_; // word in robot/base_link
+    std::map<std::size_t, cv::KeyPoint> words_;   // all words, both covisible and new extract.
+    std::map<std::size_t, cv::Point3f> words3d_;  // word in robot/base_link
     std::map<std::size_t, cv::Mat> wordsDescriptors_;
 
     std::map<std::size_t, cv::KeyPoint> covisibleWords_;    // words in former signature

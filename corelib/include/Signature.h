@@ -103,6 +103,7 @@ public:
     Eigen::Isometry3d getDeltaPoseGuess() const { return deltaGuess_; }
     void setDeltaPoseGuess(const Eigen::Isometry3d & _guess) { deltaGuess_ = _guess; }
     bool getWheelOdomPose(Eigen::Isometry3d & _wheelOdom) const { _wheelOdom= wheelOdom_; return wheelOdom_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) ? false : true; }
+    Eigen::Isometry3d getWheelOdomPose() const { return wheelOdom_; }
     void setWheelOdomPose(const Eigen::Isometry3d & _wheelOdom) { wheelOdom_ = _wheelOdom; }
 
     const std::map<std::size_t, cv::KeyPoint> & getWords() const { return words_; }

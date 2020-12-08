@@ -50,6 +50,7 @@
     <param name="System/Monitor"                    type="bool"         value="true"/>
     <param name="Tracker/MaxFeatures"               type="int"          value="200"/>
     <param name="Tracker/FlowBack"                  type="bool"         value="false"/>
+    <param name="Tracker/CullByFundationMatrix"     type="bool"         value="true"/>
     <param name="LocalMap/MinParallax"              type="double"       value="60.0"/>
     <param name="LocalMap/MinTranslation"           type="double"       value="0.5"/>
     <param name="Estimator/PnPFlags"                type="int"          value="1"/>
@@ -57,10 +58,10 @@
     <param name="Estimator/ToleranceTranslation"    type="double"       value="0.30"/>
     <param name="Estimator/ToleranceRotation"       type="double"       value="0.40"/>
     <param name="Estimator/Force3DoF"               type="bool"         value="true"/>
-    <param name="Optimizer/Solver"                  type="int"          value="0"/>
+    <param name="Optimizer/Solver"                  type="int"          value="3"/>
     <param name="Optimizer/PixelVariance"           type="double"       value="1.5"/>
     <param name="Optimizer/Iterations"              type="int"          value="10"/>
-    <param name="Optimizer/RobustKernelDelta"       type="double"       value="4.0"/>
+    <param name="Optimizer/RobustKernelDelta"       type="double"       value="3.0"/>
 </node>
 
 <node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="--Rtabmap/ImagesAlreadyRectified false --delete_db_on_start">

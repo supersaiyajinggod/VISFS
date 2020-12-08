@@ -2,6 +2,7 @@
 #define VISFS_LOCAL_MAP
 
 #include "Signature.h"
+#include "Optimizer.h"
 #include "Parameters.h"
 
 namespace VISFS {
@@ -54,6 +55,12 @@ public:
     bool insertSignature(const Signature & _signature, const Eigen::Vector3d & _translation);
     void removeSignature();
 
+	/** \brief Check the local map has enough vertex and edges to do local optimize.
+      * \return Ture: Map is avaliable.
+	  * \author eddy
+      */  
+    bool checkMapAvaliable();
+
 	/** \brief Update the local map.
       * \param[in] poses The pair of signature id and signature global pose.  
       * \param[in] point3d The pair of feature id and feature global pose. 
@@ -62,8 +69,37 @@ public:
       */      
     void updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _poses, std::map<std::size_t, Eigen::Vector3d> & _point3d, std::set<std::size_t> & _outliers);
 
+	/** \brief Get all signature's poses.
+      * \param[out] poses The signature vertexs of local map graph. With map strcture: <signature id, signature pose>.  
+	  * \author eddy
+      */  
+    bool getSignaturePoses(std::map<std::size_t, Eigen::Isometry3d> & _poses);
+
+	/** \brief Get link constraint between signatures.
+      * \param[out] links The constraint. With map strcture: <link id, <vertex From, vertex To, transform, covariance>>>.  
+	  * \author eddy
+      */  
+    bool getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links);
+
+	/** \brief Get all features' pose that has been multiple signature observed with each observations.
+      * \param[out] points The feature poses. With map strcture: <feature id, feature poses>.
+      * \param[out] observations The observations of every feature. With map structure: <feature id, <signature id, observation>>
+	  * \author eddy
+      */  
+    bool getFeaturePosesAndObservations(std::map<std::size_t, Eigen::Vector3d> & _points, std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _observations);
+
 private:
+	/** \brief Find corresponding pairs between two groups of features.
+      * \param[in] wordsFrom The a group of features.
+      * \param[in] wordsTo Another group of features.
+      * \return The words has same id.
+	  * \author eddy
+      */  
     std::vector<std::size_t> findCorrespondences(const std::map<std::size_t, cv::KeyPoint> & _wordsFrom, const std::map<std::size_t, cv::KeyPoint> & _wordsTo);
+
+	/** \brief Clear all counters in unified.
+	  * \author eddy
+      */  
     inline void clearCounters(); 
     inline bool checkCounters();
 
@@ -72,6 +108,7 @@ private:
     int maxFeature_;
     float minParallax_;
     double minTranslation_; // To convenient calculation, we automatically calculate 3*translation^2.
+    int minInliers_;
     
     int newFeatureCount_;   // Count the number of new feature since the last key signature.
     int signatureCount_;    // Count the number of signature since the last key signature.

@@ -48,7 +48,7 @@ private:
 	int refineIterations_;
     double toleranceTranslation_;
     double toleranceRotation_;
-    bool force3D_;
+    bool force3Dof_;
 
     Eigen::Vector3d tempWheel = Eigen::Vector3d(0.0, 0.0 ,0.0);
     Eigen::Vector3d tempVisual = Eigen::Vector3d(0.0, 0.0, 0.0);

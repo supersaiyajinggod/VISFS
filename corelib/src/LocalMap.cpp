@@ -14,13 +14,15 @@ LocalMap::LocalMap(const ParametersMap & _parameters) :
     newFeatureCount_(0),
     signatureCount_(0),
     parallaxCount_(0.f),
-    translationCount_(Eigen::Vector3d(0.0, 0.0, 0.0)) {
+    translationCount_(Eigen::Vector3d(0.0, 0.0, 0.0)),
+    minInliers_(Parameters::defaultEstimatorMinInliers()) {
 
     Parameters::parse(_parameters, Parameters::kLocalMapMapSize(), localMapSize_);
     Parameters::parse(_parameters, Parameters::kTrackerMaxFeatures(), maxFeature_);
     Parameters::parse(_parameters, Parameters::kLocalMapMinParallax(), minParallax_);
     Parameters::parse(_parameters, Parameters::kLocalMapMinTranslation(), minTranslation_);
     minTranslation_ = 3 * minTranslation_ * minTranslation_;
+    Parameters::parse(_parameters, Parameters::kEstimatorMinInliers(), minInliers_);
 }
 
 bool LocalMap::insertSignature(const Signature & _signature, const Eigen::Vector3d & _translation) {
@@ -37,8 +39,12 @@ bool LocalMap::insertSignature(const Signature & _signature, const Eigen::Vector
 
     for (auto iter = featuresInNewSignatrue.begin(); iter != featuresInNewSignatrue.end(); iter++) {
         auto jter = features_.find(iter->first);
-        if (jter == features_.end()) {
+        if (jter == features_.end()) {   // Make sure outliers will not be treated as new feature.
             // add new feature
+            if (features_.size() > maxFeature_) {
+                if(iter->first <= features_.rbegin()->first)
+                    continue;
+            }
             if(features3d.find(iter->first) == features3d.end()) {
                 continue;
             } else {
@@ -115,7 +121,7 @@ void LocalMap::removeSignature() {
         if (keySignature_) {
             rmId = signatures_.begin()->first;
         } else {
-            rmId = signatures_.rbegin()->first;
+            rmId = (++signatures_.rbegin())->first;
         }
         for (auto iter = features_.begin(); iter != features_.end();) {
             if (iter->second.featureStatusInSigantures_.find(rmId) != iter->second.featureStatusInSigantures_.end()) {
@@ -150,9 +156,9 @@ void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _
     for (auto featurePose : _point3d) {
         if (!(features_.find(featurePose.first) == features_.end())) {
             Feature & feature = features_.at(featurePose.first);
-            if (feature.getFeatureState() == Feature::eFeatureState::NEW_ADDED) {
+            // if (feature.getFeatureState() == Feature::eFeatureState::NEW_ADDED) {
                 feature.setFeaturePose(featurePose.second);
-            }
+            // }
         } else {
             std::cout << "[Error]: LocalMap, update feature pose unexist." << std::endl;
         }
@@ -160,14 +166,87 @@ void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _
     for (auto outlier : _outliers) {
         if (!(features_.find(outlier) == features_.end())) {
             const Feature & feature = features_.at(outlier);
-            if ((feature.getObservedTimes() == 1) && (feature.getFeatureState() == Feature::eFeatureState::NEW_ADDED)
-                && signatures_.rbegin()->first == feature.getStartSignatureId()) {
+            if (feature.getObservedTimes() >= 2) {
                 features_.erase(outlier);
             }
         } else {
             std::cout << "[Error]: LocalMap, cull out unexist feature." << std::endl;
         }
     }
+}
+
+bool LocalMap::getSignaturePoses(std::map<std::size_t, Eigen::Isometry3d> & _poses) {
+    for (auto iter = signatures_.begin(); iter != signatures_.end(); ++iter) {
+        _poses.emplace(iter->first, iter->second.getPose());
+    }
+    // for (auto pose : _poses) {
+    //     std::cout << "signature id in _pose: " << pose.first << std::endl;
+    // }
+    return true;
+}
+
+bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links) {
+    Eigen::Matrix<double, 6, 6> covariance, information;
+    covariance.setZero();
+    covariance(0, 0) = 0.00001;
+    covariance(1, 1) = 0.00001;
+    covariance(2, 2) = 0.00001;
+    covariance(3, 3) = 0.00001;
+    covariance(4, 4) = 0.00001;
+    covariance(5, 5) = 0.00001;
+    information = covariance.inverse();
+
+    std::size_t i = 1;
+    for (auto iter = signatures_.begin();;) {
+        auto fromId = iter->first;
+        auto fromPose = iter++->second.getWheelOdomPose();
+        auto toId = iter->first;
+        auto toPose = iter->second.getWheelOdomPose();
+
+        if ((!fromPose.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) && (!toPose.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())))) {
+            auto transform = fromPose.inverse()*toPose;
+            _links.emplace(i, std::make_tuple(fromId, toId, transform, information));
+        }
+        
+        if (++i == signatures_.size())
+            break;
+    }
+
+    // for (auto link : _links) {
+    //     auto [fromId, toId, transfrom, information] = link.second;
+    //     std::cout << "link id  : " << link.first << " from id : " << fromId << " to id : " << toId << std::endl;
+    // }
+
+    return true;
+}
+
+bool LocalMap::getFeaturePosesAndObservations(std::map<std::size_t, Eigen::Vector3d> & _points, std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _observations) {
+    const Eigen::Isometry3d transformRobotToImage = signatures_.begin()->second.getCameraModel().getTansformImageToRobot().inverse();
+    for (auto feature : features_) {
+        if (feature.second.getObservedTimes() > 1) {
+            _points.emplace(feature.first, feature.second.getFeaturePose());
+
+            std::map<std::size_t, FeatureBA> ptMap;
+            for (auto observation : feature.second.featureStatusInSigantures_) {
+                float depth = transformPoint(observation.second.point3d, transformRobotToImage).z;
+                const cv::KeyPoint kpt = cv::KeyPoint(observation.second.uv, 1.f);
+                ptMap.emplace(observation.first, FeatureBA(kpt, depth));
+            }
+
+            _observations.emplace(feature.first, ptMap);
+        }
+    }
+
+    assert(_points.size() == _observations.size());
+    return true;
+}
+
+bool LocalMap::checkMapAvaliable() {
+    if ((signatures_.size() < 2) || features_.size() < minInliers_) {
+        return false;
+    }    
+
+    return true;
 }
 
 std::vector<std::size_t> LocalMap::findCorrespondences(const std::map<std::size_t, cv::KeyPoint> & _wordsFrom, const std::map<std::size_t, cv::KeyPoint> & _wordsTo) {
@@ -189,8 +268,8 @@ std::vector<std::size_t> LocalMap::findCorrespondences(const std::map<std::size_
 
 inline void LocalMap::clearCounters() {
     // Print check
-    std::string time = getCurrentReadableTime();
-    std::cout << time << ", newFeatureCount_: " << newFeatureCount_ << " parallaxCount_: " << parallaxCount_ << " signatureCount_: " << signatureCount_ << " translationCount_: " << translationCount_.transpose() << std::endl;
+    // std::string time = getCurrentReadableTime();
+    // std::cout << time << ", newFeatureCount_: " << newFeatureCount_ << " parallaxCount_: " << parallaxCount_ << " signatureCount_: " << signatureCount_ << " translationCount_: " << translationCount_.transpose() << std::endl;
     newFeatureCount_ = 0;
     signatureCount_ = 0;
     parallaxCount_ = 0.f;

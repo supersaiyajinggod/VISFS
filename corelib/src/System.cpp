@@ -240,7 +240,7 @@ Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<
         } else {
             const double deltaTime = _time - lastTime;
             // alignPose = accMotionModel(deltaTime, true, lastPose, secondLastVelocity, lastVelocity);
-            alignPose = velMotionModel(deltaTime, secondLastPose, secondLastTime, lastTime, secondLastPose, lastPose);
+            alignPose = velMotionModel(deltaTime, lastPose, secondLastTime, lastTime, secondLastPose, lastPose);
         }
     } else if (thirdLastTime <= _time && _time < secondLastTime) {
         boost::posix_time::time_duration timeElapse;
@@ -260,6 +260,16 @@ Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<
             // }
             const double deltaTime = _time - thirdLastTime;
             alignPose = velMotionModel(deltaTime, thirdLastPose, thirdLastTime, secondLastTime, thirdLastPose, secondLastPose);
+        }
+    } else if (_time < thirdLastTime) {
+        boost::posix_time::time_duration timeElapse;
+        timeElapse = uTimeDouble2Boost(thirdLastTime) - uTimeDouble2Boost(_time);
+        if (timeElapse.total_milliseconds() > 2*timeInterval) {
+            std::cout.precision(18);
+            std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", time third last wheel: " << thirdLastTime << ", the image:" << _time <<std::endl; 
+        } else {
+            const double deltaTime = thirdLastTime - _time;
+            alignPose = velMotionModel(deltaTime, thirdLastPose, thirdLastTime, secondLastTime, secondLastPose, thirdLastPose);
         }
     } else {
         std::cout.precision(18);

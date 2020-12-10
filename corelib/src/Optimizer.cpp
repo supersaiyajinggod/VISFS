@@ -315,7 +315,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
     const std::map<std::size_t, Eigen::Isometry3d> & _poses,    // map<pose index, transform>
     const std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links,  // map<link index, tuple<the from pose index, the to pose index, transform, infomation matrix>>
     const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
-    std::map<std::size_t, Eigen::Vector3d> & _points3D,
+    std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points3D,
     const std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _wordReferences,
     std::set<std::size_t> & _outliers) {
 
@@ -402,9 +402,11 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 			int id = iter->first;
 			if (_points3D.find(id) != _points3D.end()) {
 				// Set vertex
+				auto [pointPose, fixSymbol] = _points3D.at(id);
 				g2o::VertexSBAPointXYZ* vpt3d = new g2o::VertexSBAPointXYZ();
-				vpt3d->setEstimate(_points3D.at(id));
+				vpt3d->setEstimate(pointPose);
 				vpt3d->setId(stepVertexId + id);
+				vpt3d->setFixed(false);
 				vpt3d->setMarginalized(true);
 				optimizer.addVertex(vpt3d);
 
@@ -470,67 +472,46 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		optimizer.initializeOptimization();
 		assert(optimizer.verifyInformationMatrices());
 
-		int it = 0;
-		int outliersCount = 0;
-		int outliersCountFar = 0;
-
-		for (int i = 0; i < (robustKernelDelta_ > 0.0 ? 2 : 1); ++i) {
-			it += optimizer.optimize((i==0 && robustKernelDelta_ > 0.0) ? iterations_ : iterations_);
-
-			// early stop condition
-			optimizer.computeActiveErrors();
-			double chi2 = optimizer.activeRobustChi2();
-			// std::cout << "iteration " << i << ": " << (int)optimizer.vertices().size() << " nodes, " << (int)optimizer.edges().size() << " edges" << " chi2: " << chi2 << std::endl;
-			if (std::isnan(chi2)) {
-				std::cout << "Optimization generated NANs, aborting optimization!" << std::endl;
-				return optimizedPoses;
-			}
-
-			if (i > 0 && (chi2 > 1000000000000.0 || !std::isfinite(chi2))) {
-				std::cout << "g2o: Large optimization error detected, aborting optimization!" << std::endl;
-				return optimizedPoses;
-			}
-
-			if (robustKernelDelta_ > 0.0) {
-				for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
-					if ((*iter)->level() == 0 && (*iter)->chi2() > (*iter)->robustKernel()->delta()) {
-						(*iter)->setLevel(1);
-						++outliersCount;
-						double d = 0.0;
-
-						if (dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter) != 0) {
-							d = dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[0] - dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[2];
-						}
-						// std::cout << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((EdgeStereoSE3PointXYZ*)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2() << std::endl;
-						
-						Eigen::Vector3d pt3d;
-						pt3d = _points3D.at((*iter)->vertex(0)->id() - stepVertexId);
-						dynamic_cast<g2o::VertexSBAPointXYZ *>((*iter)->vertex(0))->setEstimate(pt3d);
-
-						_outliers.insert((*iter)->vertex(0)->id() - stepVertexId);
-
-						if (d < 5.0) {
-							++outliersCountFar;
-						}
-					}
-				}
-
-				if (_outliers.size() > _wordReferences.size()/2) {
-					std::cout << "g2o: Large outliers detect, _outliers.size(): " << _outliers.size() << std::endl;
-					return optimizedPoses;
-				}
-
-				if (i == 0) {
-					// std::cout << "Optimizer: _outliers.size(): " << _outliers.size() << std::endl;
-					optimizer.initializeOptimization(0);
-				}
-			}
-		}
+		optimizer.optimize(iterations_);
 
 		// Optimize end.
-		if (optimizer.activeRobustChi2() > 1000000000000.0) {
+		int outliersCount = 0;
+		int outliersCountFar = 0;
+		optimizer.computeActiveErrors();
+		double chi2 = optimizer.activeRobustChi2();
+		if (std::isnan(chi2)) {
+			std::cout << "Optimization generated NANs, aborting optimization!" << std::endl;
+			return optimizedPoses;
+		}
+
+		if (chi2 > 1000000000000.0 || !std::isfinite(chi2)) {
 			std::cout << "g2o: Large optimization error detected, aborting optimization!" << std::endl;
 			return optimizedPoses;
+		}
+
+		if (robustKernelDelta_ > 0.0) {
+			for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
+				if ((*iter)->level() == 0 && (*iter)->chi2() > (*iter)->robustKernel()->delta()) {
+					++outliersCount;
+					double d = 0.0;
+
+					if (dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter) != 0) {
+						d = dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[0] - dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[2];
+					}
+					// std::cout << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((EdgeStereoSE3PointXYZ*)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2() << std::endl;
+
+					_outliers.insert((*iter)->vertex(0)->id() - stepVertexId);
+
+					if (d < 5.0) {
+						++outliersCountFar;
+					}
+				}
+			}
+
+			// if (_outliers.size() > _wordReferences.size()/2) {
+			// 	std::cout << "g2o: Large outliers detect, _outliers.size(): " << _outliers.size() << std::endl;
+			// 	return optimizedPoses;
+			// }
 		}
 
 		// Update poses
@@ -562,9 +543,12 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 			int id = iter->first;
 			v = dynamic_cast<const g2o::VertexSBAPointXYZ *>(optimizer.vertex(stepVertexId + id));
 			if (v) {
-				iter->second = v->estimate();
+				auto [oldPose, fixSymbol] = iter->second;
+				iter->second = std::make_tuple(v->estimate(), fixSymbol);
 			} else {
-				iter->second[0] = iter->second[1] = iter->second[2] = std::numeric_limits<float>::quiet_NaN();
+				auto [oldPose, fixSymbol] = iter->second;
+				oldPose[0] = oldPose[1] = oldPose[2] = std::numeric_limits<float>::quiet_NaN();
+				iter->second = std::make_tuple(oldPose, fixSymbol);
 			}
 		}
 

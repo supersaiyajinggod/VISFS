@@ -40,7 +40,7 @@ private:
     Eigen::Isometry3d previousWheelOdom_;
     Eigen::Isometry3d velocityGuess_;
     
-
+    int sensorStrategy_;
     int minInliers_;
     int pnpIterations_;
 	float pnpReprojError_;

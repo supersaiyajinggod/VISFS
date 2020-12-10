@@ -142,8 +142,8 @@ class Parameters {
     VISFS_PARAM(System,     Monitor,                bool,   false,  "Monitor");
 
     VISFS_PARAM(Tracker,    MaxFeatures,            int,    300,    "The maximum number of key points will be generated.");
-    VISFS_PARAM(Tracker,    QualityLevel,           double, 0.005,  "");
-    VISFS_PARAM(Tracker,    MinDistance,            double, 20,     "");
+    VISFS_PARAM(Tracker,    QualityLevel,           double, 0.01,  "");
+    VISFS_PARAM(Tracker,    MinDistance,            int,    40,     "");
     VISFS_PARAM(Tracker,    FlowBack,               bool,   true,   "Perform backward optical flow to improve feature tracking accuracy.");
     VISFS_PARAM(Tracker,    MaxDepth,               float,  10.0,   "Max depth of the features (0 means no limit).");
     VISFS_PARAM(Tracker,    MinDepth,               float,  0.2,    "Min depth of the features (0 means no limit).");

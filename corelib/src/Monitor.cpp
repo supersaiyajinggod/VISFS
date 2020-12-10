@@ -71,7 +71,7 @@ void Monitor::process(Signature & _signature) {
 
         cv::namedWindow("Monitor", CV_WINDOW_NORMAL);
         cv::imshow("Monitor", stitch);
-        cv::waitKey(5);
+        cv::waitKey(10);
 
     } else if (sensorStrategy_ == 1) {          // RGBD
 

@@ -61,7 +61,7 @@ bool LocalMap::insertSignature(const Signature & _signature, const Eigen::Vector
             // update feature
             jter->second.featureStatusInSigantures_.emplace(_signature.getId(), FeatureStatusInSiganature(iter->second.pt, featuresInRight.at(iter->first).pt, features3d.at(iter->first)));
             jter->second.setEndSignatureId(_signature.getId());
-            if (jter->second.getObservedTimes() > 3) {
+            if (jter->second.getObservedTimes() > (localMapSize_)) {
                 if (jter->second.getFeatureState() == Feature::eFeatureState::NEW_ADDED) {
                     jter->second.setFeatureState(Feature::eFeatureState::STABLE);
                     // std::cout << "featrue:" << jter->first << " become stable here!!!!!!!" << std::endl; 
@@ -145,7 +145,7 @@ void LocalMap::removeSignature() {
     // std::cout << "After remove, size of local Map is : " << signatures_.size() << " feature size: " << features_.size() << std::endl;
 }
 
-void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _poses, std::map<std::size_t, Eigen::Vector3d> & _point3d, std::set<std::size_t> & _outliers) {
+void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _poses, std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _point3d, std::set<std::size_t> & _outliers) {
     for (auto pose : _poses) {
         if (!(signatures_.find(pose.first) == signatures_.end())) {
             signatures_.at(pose.first).setPose(pose.second);
@@ -156,18 +156,21 @@ void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _
     for (auto featurePose : _point3d) {
         if (!(features_.find(featurePose.first) == features_.end())) {
             Feature & feature = features_.at(featurePose.first);
-            // if (feature.getFeatureState() == Feature::eFeatureState::NEW_ADDED) {
-                feature.setFeaturePose(featurePose.second);
-            // }
+            if (feature.getFeatureState() == Feature::eFeatureState::NEW_ADDED) {
+                auto [pose, fixSymbol] = featurePose.second;
+                feature.setFeaturePose(pose);
+            }
         } else {
             std::cout << "[Error]: LocalMap, update feature pose unexist." << std::endl;
         }
     }
+    int i = 0;
     for (auto outlier : _outliers) {
         if (!(features_.find(outlier) == features_.end())) {
             const Feature & feature = features_.at(outlier);
             if (feature.getObservedTimes() >= 2) {
                 features_.erase(outlier);
+                i++;
             }
         } else {
             std::cout << "[Error]: LocalMap, cull out unexist feature." << std::endl;
@@ -193,7 +196,7 @@ bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, st
     covariance(2, 2) = 0.00001;
     covariance(3, 3) = 0.00001;
     covariance(4, 4) = 0.00001;
-    covariance(5, 5) = 0.00001;
+    covariance(5, 5) = 0.0001;
     information = covariance.inverse();
 
     std::size_t i = 1;
@@ -220,11 +223,15 @@ bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, st
     return true;
 }
 
-bool LocalMap::getFeaturePosesAndObservations(std::map<std::size_t, Eigen::Vector3d> & _points, std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _observations) {
+bool LocalMap::getFeaturePosesAndObservations(std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points, std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _observations) {
     const Eigen::Isometry3d transformRobotToImage = signatures_.begin()->second.getCameraModel().getTansformImageToRobot().inverse();
+    int i = 0;
     for (auto feature : features_) {
         if (feature.second.getObservedTimes() > 1) {
-            _points.emplace(feature.first, feature.second.getFeaturePose());
+            bool fixSymbol = feature.second.getFeatureState() == Feature::STABLE ? true : false;
+            if (fixSymbol)
+                i++;
+            _points.emplace(feature.first, std::make_tuple(feature.second.getFeaturePose(), fixSymbol));
 
             std::map<std::size_t, FeatureBA> ptMap;
             for (auto observation : feature.second.featureStatusInSigantures_) {

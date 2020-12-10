@@ -156,8 +156,8 @@ inline T uVariance(const std::vector<T> & _v) {
   */
 template<typename T1, typename T2>
 inline T1 L2Norm(const T2 & _pt1, const T2 & _pt2) {
-    T1 dx = _pt1.x - _pt2.y;
-    T1 dy = _pt1.x - _pt2.y;
+    T1 dx = _pt1.x - _pt2.x;
+    T1 dy = _pt1.y - _pt2.y;
     return sqrt(dx * dx + dy * dy);
 }
 

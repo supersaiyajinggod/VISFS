@@ -67,7 +67,7 @@ public:
       * \param[in] outliers The outliers in the local map, calculated by local optimize.
 	  * \author eddy
       */      
-    void updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _poses, std::map<std::size_t, Eigen::Vector3d> & _point3d, std::set<std::size_t> & _outliers);
+    void updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _poses, std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _point3d, std::set<std::size_t> & _outliers);
 
 	/** \brief Get all signature's poses.
       * \param[out] poses The signature vertexs of local map graph. With map strcture: <signature id, signature pose>.  
@@ -86,7 +86,7 @@ public:
       * \param[out] observations The observations of every feature. With map structure: <feature id, <signature id, observation>>
 	  * \author eddy
       */  
-    bool getFeaturePosesAndObservations(std::map<std::size_t, Eigen::Vector3d> & _points, std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _observations);
+    bool getFeaturePosesAndObservations(std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points, std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _observations);
 
 private:
 	/** \brief Find corresponding pairs between two groups of features.

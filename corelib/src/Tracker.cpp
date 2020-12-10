@@ -191,6 +191,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
 								cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, flowIterations_, flowEps_),
                                 cv::OPTFLOW_LK_GET_MIN_EIGENVALS | cv::OPTFLOW_USE_INITIAL_FLOW, 1e-4);
         for (std::size_t i = 0; i < status.size(); ++i) {
+            // std::cout << "status[i]: " << (int)status[i] << "  reverseStatus[i]: " << (int)reverseStatus[i] << " distance: " << L2Norm<float, cv::Point2f>(cornersReverse[i], cornersFrom[i]) << std::endl;
             if (status[i] && reverseStatus[i] && L2Norm<float, cv::Point2f>(cornersReverse[i], cornersFrom[i]) <= 1.5) {
                 status[i] = 1;
             } else {
@@ -253,8 +254,11 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
         cv::Mat mask = cv::Mat(imageTo.rows, imageTo.cols, CV_8UC1, cv::Scalar(255));
         for (auto kpt : kptsTo) {
             if (mask.at<unsigned char>(kpt.pt) == 255)
-                cv::circle(mask, kpt.pt, minFeatureDistance_, 0 -1);
+                cv::circle(mask, kpt.pt, minFeatureDistance_, 0, -1);
         }
+        // cv::namedWindow("mask");
+        // cv::imshow("mask", mask);
+        // cv::waitKey(2);
         cv::goodFeaturesToTrack(imageTo, newCornersInTo, backUpCornersCnt, qualityLevel_, minFeatureDistance_, mask);
         std::map<std::size_t, cv::KeyPoint> wordsToNewExtract;
         for (auto corner : newCornersInTo) {

@@ -406,7 +406,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 				g2o::VertexSBAPointXYZ* vpt3d = new g2o::VertexSBAPointXYZ();
 				vpt3d->setEstimate(pointPose);
 				vpt3d->setId(stepVertexId + id);
-				vpt3d->setFixed(false);
+				vpt3d->setFixed(fixSymbol);
 				vpt3d->setMarginalized(true);
 				optimizer.addVertex(vpt3d);
 

@@ -256,9 +256,6 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
             if (mask.at<unsigned char>(kpt.pt) == 255)
                 cv::circle(mask, kpt.pt, minFeatureDistance_, 0, -1);
         }
-        // cv::namedWindow("mask");
-        // cv::imshow("mask", mask);
-        // cv::waitKey(2);
         cv::goodFeaturesToTrack(imageTo, newCornersInTo, backUpCornersCnt, qualityLevel_, minFeatureDistance_, mask);
         std::map<std::size_t, cv::KeyPoint> wordsToNewExtract;
         for (auto corner : newCornersInTo) {
@@ -269,8 +266,6 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
         }
         _toSignature.setKeyPointsNewExtract(wordsToNewExtract);
     }
-    
-    _toSignature.setWords(wordsTo);
 
     // Stereo
     std::map<std::size_t, cv::KeyPoint> wordsToRight;
@@ -286,41 +281,54 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
         cv::calcOpticalFlowPyrLK(imageTo, imageToRight, allCornersInLeft, cornersToRight, status, err, cv::Size(flowWinSize_, flowWinSize_), flowMaxLevel_,
 							cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, flowIterations_, flowEps_),
 							cv::OPTFLOW_LK_GET_MIN_EIGENVALS | 0, 1e-4);
-        if (flowBack_) {
-            std::vector<unsigned char> reverseStatus;
-            std::vector<cv::Point2f> cornersReverse = allCornersInLeft;
-		    cv::calcOpticalFlowPyrLK(imageToRight, imageTo, cornersToRight, cornersReverse, reverseStatus, err, cv::Size(flowWinSize_, flowWinSize_), flowMaxLevel_,
-								cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, flowIterations_, flowEps_),
-                                cv::OPTFLOW_LK_GET_MIN_EIGENVALS | cv::OPTFLOW_USE_INITIAL_FLOW, 1e-4);
-            for (std::size_t i = 0; i < status.size(); ++i) {
-                if (status[i] && reverseStatus[i] && L2Norm<float, cv::Point2f>(cornersReverse[i], cornersFrom[i]) <= 0.5) {
-                    status[i] = 1;
-                } else {
-                    status[i] = 0;
-                }
-            }            
-        }
+        // if (flowBack_) {
+        //     std::vector<unsigned char> reverseStatus;
+        //     std::vector<cv::Point2f> cornersReverse = allCornersInLeft;
+		//     cv::calcOpticalFlowPyrLK(imageToRight, imageTo, cornersToRight, cornersReverse, reverseStatus, err, cv::Size(flowWinSize_, flowWinSize_), flowMaxLevel_,
+		// 						cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, flowIterations_, flowEps_),
+        //                         cv::OPTFLOW_LK_GET_MIN_EIGENVALS | cv::OPTFLOW_USE_INITIAL_FLOW, 1e-4);
+        //     for (std::size_t i = 0; i < status.size(); ++i) {
+        //         if (status[i] && reverseStatus[i] && L2Norm<float, cv::Point2f>(cornersReverse[i], cornersFrom[i]) <= 0.5) {
+        //             status[i] = 1;
+        //         } else {
+        //             status[i] = 0;
+        //         }
+        //     }            
+        // }
 
         assert(cornersToRight.size() == wordsToIds.size());
-        for (std::size_t i = 0; i < wordsToIds.size(); ++i) {
-            wordsToRight.insert(std::pair<std::size_t, cv::KeyPoint>(wordsToIds[i], cv::KeyPoint(cornersToRight[i], 1.f)));
+
+        for (std::size_t i = 0; i < status.size(); ++i) {
+            if (status[i] && uIsInBounds(cornersToRight[i].x, 0.f, static_cast<float>(imageTo.cols)) && uIsInBounds(cornersToRight[i].y, 0.f, static_cast<float>(imageTo.rows))) {
+                wordsToRight.insert(std::pair<std::size_t, cv::KeyPoint>(wordsToIds[i], cv::KeyPoint(cornersToRight[i], 1.f)));
+            } else {
+                wordsTo.erase(wordsToIds[i]);
+            }
         }
-        _toSignature.setKeyPointMatchesImageRight(wordsToRight);
-        _toSignature.setLeftRightPairStatus(status);
     }
 
     std::vector<cv::Point3f> kptsTo3D;
     std::map<std::size_t, cv::Point3f> wordsTo3D;
+    wordsToIds = uKeys(wordsTo);
     if (trackingMethod_ == STEREO) {
         kptsTo3D = generateKeyPoints3DStereo(uValues(wordsTo), uValues(wordsToRight), _toSignature.getCameraModelLeft(), _toSignature.getCameraModelRight(), minDepth_, maxDepth_);
         for (std::size_t i = 0; i < wordsToIds.size(); ++i) {
-            wordsTo3D.insert(std::pair<std::size_t, cv::Point3f>(wordsToIds[i], kptsTo3D[i]));
+            if (isFinite(kptsTo3D[i])) {
+                wordsTo3D.insert(std::pair<std::size_t, cv::Point3f>(wordsToIds[i], kptsTo3D[i]));
+            } else {
+                wordsTo.erase(wordsToIds[i]);
+                wordsToRight.erase(wordsToIds[i]);
+            }
+            
         }        
     } else if (trackingMethod_ == RGBD) {
 
     }
+
+    _toSignature.setKeyPointMatchesImageRight(wordsToRight);
+    _toSignature.setWords(wordsTo);
     _toSignature.setWords3d(wordsTo3D);
-    
+
 }
 
 }   // namespace

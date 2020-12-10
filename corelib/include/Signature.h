@@ -122,8 +122,6 @@ public:
     void setKeyPointsNewExtract(const std::map<std::size_t, cv::KeyPoint> & _kpts) { keyPointsNewExtracted_ = _kpts; }
     const std::map<std::size_t, cv::KeyPoint> & getKeyPointsMatchesImageRight() const { return keyPointsMatchesImageRight_; }
     void setKeyPointMatchesImageRight(const std::map<std::size_t, cv::KeyPoint> & _kpts) { keyPointsMatchesImageRight_ = _kpts; }
-    const std::vector<unsigned char> & getLeftRightPairStatus() const { return leftRightPairStatus_; }
-    void setLeftRightPairStatus(const std::vector<unsigned char> & _status) { leftRightPairStatus_ = _status; }
 
     bool empty() const;
     const cv::Mat & getImage() const { return imageLeft_; }
@@ -164,7 +162,6 @@ private:
     std::map<std::size_t, cv::KeyPoint> keyPointsMatchesFormer_;  // keypoints matches with the former signature
     std::map<std::size_t, cv::KeyPoint> keyPointsNewExtracted_;   // new keypoints in this signature
     std::map<std::size_t, cv::KeyPoint> keyPointsMatchesImageRight_;  // all keypoints, (keyPointsMatchesFormer_ +  keyPointsNewExtracted_) also keeping the order, matches in right image.
-    std::vector<unsigned char> leftRightPairStatus_;    // all keypoints' match status in left and right image.
 
     TrackInfo trackInfo_;
     EstimateInfo estimateInfo_;

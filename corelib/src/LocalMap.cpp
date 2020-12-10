@@ -225,12 +225,9 @@ bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, st
 
 bool LocalMap::getFeaturePosesAndObservations(std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points, std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _observations) {
     const Eigen::Isometry3d transformRobotToImage = signatures_.begin()->second.getCameraModel().getTansformImageToRobot().inverse();
-    int i = 0;
     for (auto feature : features_) {
         if (feature.second.getObservedTimes() > 1) {
             bool fixSymbol = feature.second.getFeatureState() == Feature::STABLE ? true : false;
-            if (fixSymbol)
-                i++;
             _points.emplace(feature.first, std::make_tuple(feature.second.getFeaturePose(), fixSymbol));
 
             std::map<std::size_t, FeatureBA> ptMap;

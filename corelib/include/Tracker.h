@@ -37,6 +37,21 @@ private:
      */
     void rejectOutlierWithFundationMatrix(const std::vector<cv::Point2f> & _cornersFrom, const std::vector<cv::Point2f> & _cornersTo, std::vector<unsigned char> & _status) const;
 
+    /** \brief Update the feature observed counters.
+     * \param[in] wordIds All words observed in current signature.
+     * \author eddy
+     */
+    void updateTrackCounter(std::map<std::size_t, cv::KeyPoint> _wordIds);
+
+    /** \brief Get a mask for new feature extract.
+     * \param[in] kptTo KeyPoint in the current signature.
+     * \param[in] rows The total rows of mask.
+     * \param[in] cols The total cols of mask.
+     * \return Mask.
+     * \author eddy
+     */
+    cv::Mat getMask(std::map<std::size_t, cv::KeyPoint> _kptTo, int _rows, int _cols);
+
     /** \brief The wrapper whole tracking procecude
      * \param[in] fromSignature The former signature.
      * \param[in] toSignature The current signature.
@@ -60,6 +75,8 @@ private:
     bool cullByFundationMatrix_;
     float fundationPixelError_;
     int minInliers_;
+
+    std::map<std::size_t, std::size_t> trackCnt_;
 
     TrackingMethod trackingMethod_;
     std::size_t globalFeatureId_;

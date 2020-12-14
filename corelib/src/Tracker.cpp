@@ -91,6 +91,47 @@ void Tracker::rejectOutlierWithFundationMatrix(const std::vector<cv::Point2f> & 
 	}	
 }
 
+void Tracker::updateTrackCounter(std::map<std::size_t, cv::KeyPoint> _wordIds) {
+    for (auto iter = trackCnt_.begin(); iter != trackCnt_.end();) {
+        auto jter = _wordIds.find(iter->first);
+        if (jter != _wordIds.end()) {
+            iter->second++;
+            _wordIds.erase(jter);
+            ++iter;
+        } else {
+            iter = trackCnt_.erase(iter);
+        }
+    }
+
+    for (auto word : _wordIds) {
+        trackCnt_.emplace(word.first, 1);
+    }
+
+}
+
+cv::Mat Tracker::getMask(std::map<std::size_t, cv::KeyPoint> _kptTo, int _rows, int _cols) {
+    std::vector<std::pair<std::size_t, std::pair<std::size_t, cv::Point2f>>> currentWords;
+
+    for (auto kpt : _kptTo) {
+        auto iter = trackCnt_.find(kpt.first);
+        if (iter != trackCnt_.end()) {
+            currentWords.emplace_back(std::make_pair(iter->second, std::make_pair(iter->first, kpt.second.pt)));
+        }
+    }
+
+    std::sort(currentWords.begin(), currentWords.end(), [](const std::pair<std::size_t, std::pair<std::size_t, cv::Point2f>> & a, const std::pair<std::size_t, std::pair<std::size_t, cv::Point2f>> & b){
+        return a.first > b.first;
+    });
+
+    cv::Mat mask = cv::Mat(_rows, _cols, CV_8UC1, cv::Scalar(255));
+    for (auto word : currentWords) {
+        if (mask.at<unsigned char>(word.second.second) == 255)
+            cv::circle(mask, word.second.second, minFeatureDistance_, 0, -1);
+    }
+
+    return mask;
+}
+
 void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
     if (_fromSignature.empty() || _toSignature.empty()) {
         std::cout << "[Error]: The from signature or the to signature is empty."  << std::endl;
@@ -250,12 +291,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
     std::vector<cv::Point2f> newCornersInTo;
     int backUpCornersCnt = maxFeature_ - static_cast<int>(kptsTo.size());
     if (backUpCornersCnt > 0 && !_toSignature.getImage().empty()) {
-        // Set mask
-        cv::Mat mask = cv::Mat(imageTo.rows, imageTo.cols, CV_8UC1, cv::Scalar(255));
-        for (auto kpt : kptsTo) {
-            if (mask.at<unsigned char>(kpt.pt) == 255)
-                cv::circle(mask, kpt.pt, minFeatureDistance_, 0, -1);
-        }
+        cv::Mat mask = getMask(wordsTo, imageTo.rows, imageTo.cols);
         cv::goodFeaturesToTrack(imageTo, newCornersInTo, backUpCornersCnt, qualityLevel_, minFeatureDistance_, mask);
         std::map<std::size_t, cv::KeyPoint> wordsToNewExtract;
         for (auto corner : newCornersInTo) {
@@ -328,6 +364,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
     _toSignature.setKeyPointMatchesImageRight(wordsToRight);
     _toSignature.setWords(wordsTo);
     _toSignature.setWords3d(wordsTo3D);
+    updateTrackCounter(wordsTo);
 
 }
 

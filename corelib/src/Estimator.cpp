@@ -15,6 +15,8 @@ Estimator::Estimator(const ParametersMap & _parameters) :
     pose_(Eigen::Isometry3d::Identity()),
     previousWheelOdom_(Eigen::Isometry3d::Identity()),
     velocityGuess_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
+    tracker_(nullptr),
+    monitor_(nullptr),
     previousStamps_(0.0),
     sensorStrategy_(Parameters::defaultSystemSensorStrategy()),
     minInliers_(Parameters::defaultEstimatorMinInliers()),
@@ -65,6 +67,16 @@ Signature Estimator::getEstimatedSignature() {
     return signature;
 }
 
+void Estimator::outputOutliers(const std::set<std::size_t> & _outliers) {
+    boost::lock_guard<boost::mutex> lock(mutexOutliersRw_);
+    outliersBuf_ = _outliers;
+}
+
+std::set<std::size_t> Estimator::getOutliers() {
+    boost::lock_guard<boost::mutex> lock(mutexOutliersRw_);
+    return outliersBuf_;
+}
+
 void Estimator::threadProcess() {
     while (1) {
         Signature signature;
@@ -79,6 +91,10 @@ void Estimator::threadProcess() {
             process(signature);
             // timer.elapsed("Estimator");
 
+            if (monitor_) {
+                monitor_->addSignature(signature);
+            }
+            
             //publish process result
             outputSignature(signature);
         }
@@ -197,7 +213,8 @@ void Estimator::process(Signature & _signature) {
                 // std::cout << "transform: \n" << transform.matrix() << std::endl;
             }
 
-            covariance = computeCovariance(words3dFrom, _signature.getWords3d(), transform, inliers);
+            // covariance = computeCovariance(words3dFrom, _signature.getWords3d(), transform, inliers);
+            covariance = cv::Mat::eye(6, 6, CV_64FC1);
             // std::cout << "covariance: \n" << covariance << std::endl;
 
             // Update 3d points in signture.
@@ -309,6 +326,7 @@ void Estimator::process(Signature & _signature) {
     previousStamps_ = _signature.getTimeStamp();
     // std::cout << "visual pose: \n" << _signature.getPose().matrix() << std::endl;
     localMap_->removeSignature();
+    outputOutliers(sbaOutliers);
     
 }
 

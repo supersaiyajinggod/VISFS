@@ -147,7 +147,7 @@ class Parameters {
     VISFS_PARAM(Tracker,    FlowBack,               bool,   true,   "Perform backward optical flow to improve feature tracking accuracy.");
     VISFS_PARAM(Tracker,    MaxDepth,               float,  10.0,   "Max depth of the features (0 means no limit).");
     VISFS_PARAM(Tracker,    MinDepth,               float,  0.2,    "Min depth of the features (0 means no limit).");
-    VISFS_PARAM(Tracker,    FlowWinSize,            int,    18,     "Size of the search window at each pyramid level.");
+    VISFS_PARAM(Tracker,    FlowWinSize,            int,    21,     "Size of the search window at each pyramid level.");
     VISFS_PARAM(Tracker,    FlowIterations,         int,    30,     "Termination criteria of the max interation times.");
     VISFS_PARAM(Tracker,    FlowEps,                float,  0.01,   "Termination criteria of the search window moves by less than criteria.epsilon");
     VISFS_PARAM(Tracker,    FlowMaxLevel,           int,    3,      "Maximal pyramid level number; if set to 0, pyramids are not used (single level)");

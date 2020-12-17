@@ -26,11 +26,14 @@ System::System(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kSystemWheelOdometryFreq(), wheelFreq_);
 
     estimator_ = new Estimator(_parameters);
-    tracker_ = new Tracker(estimator_, _parameters);
+    tracker_ = new Tracker(_parameters);
+
+    estimator_->setTracker(tracker_);
+    tracker_->setEstimator(estimator_);
 
     if (monitorSwitch_) {
         monitor_ = new Monitor(_parameters);
-        tracker_->setMonitor(monitor_);
+        estimator_->setMonitor(monitor_);
         threadMonitor_ = new boost::thread(boost::bind(&Monitor::threadProcess, monitor_));
     }
 

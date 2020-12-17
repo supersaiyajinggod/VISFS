@@ -6,13 +6,14 @@
 #include "Parameters.h"
 #include "Signature.h"
 #include "Estimator.h"
-#include "Monitor.h"
 
 namespace VISFS {
 
+class Estimator;
+
 class Tracker {
 public:
-    Tracker(Estimator * _estimator, const ParametersMap & _parameters = ParametersMap());
+    Tracker(const ParametersMap & _parameters = ParametersMap());
     ~Tracker();
 
     enum TrackingMethod {
@@ -24,8 +25,8 @@ public:
     void inputSignature(const Signature & _signature);
     void threadProcess(void);
 
-    void setMonitor(Monitor * _monitor) { monitor_ = _monitor; }
-    Monitor * getMonitor() const { return monitor_; }
+    void setEstimator(Estimator * _estimator) { estimator_ = _estimator; }
+    Estimator * getEstimator() const { return estimator_; }
 
 private:
 
@@ -47,10 +48,11 @@ private:
      * \param[in] kptTo KeyPoint in the current signature.
      * \param[in] rows The total rows of mask.
      * \param[in] cols The total cols of mask.
+     * \param[in] kptBlocked KeyPoint should be blocked. 
      * \return Mask.
      * \author eddy
      */
-    cv::Mat getMask(std::map<std::size_t, cv::KeyPoint> _kptTo, int _rows, int _cols);
+    cv::Mat getMask(const std::map<std::size_t, cv::KeyPoint> & _kptTo,  const int _rows, const int _cols, const std::map<std::size_t, cv::KeyPoint> & _kptBlocked) const;
 
     /** \brief The wrapper whole tracking procecude
      * \param[in] fromSignature The former signature.
@@ -59,6 +61,13 @@ private:
      * \author eddy
      */    
     void process(Signature & _fromSignature, Signature & _toSignature);
+
+    /** \brief Pretreatment of the signature. For now, cull out the outliers, can add toSignature or other parameters to do other things.
+     * \param[in] fromSignature The former signature.
+     * \param[in] outliers The outliers estimated by estimator.
+     * \author eddy
+     */   
+    void pretreatment(Signature & _fromSignature, const std::set<std::size_t> & _outliers);
 
     Signature lastSignature_;
 
@@ -85,7 +94,6 @@ private:
     std::queue<Signature> signatureBuf_;
 
     Estimator * estimator_;
-    Monitor * monitor_;
 
 };
 

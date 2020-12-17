@@ -43,8 +43,8 @@ void EdgeSE3Expmap::linearizeOplus() {
 	_jacobianOplusXj.block<3, 3>(0, 3) = sQ1.toRotationMatrix()*skewSymmetric(sQ2.inverse()*(-sP2));
 	_jacobianOplusXj.block<3, 3>(3, 3) = -(QuaternionLeft(sQ2)*QuaternionRight(sQ1.inverse()*mQ12)).bottomRightCorner<3, 3>();
 
-	std::cout << "_jacobianOplusXi: \n" << _jacobianOplusXi.matrix() << std::endl;
-	std::cout << "_jacobianOplusXj: \n" << _jacobianOplusXj.matrix() << std::endl;
+	// std::cout << "_jacobianOplusXi: \n" << _jacobianOplusXi.matrix() << std::endl;
+	// std::cout << "_jacobianOplusXj: \n" << _jacobianOplusXj.matrix() << std::endl;
 
 }
 

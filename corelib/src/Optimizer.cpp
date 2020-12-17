@@ -514,6 +514,8 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 			// }
 		}
 
+		// std::cout << "Optimizer: _outliers.size(): " << _outliers.size() << std::endl;
+
 		// Update poses
 		for (auto iter = _poses.begin(); iter != _poses.end(); ++iter) {
 			if (iter->first > 0) {

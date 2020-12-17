@@ -113,6 +113,8 @@ public:
     const std::map<std::size_t, cv::Mat> & getWordsDescriptors() const { return wordsDescriptors_; }
     void setWordsDescriptors(const std::map<std::size_t, cv::Mat> & _wordsDescriptors) { wordsDescriptors_ = _wordsDescriptors; }
     const std::map<std::size_t, cv::KeyPoint> & getCovisibleWords() const { return covisibleWords_; }
+    void setBlockedWords(const std::map<std::size_t, cv::KeyPoint> & _blockedWords) { blockedWords_ = _blockedWords; }
+    const std::map<std::size_t, cv::KeyPoint> & getBlockedWords() const { return blockedWords_; }
     void setCovisibleWords(const std::map<std::size_t, cv::KeyPoint> & _words) {  covisibleWords_ = _words; }
     const std::map<std::size_t, cv::Point3f> & getCovisibleWords3d() const { return covisibleWords3d_; }
     void setCovisibleWords3d(const std::map<std::size_t, cv::Point3f> & _words3d) { covisibleWords3d_ = _words3d; } 
@@ -155,6 +157,7 @@ private:
     std::map<std::size_t, cv::KeyPoint> words_;   // all words, both covisible and new extract.
     std::map<std::size_t, cv::Point3f> words3d_;  // word in robot/base_link
     std::map<std::size_t, cv::Mat> wordsDescriptors_;
+    std::map<std::size_t, cv::KeyPoint> blockedWords_;          // features which is blocked in process.
 
     std::map<std::size_t, cv::KeyPoint> covisibleWords_;    // words in former signature
     std::map<std::size_t, cv::Point3f> covisibleWords3d_;  // words3d in former signature

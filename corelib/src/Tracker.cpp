@@ -9,7 +9,7 @@
 
 namespace VISFS {
 
-Tracker::Tracker(Estimator * _estimator, const ParametersMap & _parameters) :
+Tracker::Tracker(const ParametersMap & _parameters) :
     maxFeature_(Parameters::defaultTrackerMaxFeatures()),
     qualityLevel_(Parameters::defaultTrackerQualityLevel()),
     minFeatureDistance_(Parameters::defaultTrackerMinDistance()),
@@ -25,8 +25,7 @@ Tracker::Tracker(Estimator * _estimator, const ParametersMap & _parameters) :
     minInliers_(Parameters::defaultEstimatorMinInliers()),
     trackingMethod_(TrackingMethod::STEREO),
     globalFeatureId_(0),
-    estimator_(_estimator),
-    monitor_(nullptr) {
+    estimator_(nullptr) {
     
     Parameters::parse(_parameters, Parameters::kTrackerMaxFeatures(), maxFeature_);
     Parameters::parse(_parameters, Parameters::kTrackerQualityLevel(), qualityLevel_);
@@ -62,13 +61,17 @@ void Tracker::threadProcess() {
                 signatureBuf_.pop(); 
             }
             // UTimer timer;
+            std::set<std::size_t> outliers = estimator_->getOutliers();
+            pretreatment(lastSignature_, outliers);
             process(lastSignature_, signature);
             // timer.elapsed("Tracker");
             
-            estimator_->inputSignature(signature);
-            if (monitor_) {
-                monitor_->addSignature(signature);
+            if (estimator_) {
+                estimator_->inputSignature(signature);
+            } else {
+                std::cout << "[Error]: Estimator not set!" << std::endl;
             }
+
             lastSignature_ = signature;
         }
 
@@ -109,7 +112,7 @@ void Tracker::updateTrackCounter(std::map<std::size_t, cv::KeyPoint> _wordIds) {
 
 }
 
-cv::Mat Tracker::getMask(std::map<std::size_t, cv::KeyPoint> _kptTo, int _rows, int _cols) {
+cv::Mat Tracker::getMask(const std::map<std::size_t, cv::KeyPoint> & _kptTo,  const int _rows, const int _cols, const std::map<std::size_t, cv::KeyPoint> & _kptBlocked) const {
     std::vector<std::pair<std::size_t, std::pair<std::size_t, cv::Point2f>>> currentWords;
 
     for (auto kpt : _kptTo) {
@@ -128,8 +131,36 @@ cv::Mat Tracker::getMask(std::map<std::size_t, cv::KeyPoint> _kptTo, int _rows, 
         if (mask.at<unsigned char>(word.second.second) == 255)
             cv::circle(mask, word.second.second, minFeatureDistance_, 0, -1);
     }
+    for (auto word : _kptBlocked) {
+        if (mask.at<unsigned char>(word.second.pt) == 255)
+            cv::circle(mask, word.second.pt, minFeatureDistance_/2, 0, -1);        
+    }
 
     return mask;
+}
+
+void Tracker::pretreatment(Signature & _fromSignature, const std::set<std::size_t> & _outliers) {
+    if (_fromSignature.empty() || _outliers.empty()) {
+        return;
+    }
+
+    std::map<std::size_t, cv::KeyPoint> blockedWords;
+    auto words = _fromSignature.getWords();
+    auto words3d = _fromSignature.getWords3d();
+    if (!words.empty()) {
+        for (auto outlier : _outliers) {
+            if (words.find(outlier) != words.end()) {
+                blockedWords.emplace(outlier, words.at(outlier));
+                words.erase(outlier);
+                words3d.erase(outlier);
+            }
+
+            if (trackCnt_.find(outlier) != trackCnt_.end())
+                trackCnt_.erase(outlier);
+        }
+    }
+
+    _fromSignature.setBlockedWords(blockedWords);
 }
 
 void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
@@ -291,7 +322,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
     std::vector<cv::Point2f> newCornersInTo;
     int backUpCornersCnt = maxFeature_ - static_cast<int>(kptsTo.size());
     if (backUpCornersCnt > 0 && !_toSignature.getImage().empty()) {
-        cv::Mat mask = getMask(wordsTo, imageTo.rows, imageTo.cols);
+        cv::Mat mask = getMask(wordsTo, imageTo.rows, imageTo.cols, _fromSignature.getBlockedWords());
         cv::goodFeaturesToTrack(imageTo, newCornersInTo, backUpCornersCnt, qualityLevel_, minFeatureDistance_, mask);
         std::map<std::size_t, cv::KeyPoint> wordsToNewExtract;
         for (auto corner : newCornersInTo) {
@@ -301,6 +332,9 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
             ++globalFeatureId_;
         }
         _toSignature.setKeyPointsNewExtract(wordsToNewExtract);
+        // cv::namedWindow("mask");
+        // cv::imshow("mask", mask);
+        // cv::waitKey(5);
     }
 
     // Stereo
@@ -317,20 +351,20 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
         cv::calcOpticalFlowPyrLK(imageTo, imageToRight, allCornersInLeft, cornersToRight, status, err, cv::Size(flowWinSize_, flowWinSize_), flowMaxLevel_,
 							cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, flowIterations_, flowEps_),
 							cv::OPTFLOW_LK_GET_MIN_EIGENVALS | 0, 1e-4);
-        // if (flowBack_) {
-        //     std::vector<unsigned char> reverseStatus;
-        //     std::vector<cv::Point2f> cornersReverse = allCornersInLeft;
-		//     cv::calcOpticalFlowPyrLK(imageToRight, imageTo, cornersToRight, cornersReverse, reverseStatus, err, cv::Size(flowWinSize_, flowWinSize_), flowMaxLevel_,
-		// 						cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, flowIterations_, flowEps_),
-        //                         cv::OPTFLOW_LK_GET_MIN_EIGENVALS | cv::OPTFLOW_USE_INITIAL_FLOW, 1e-4);
-        //     for (std::size_t i = 0; i < status.size(); ++i) {
-        //         if (status[i] && reverseStatus[i] && L2Norm<float, cv::Point2f>(cornersReverse[i], cornersFrom[i]) <= 0.5) {
-        //             status[i] = 1;
-        //         } else {
-        //             status[i] = 0;
-        //         }
-        //     }            
-        // }
+        if (flowBack_) {
+            std::vector<unsigned char> reverseStatus;
+            std::vector<cv::Point2f> cornersReverse = allCornersInLeft;
+		    cv::calcOpticalFlowPyrLK(imageToRight, imageTo, cornersToRight, cornersReverse, reverseStatus, err, cv::Size(flowWinSize_, flowWinSize_), flowMaxLevel_,
+								cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, flowIterations_, flowEps_),
+                                cv::OPTFLOW_LK_GET_MIN_EIGENVALS | cv::OPTFLOW_USE_INITIAL_FLOW, 1e-4);
+            for (std::size_t i = 0; i < status.size(); ++i) {
+                if (status[i] && reverseStatus[i] && L2Norm<float, cv::Point2f>(cornersReverse[i], allCornersInLeft[i]) <= 0.5) {
+                    status[i] = 1;
+                } else {
+                    status[i] = 0;
+                }
+            }            
+        }
 
         assert(cornersToRight.size() == wordsToIds.size());
 
@@ -361,6 +395,8 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
 
     }
 
+    assert(wordsTo.size() == wordsToRight.size());
+    assert(wordsTo.size() == wordsTo3D.size());
     _toSignature.setKeyPointMatchesImageRight(wordsToRight);
     _toSignature.setWords(wordsTo);
     _toSignature.setWords3d(wordsTo3D);

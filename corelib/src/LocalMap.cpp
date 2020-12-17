@@ -171,6 +171,8 @@ void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _
             if (feature.getObservedTimes() >= 2) {
                 features_.erase(outlier);
                 i++;
+            } else {
+                _outliers.erase(outlier);
             }
         } else {
             std::cout << "[Error]: LocalMap, cull out unexist feature." << std::endl;

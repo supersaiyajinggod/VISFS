@@ -49,9 +49,10 @@
     <param name="System/SensorStrategy"             type="int"          value="2"/>
     <param name="System/Monitor"                    type="bool"         value="true"/>
     <param name="Tracker/MaxFeatures"               type="int"          value="150"/>
-    <param name="Tracker/MinDistance"               type="int"          value="30"/>
+    <param name="Tracker/MinDistance"               type="int"          value="40"/>
     <param name="Tracker/FlowBack"                  type="bool"         value="true"/>
     <param name="Tracker/CullByFundationMatrix"     type="bool"         value="false"/>
+    <param name="Tracker/FlowWinSize"               type="int"          value="21"/>
     <param name="LocalMap/MapSize"                  type="int"          value="5"/>
     <param name="LocalMap/MinParallax"              type="double"       value="60.0"/>
     <param name="LocalMap/MinTranslation"           type="double"       value="0.5"/>

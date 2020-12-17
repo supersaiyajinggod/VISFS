@@ -4,30 +4,15 @@ eigen
 g2o
 ros
 
-remap input
-left/image
-right/image
-left/info
-right/info
-wheel_odom
-
-output
-odom
-odom_info
-
-
-rosparam
-left/image_transport
-right/image_transport
-approx_sync
-queue_size
-base_line
-camera_frame_id
-robot_frame_id
-publish_tf
-
-algorithm param
-Parameters.h
-
 debug
 <node pkg="VISFS" type="VISFSInterfaceROSNode" name="VISFSInterfaceROSNode" output="screen" launch-prefix="gdb -ex run --args">
+  
+master a stable branch
+
+develop a branch to be merge new feature or fix bugs associate with issues.
+
+When need to add a new feature to this repo,
+1. create a issues.
+2. work on a new branch assosiate with new issues.
+3. pull request merge to develop.
+4. When test stable merge to master.

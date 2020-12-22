@@ -40,6 +40,7 @@ void Monitor::process(Signature & _signature) {
         std::vector<cv::KeyPoint> kptsNewExtract = uValues(_signature.getKeyPointsNewExtract());
         std::map<std::size_t, cv::KeyPoint> kptsMatchesLeftToRight = _signature.getKeyPointsMatchesImageRight();
         std::map<std::size_t, cv::Point3f> words3d = _signature.getWords3d();
+        std::map<std::size_t, cv::KeyPoint> blockedWords = _signature.getBlockedWords();
 
         cv::Mat stitch;
         cv::hconcat(imageLeft, imageRight, stitch);
@@ -50,6 +51,11 @@ void Monitor::process(Signature & _signature) {
         } 
         for (auto kpt : kptsNewExtract) {
             cv::circle(stitch, kpt.pt, 2, cv::Scalar(255, 0, 0), 1);
+        }
+        for (auto blockedWord : blockedWords) {
+            // cv::Rect rect((blockedWord.second.pt.x - 10) < 0 ? 0 : (blockedWord.second.pt.x - 10), (blockedWord.second.pt.y - 10) < 0 ? 0 : (blockedWord.second.pt.y - 10), 20, 20);
+            // cv::rectangle(stitch, blockedWord.second.pt, blockedWord.second.pt, cv::Scalar(255, 0, 0));
+            cv::circle(stitch, blockedWord.second.pt, 10, cv::Scalar(255, 0, 0), 1);
         }
         assert(kptsMatchesLeftToRight.size() == words3d.size());
         for (auto iter = kptsMatchesLeftToRight.begin(); iter != kptsMatchesLeftToRight.end(); ++iter) {

@@ -361,6 +361,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
                 if (status[i] && reverseStatus[i] && L2Norm<float, cv::Point2f>(cornersReverse[i], allCornersInLeft[i]) <= 0.5) {
                     status[i] = 1;
                 } else {
+                    // std::cout << "Cull out stereo: " << "status: " << (int)status[i] << "  reverseStatus" << (int)reverseStatus[i] << " distance: " << L2Norm<float, cv::Point2f>(cornersReverse[i], allCornersInLeft[i]) << std::endl;
                     status[i] = 0;
                 }
             }            
@@ -397,6 +398,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
 
     assert(wordsTo.size() == wordsToRight.size());
     assert(wordsTo.size() == wordsTo3D.size());
+    // std::cout << "Valiable words count: " << wordsTo.size() << std::endl;
     _toSignature.setKeyPointMatchesImageRight(wordsToRight);
     _toSignature.setWords(wordsTo);
     _toSignature.setWords3d(wordsTo3D);

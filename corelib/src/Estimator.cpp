@@ -327,6 +327,14 @@ void Estimator::process(Signature & _signature) {
     // std::cout << "visual pose: \n" << _signature.getPose().matrix() << std::endl;
     localMap_->removeSignature();
     outputOutliers(sbaOutliers);
+
+    std::map<std::size_t, cv::KeyPoint> blockWords;
+    for (auto outlier : sbaOutliers) {
+        if (wordsTo.find(outlier) != wordsTo.end()) {
+            blockWords.emplace(outlier, wordsTo.at(outlier));
+        }
+    }
+    _signature.setBlockedWords(blockWords);
     
 }
 

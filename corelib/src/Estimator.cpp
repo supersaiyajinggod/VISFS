@@ -4,6 +4,7 @@
 #include "Math.h"
 #include "Timer.h"
 #include "Stl.h"
+#include "Log.h"
 
 #include <opencv2/core/eigen.hpp>
 #include <pcl/common/eigen.h>
@@ -121,8 +122,8 @@ void Estimator::process(Signature & _signature) {
         matches = findCorrespondences(words3dFrom, wordsTo);
         inliers = matches;
         _signature.setPose(pose_ * transform);
-        // std::cout << "deltaWheelOdom pose: \n" << transform.matrix() << std::endl;
-        // std::cout << "set guess pose: \n" << _signature.getPose().matrix() << std::endl;
+        LOG_DEBUG << "DeltaWheelOdom pose: \n" << transform.matrix();
+        LOG_DEBUG << "Set guess pose:\n" << _signature.getPose().matrix() << std::endl;
     } else {
         if (words3dFrom.size() >= minInliers_ && wordsTo.size() >= minInliers_) {
             transform = estimateMotion3DTo2D(words3dFrom, wordsTo, _signature.getCameraModel(), minInliers_, pnpIterations_,
@@ -134,13 +135,13 @@ void Estimator::process(Signature & _signature) {
 
         } else {
             transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
-            std::cout << "Not enough features in images, old=" << words3dFrom.size() << ", new=" << wordsTo.size() << ", min=" << minInliers_ << "." << std::endl;
+            LOG_ERROR << "Not enough features in images, old=" << words3dFrom.size() << ", new=" << wordsTo.size() << ", min=" << minInliers_ << ".";
         }
-        // std::cout << "_signature id : " << _signature.getId() << "  pose 3d->2d pnp is :\n" << transform.matrix() << std::endl;
+        LOG_DEBUG << "Signature id : " << _signature.getId() << ", pose 3d->2d pnp is :\n" << transform.matrix();
     }
 
     if (transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
-        std::cout << "Error: transform is Zero. The initial estimate failed." << std::endl;
+        LOG_ERROR << "Error: transform is Zero. The initial estimate failed.";
     } else {
         localMap_->insertSignature(_signature, transform.translation());
     }
@@ -164,7 +165,6 @@ void Estimator::process(Signature & _signature) {
         Eigen::Isometry3d transformRobotToImage = _signature.getCameraModel().getTansformImageToRobot().inverse();
         cameraModels.push_back(_signature.getCameraModelLeftPtr());
         cameraModels.push_back(_signature.getCameraModelRightPtr());
-        // std::cout << "Estimate camera K : \n" << cameraModels[0]->eigenKdouble() << "  \n baselne : " << cameraModels[0]->getBaseLine() << std::endl;
 
         localMap_->getFeaturePosesAndObservations(points3D, wordReferences);
 
@@ -203,7 +203,7 @@ void Estimator::process(Signature & _signature) {
                 inliers = newInliers;
             }
             if (static_cast<int>(inliers.size()) < minInliers_) {
-                std::cout << "Not enough inliers after bundle adjustment " << inliers.size() << "/" << minInliers_ << " between signature " << _signature.getId() - 1  << " and " << _signature.getId() << std::endl;
+                LOG_ERROR << "Not enough inliers after bundle adjustment " << inliers.size() << "/" << minInliers_ << " between signature " << _signature.getId() - 1  << " and " << _signature.getId();
                 transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
             } else {
                 auto iter = optimizedPoses.rbegin();
@@ -228,9 +228,8 @@ void Estimator::process(Signature & _signature) {
             // _signature.setWords3d(cpyWords3dTo);
                       
         } else {
-            // transform = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
             currentGlobalPose = pose_ * transform;
-            std::cout << "BA failed, use default transform." << std::endl;
+            LOG_ERROR << "BA failed, use default transform." << std::endl;
         }
     }
 
@@ -253,7 +252,7 @@ void Estimator::process(Signature & _signature) {
         // std::cout << "wheel - visual, deltaX: " << deltaX << " deltaY:" << deltaY << " Tolerance:" << toleranceTranslation_ << std::endl; 
         if (wheelX != 0.0 && wheelY != 0.0) {
             if ((deltaX*deltaX + deltaY*deltaY) / (wheelX*wheelX + wheelY*wheelY) > toleranceTranslation_ ) {
-                std::cout << "Signatrue id : " << _signature.getId() << " has a large Translation. deltaX: " << deltaX << " deltaY: " << deltaY << std::endl;
+                LOG_INFO << "Signatrue id : " << _signature.getId() << " has a large Translation. deltaX: " << deltaX << " deltaY: " << deltaY;
                 transform = deltaWheelOdom;
                 currentGlobalPose = pose_ * transform;
             }
@@ -283,7 +282,7 @@ void Estimator::process(Signature & _signature) {
         Eigen::Affine3d pose;
         pcl::getTransformation(x, y, 0, 0, 0, yaw, pose);
         currentGlobalPose = Eigen::Isometry3d(pose.matrix());
-        // std::cout << "currentGlobalPose After force 3d: \n" << currentGlobalPose.matrix() << std::endl;
+        LOG_DEBUG << "CurrentGlobalPose After force 3d: \n" << currentGlobalPose.matrix() << std::endl;
     }
 
     if (optimizedPoses.size() == 6 && !optimizedPoses.begin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))
@@ -327,6 +326,14 @@ void Estimator::process(Signature & _signature) {
     // std::cout << "visual pose: \n" << _signature.getPose().matrix() << std::endl;
     localMap_->removeSignature();
     outputOutliers(sbaOutliers);
+
+    std::map<std::size_t, cv::KeyPoint> blockWords;
+    for (auto outlier : sbaOutliers) {
+        if (wordsTo.find(outlier) != wordsTo.end()) {
+            blockWords.emplace(outlier, wordsTo.at(outlier));
+        }
+    }
+    _signature.setBlockedWords(blockWords);
     
 }
 
@@ -345,7 +352,7 @@ Eigen::Isometry3d Estimator::guessVelocity(const Eigen::Isometry3d & _t, const d
         velocityGuess_ = Eigen::Isometry3d(velocity.matrix());
         return velocityGuess_;
     } else {
-        std::cout << "Error with value dt: " << _dt << std::endl;
+        LOG_ERROR << "Error with value dt: " << _dt;
     }
 
     return Eigen::Isometry3d::Identity();

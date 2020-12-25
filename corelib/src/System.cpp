@@ -12,6 +12,10 @@ System::System(const ParametersMap & _parameters) :
     threadEstimator_(nullptr),
     monitor_(nullptr),
     threadMonitor_(nullptr),
+    logger_(nullptr),
+    logLevel_(Parameters::defaultSystemLogLevel()),
+    console_(Parameters::defaultSystemLogOnConsole()),
+    logFolder_(Parameters::defaultSystemLogFolder()),
     cameraLeft_(nullptr),
     cameraRight_(nullptr),
     velocityGuess_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
@@ -24,6 +28,12 @@ System::System(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kSystemMonitor(), monitorSwitch_);
     Parameters::parse(_parameters, Parameters::kSystemSensorStrategy(), sensorStrategy_);
     Parameters::parse(_parameters, Parameters::kSystemWheelOdometryFreq(), wheelFreq_);
+    Parameters::parse(_parameters, Parameters::kSystemLogLevel(), logLevel_);
+    Parameters::parse(_parameters, Parameters::kSystemLogOnConsole(), console_);
+    Parameters::parse(_parameters, Parameters::kSystemLogFolder(), logFolder_);
+
+    logger_ = new Logger(static_cast<SeverityLevel>(logLevel_), console_, logFolder_);
+    // Logger lg(static_cast<SeverityLevel>(logLevel_), console_, logFolder_);
 
     estimator_ = new Estimator(_parameters);
     tracker_ = new Tracker(_parameters);
@@ -60,6 +70,8 @@ System::~System() {
 void System::init(const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight) {
     cameraLeft_ = _cameraLeft;
     cameraRight_ = _cameraRight;
+
+    LOG_INFO << "System initialization over!";
 }
 
 void System::init(const double fxl, const double fyl, const double cxl, const double cyl, const double fxr, const double fyr,
@@ -73,6 +85,8 @@ void System::init(const double fxl, const double fyl, const double cxl, const do
     boost::shared_ptr<GeometricCamera> spcameraRight(cameraRight);
     cameraLeft_ = spcameraLeft;
     cameraRight_ = spcameraRight;
+
+	LOG_INFO << "System initialization over!";
 }
 
 Eigen::Isometry3d System::getGuessPose(const Eigen::Isometry3d & _guessVelocity, const double _dt) {
@@ -143,7 +157,7 @@ Eigen::Isometry3d System::accMotionModel(const double _deltaTime, const bool _di
 
 Eigen::Isometry3d System::velMotionModel(const double _deltaTime, const Eigen::Isometry3d & _basePose, const double & _time1, const double & _time2, Eigen::Isometry3d & _pose1, const Eigen::Isometry3d & _pose2) const {
     if (_deltaTime <= 0.0) {
-        std::cout << "[Error]:System::velMotionModel: _deltaTime <= 0.0." << std::endl;
+        LOG_ERROR << "System::velMotionModel: _deltaTime <= 0.0.";
         return Eigen::Isometry3d(Eigen::Matrix4d::Zero());
     }
 
@@ -174,18 +188,8 @@ Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(lastTime) - uTimeDouble2Boost(secondLastTime);
         if (timeElapse.total_milliseconds() > 2*timeInterval) {
-            std::cout.precision(18);
-            std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time <<std::endl;         
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;         
         } else {
-            // timeElapse = uTimeDouble2Boost(lastTime) - uTimeDouble2Boost(_time);
-            // bool direction = timeElapse.total_milliseconds() > wheelFreq_/2 ? true : false; //true: second->last, false: last->second
-            // if (direction) {
-            //     const double deltaTime = _time - secondLastTime;
-            //     alignPose = accMotionModel(deltaTime, direction, secondLastPose, secondLastVelocity, lastVelocity);
-            // } else {
-            //     const double deltaTime = lastTime - _time;
-            //     alignPose = accMotionModel(deltaTime, direction, lastPose, secondLastVelocity, lastVelocity);
-            // }
             const double deltaTime = _time - secondLastTime;
             alignPose = velMotionModel(deltaTime, secondLastPose, secondLastTime, lastTime, secondLastPose, lastPose);
         }          
@@ -193,16 +197,14 @@ Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(_time) - uTimeDouble2Boost(lastTime);
         if (timeElapse.total_milliseconds() > timeInterval) {
-            std::cout.precision(18);
-            std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time <<std::endl;      
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;      
         } else {
             const double deltaTime = _time - lastTime;
             // alignPose = accMotionModel(deltaTime, true, lastPose, secondLastVelocity, lastVelocity);
             alignPose = velMotionModel(deltaTime, secondLastPose, secondLastTime, lastTime, secondLastPose, lastPose);
         }
     } else {
-        std::cout.precision(18);
-        std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time <<std::endl;     
+        LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;     
     }
 
     return alignPose;
@@ -219,18 +221,8 @@ Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(lastTime) - uTimeDouble2Boost(secondLastTime);
         if (timeElapse.total_milliseconds() > 2*timeInterval) {
-            std::cout.precision(18);
-            std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time <<std::endl;         
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;         
         } else {
-            // timeElapse = uTimeDouble2Boost(lastTime) - uTimeDouble2Boost(_time);
-            // bool direction = timeElapse.total_milliseconds() > wheelFreq_/2 ? true : false; //true: second->last, false: last->second
-            // if (direction) {
-            //     const double deltaTime = _time - secondLastTime;
-            //     alignPose = accMotionModel(deltaTime, direction, secondLastPose, secondLastVelocity, lastVelocity);
-            // } else {
-            //     const double deltaTime = lastTime - _time;
-            //     alignPose = accMotionModel(deltaTime, direction, lastPose, secondLastVelocity, lastVelocity);
-            // }
             const double deltaTime = _time - secondLastTime;
             alignPose = velMotionModel(deltaTime, secondLastPose, secondLastTime, lastTime, secondLastPose, lastPose);
         }          
@@ -238,8 +230,7 @@ Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(_time) - uTimeDouble2Boost(lastTime);
         if (timeElapse.total_milliseconds() > timeInterval) {
-            std::cout.precision(18);
-            std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time <<std::endl;      
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;      
         } else {
             const double deltaTime = _time - lastTime;
             // alignPose = accMotionModel(deltaTime, true, lastPose, secondLastVelocity, lastVelocity);
@@ -249,18 +240,8 @@ Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(secondLastTime) - uTimeDouble2Boost(thirdLastTime);
         if (timeElapse.total_milliseconds() > 2*timeInterval) {
-            std::cout.precision(18);
-            std::cout << "Time stamps error, Time second last wheel: " << secondLastTime << ", time third last wheel: " << thirdLastTime << ", the image:" << _time <<std::endl;         
+            LOG_ERROR << "Time stamps error, Time second last wheel: " << secondLastTime << ", time third last wheel: " << thirdLastTime << ", the image:" << _time;         
         } else {
-            // timeElapse = uTimeDouble2Boost(secondLastTime) - uTimeDouble2Boost(_time);
-            // bool direction = timeElapse.total_milliseconds() > wheelFreq_/2 ? true : false; //true: second->last, false: last->second
-            // if (direction) {
-            //     const double deltaTime = _time - secondLastTime;
-            //     alignPose = accMotionModel(deltaTime, direction, secondLastPose, secondLastVelocity, lastVelocity);
-            // } else {
-            //     const double deltaTime = lastTime - _time;
-            //     alignPose = accMotionModel(deltaTime, direction, lastPose, secondLastVelocity, lastVelocity);
-            // }
             const double deltaTime = _time - thirdLastTime;
             alignPose = velMotionModel(deltaTime, thirdLastPose, thirdLastTime, secondLastTime, thirdLastPose, secondLastPose);
         }
@@ -268,15 +249,13 @@ Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(thirdLastTime) - uTimeDouble2Boost(_time);
         if (timeElapse.total_milliseconds() > 2*timeInterval) {
-            std::cout.precision(18);
-            std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", time third last wheel: " << thirdLastTime << ", the image:" << _time <<std::endl; 
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", time third last wheel: " << thirdLastTime << ", the image:" << _time; 
         } else {
             const double deltaTime = thirdLastTime - _time;
             alignPose = velMotionModel(deltaTime, thirdLastPose, thirdLastTime, secondLastTime, secondLastPose, thirdLastPose);
         }
     } else {
-        std::cout.precision(18);
-        std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", time third last wheel: " << thirdLastTime << ", the image:" << _time <<std::endl;     
+    	LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", time third last wheel: " << thirdLastTime << ", the image:" << _time;     
     }
 
     return alignPose;
@@ -295,7 +274,7 @@ Eigen::Isometry3d System::predictAlignPose(const int _n, const double _time, con
         if (std::abs(lastTime - _time) > 2.0/static_cast<double>(wheelFreq_)) {
             alignPose = lastPose;
         } else {
-            std::cout << "Time gap is too large when only use single measure of wheel odometry." << std::endl;
+            LOG_WARN << "Time gap is too large when only use single measure of wheel odometry.";
         }
     }
 
@@ -316,8 +295,7 @@ Eigen::Isometry3d System::predictAlignPose(const int _n, const double _time, con
             boost::posix_time::time_duration timeElapse;
             timeElapse = uTimeDouble2Boost(lastTime) - uTimeDouble2Boost(secondLastTime);
             if (timeElapse.total_milliseconds() > 2*timeInterval) {
-                std::cout.precision(18);
-                std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time <<std::endl;         
+                LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;         
             } else {
                 timeElapse = uTimeDouble2Boost(lastTime) - uTimeDouble2Boost(_time);
                 bool direction = timeElapse.total_milliseconds() > wheelFreq_/2 ? true : false; //true: second->last, false: last->second
@@ -335,8 +313,7 @@ Eigen::Isometry3d System::predictAlignPose(const int _n, const double _time, con
             boost::posix_time::time_duration timeElapse;
             timeElapse = uTimeDouble2Boost(_time) - uTimeDouble2Boost(lastTime);
             if (timeElapse.total_milliseconds() > timeInterval) {
-                std::cout.precision(18);
-                std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time <<std::endl;      
+                LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;      
             } else {
                 const double deltaTime = _time - lastTime;
                 // alignPose = accMotionModel(deltaTime, true, lastPose, secondLastVelocity, lastVelocity);
@@ -345,8 +322,7 @@ Eigen::Isometry3d System::predictAlignPose(const int _n, const double _time, con
         } else if (_time < secondLastTime) {
 
         } else {
-            std::cout.precision(18);
-            std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time <<std::endl;     
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;     
         }   
 
     }
@@ -392,20 +368,7 @@ void System::inputStereoImage(const double _time, const cv::Mat & _imageLeft, co
             if (!globalWheelPose.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
                 auto lastTime = std::get<0>(lastOdom);
                 auto secondLastTime = std::get<0>(secondLastOdom);
-                // double x, y, z, roll, pitch, yaw;
-                // Eigen::Matrix<double, 1, 6> pose;
-                // std::cout.precision(18);
-                // std::cout << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time <<std::endl;
-                // std::cout.precision(5); 
-                // pcl::getTranslationAndEulerAngles(std::get<1>(secondLastOdom), x, y, z, roll, pitch, yaw);
-                // pose(0, 0) = x; pose(0, 1) = y; pose(0, 2) = z; pose(0, 3) = roll; pose(0, 4) = pitch; pose(0, 5) = yaw;
-                // std::cout << "secondLastOdom: " << pose << std::endl;
-                // pcl::getTranslationAndEulerAngles(std::get<1>(lastOdom), x, y, z, roll, pitch, yaw);
-                // pose(0, 0) = x; pose(0, 1) = y; pose(0, 2) = z; pose(0, 3) = roll; pose(0, 4) = pitch; pose(0, 5) = yaw;
-                // std::cout << "lastOdom: " << pose << std::endl;
-                // pcl::getTranslationAndEulerAngles(guessPose, x, y, z, roll, pitch, yaw);
-                // pose(0, 0) = x; pose(0, 1) = y; pose(0, 2) = z; pose(0, 3) = roll; pose(0, 4) = pitch; pose(0, 5) = yaw;
-                // std::cout << "align pose: " << pose << std::endl;
+
                 if (previousWheelOdom_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
                     guessPose = Eigen::Isometry3d::Identity();
                     deltaOdomPose = Eigen::Isometry3d(Eigen::Matrix4d::Zero());
@@ -422,7 +385,7 @@ void System::inputStereoImage(const double _time, const cv::Mat & _imageLeft, co
             signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose, globalWheelPose);
         } else {
             // Error no odom, use pure stereo.
-            std::cout << "Error: Strategy is stereo + wheel, but there is no wheel odom recieved." << std::endl;  
+            LOG_ERROR << "Error: Strategy is stereo + wheel, but there is no wheel odom recieved.";  
             if (!velocityGuess_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && !(previousTimeStamp_ == 0.0)) {
                 guessPose = getGuessPose(velocityGuess_, _time - previousTimeStamp_);
             } else {
@@ -440,7 +403,7 @@ void System::inputWheelOdometry(const double _time, const Eigen::Isometry3d & _p
         boost::lock_guard<boost::mutex> lock(mutexWheelOdometryBuf_);
         wheelOdometryBuf_.emplace_back(_time, _pose, _velocity);
     } else {
-        std::cout << "System no need for wheel Odometry, please check prameters." << std::endl;
+        LOG_WARN << "System no need for wheel Odometry, please check prameters.";
     }
 }
 
@@ -455,7 +418,6 @@ bool System::outputOdometryInfo(double & _stamp, Eigen::Isometry3d & _pose, Trac
         return true;
     }
     return false;
-
 }
 
 }   // namespace

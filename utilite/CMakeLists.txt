@@ -1,5 +1,6 @@
 set(SRC_FILES
     src/Conversion.cpp
+    src/Log.cpp
     src/Math.cpp
     src/ProcessInfo.cpp
     src/Timer.cpp
@@ -15,3 +16,6 @@ include_directories(
 )
 
 add_library(VISFS_utilite ${SRC_FILES})
+target_link_libraries(VISFS_utilite
+    ${Boost_LIBRARIES}
+)

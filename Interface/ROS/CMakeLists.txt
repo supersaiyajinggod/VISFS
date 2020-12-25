@@ -48,6 +48,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Boost 1.65 REQUIRED COMPONENTS
     system
+    log
     # thread
     # unit_test_framework
 )
@@ -80,9 +81,11 @@ link_directories(
     ${LIB_DIR}
 )
 
+add_definitions(-DBOOST_LOG_DYN_LINK)
+
 add_library(VISFSInterfaceROS src/InterfaceROS.cpp)
 target_link_libraries(VISFSInterfaceROS
-    # ${Boost_LIBRARIES}
+    ${Boost_LIBRARIES}
     ${OpenCV_LIBRARIES}
     ${PCL_LIBRARIES}
     ${catkin_LIBRARIES}

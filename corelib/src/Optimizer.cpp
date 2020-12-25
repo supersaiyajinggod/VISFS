@@ -2,6 +2,7 @@
 #include "OptimizeTypeDefine.h"
 #include "Stl.h"
 #include "Math.h"
+#include "Log.h"
 
 #include <g2o/config.h>
 #include <g2o/core/sparse_optimizer.h>
@@ -108,8 +109,6 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 					//Tc1c2 = Tcr * Tr1r2 * Trc
 					Eigen::Isometry3d Tc1c2 = Tri.inverse()*transfrom*Tri;
 					Eigen::Isometry3d Tc2c1 = Tc1c2.inverse();
-					// std::cout << "Tc2c1:\n" << Tc2c1.matrix() << std::endl;
-					// std::cout << "Tc1c2:\n" << Tc1c2.matrix() << std::endl;
 					g2o::EdgeSE3Expmap * e = new g2o::EdgeSE3Expmap();
 					g2o::VertexSE3Expmap * v1 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(fromId));
 					g2o::VertexSE3Expmap * v2 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(toId));
@@ -120,7 +119,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 
 					if (!optimizer.addEdge(e)) {
 						delete e;
-						std::cout << "Optimizer: Failed adding constraint between " << fromId << " and " << toId << ", skipping." << std::endl;
+						LOG_WARN << "Optimizer: Failed adding constraint between " << fromId << " and " << toId << ", skipping.";
 						return optimizedPoses;
 					}
 				}
@@ -214,12 +213,12 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 			double chi2 = optimizer.activeRobustChi2();
 			// std::cout << "iteration " << i << ": " << (int)optimizer.vertices().size() << " nodes, " << (int)optimizer.edges().size() << " edges" << " chi2: " << chi2 << std::endl;
 			if (std::isnan(chi2)) {
-				std::cout << "Optimization generated NANs, aborting optimization!" << std::endl;
+				LOG_ERROR << "Optimization generated NANs, aborting optimization!";
 				return optimizedPoses;
 			}
 
 			if (i > 0 && (chi2 > 1000000000000.0 || !std::isfinite(chi2))) {
-				std::cout << "g2o: Large optimization error detected, aborting optimization!" << std::endl;
+				LOG_ERROR << "g2o: Large optimization error detected, aborting optimization!";
 				return optimizedPoses;
 			}
 
@@ -248,7 +247,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 				}
 
 				if (_outliers.size() > _wordReferences.size()/2) {
-					std::cout << "g2o: Large outliers detect, _outliers.size(): " << _outliers.size() << std::endl;
+					LOG_WARN << "g2o: Large outliers detect, _outliers.size(): " << _outliers.size();
 					return optimizedPoses;
 				}
 
@@ -261,7 +260,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 
 		// Optimize end.
 		if (optimizer.activeRobustChi2() > 1000000000000.0) {
-			std::cout << "g2o: Large optimization error detected, aborting optimization!" << std::endl;
+			LOG_ERROR << "g2o: Large optimization error detected, aborting optimization!";
 			return optimizedPoses;
 		}
 
@@ -277,13 +276,13 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 					const GeometricCamera & cameraModel = *_cameraModels.front();
 					t = t * cameraModel.getTansformImageToRobot().inverse();
 					if (t.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
-						std::cout << "Optimized pose " << iter->first << " is null." << std::endl;
+						LOG_ERROR << "Optimized pose " << iter->first << " is null.";
 						optimizedPoses.clear();
 						return optimizedPoses;
 					}
 					optimizedPoses.emplace(iter->first, t);
 				} else {
-					std::cout << "Vertex (pose) " << iter->first << " not found!" << std::endl;
+					LOG_ERROR << "Vertex (pose) " << iter->first << " not found!";
 				}
 			}
 		}
@@ -303,7 +302,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 	} else if (_poses.size() == 1 || iterations_ <= 0) {
 		optimizedPoses = _poses;
 	} else {
-		std::cout << "This method should be called at least with 1 pose!" << std::endl;
+		LOG_ERROR << "This method should be called at least with 1 pose!";
 	}
 
 	return optimizedPoses;
@@ -376,8 +375,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 					//Tc1c2 = Tcr * Tr1r2 * Trc
 					Eigen::Isometry3d Tc1c2 = Tri.inverse()*transfrom*Tri;
 					Eigen::Isometry3d Tc2c1 = Tc1c2.inverse();
-					// std::cout << "Tc2c1:\n" << Tc2c1.matrix() << std::endl;
-					// std::cout << "Tc1c2:\n" << Tc1c2.matrix() << std::endl;
+
 					g2o::EdgeSE3Expmap * e = new g2o::EdgeSE3Expmap();
 					g2o::VertexSE3Expmap * v1 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(fromId));
 					g2o::VertexSE3Expmap * v2 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(toId));
@@ -388,7 +386,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 
 					if (!optimizer.addEdge(e)) {
 						delete e;
-						std::cout << "Optimizer: Failed adding constraint between " << fromId << " and " << toId << ", skipping." << std::endl;
+						LOG_ERROR << "Optimizer: Failed adding constraint between " << fromId << " and " << toId << ", skipping.";
 						return optimizedPoses;
 					}
 				}
@@ -480,12 +478,12 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		optimizer.computeActiveErrors();
 		double chi2 = optimizer.activeRobustChi2();
 		if (std::isnan(chi2)) {
-			std::cout << "Optimization generated NANs, aborting optimization!" << std::endl;
+			LOG_ERROR << "Optimization generated NANs, aborting optimization!";
 			return optimizedPoses;
 		}
 
 		if (chi2 > 1000000000000.0 || !std::isfinite(chi2)) {
-			std::cout << "g2o: Large optimization error detected, aborting optimization!" << std::endl;
+			LOG_ERROR << "g2o: Large optimization error detected, aborting optimization!";
 			return optimizedPoses;
 		}
 
@@ -514,7 +512,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 			// }
 		}
 
-		// std::cout << "Optimizer: _outliers.size(): " << _outliers.size() << std::endl;
+		LOG_DEBUG << "Optimizer: find outliers: " << _outliers.size();
 
 		// Update poses
 		for (auto iter = _poses.begin(); iter != _poses.end(); ++iter) {
@@ -528,13 +526,13 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 					const GeometricCamera & cameraModel = *_cameraModels.front();
 					t = t * cameraModel.getTansformImageToRobot().inverse();
 					if (t.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
-						std::cout << "Optimized pose " << iter->first << " is null." << std::endl;
+						LOG_WARN << "Optimized pose " << iter->first << " is null.";
 						optimizedPoses.clear();
 						return optimizedPoses;
 					}
 					optimizedPoses.emplace(iter->first, t);
 				} else {
-					std::cout << "Vertex (pose) " << iter->first << " not found!" << std::endl;
+					LOG_WARN << "Vertex (pose) " << iter->first << " not found!";
 				}
 			}
 		}
@@ -557,7 +555,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 	} else if (_poses.size() == 1 || iterations_ <= 0) {
 		optimizedPoses = _poses;
 	} else {
-		std::cout << "This method should be called at least with 1 pose!" << std::endl;
+		LOG_ERROR << "This method should be called at least with 1 pose!";
 	}
 
 	return optimizedPoses;

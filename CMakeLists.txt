@@ -61,8 +61,12 @@ find_package(OpenCV REQUIRED)
 find_package(PCL 1.7 REQUIRED REQUIRED)
 find_package(G2O REQUIRED)
 
+find_package(Boost 1.65 REQUIRED COMPONENTS
+   log
+)
+
 message(STATUS "--------------------------------------------")
-message(STATUS "Info :")
+message(STATUS "  Info :")
 message(STATUS "  Version : ${RTABMAP_VERSION}")
 message(STATUS "  CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "  CMAKE_BUILD_TYPE =     ${CMAKE_BUILD_TYPE}")

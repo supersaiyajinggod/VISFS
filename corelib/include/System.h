@@ -13,6 +13,9 @@
 #include "Estimator.h"
 #include "Monitor.h"
 #include "CameraModels/PinholeModel.h"
+#include "Log.h"
+
+class Logger;
 
 namespace VISFS {
 
@@ -87,6 +90,11 @@ private:
     boost::thread * threadEstimator_;
     Monitor * monitor_;
     boost::thread * threadMonitor_;
+
+    Logger * logger_;
+    int logLevel_;
+	bool console_;
+	std::string logFolder_;
 
     boost::shared_ptr<GeometricCamera> cameraLeft_;
     boost::shared_ptr<GeometricCamera> cameraRight_;

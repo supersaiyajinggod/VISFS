@@ -1,5 +1,6 @@
 #include "Parameters.h"
 #include "Conversion.h"
+#include "Log.h"
 
 namespace VISFS {
 
@@ -20,7 +21,7 @@ std::string Parameters::getType(const std::string & _paramKey) {
     if (iter != parametersType_.end()) {
         type = iter->second;
     } else {
-        std::cout << "Parameters " << _paramKey << " doesn't exist!" << std::endl;
+        LOG_WARN << "Parameters " << _paramKey << " doesn't exist!";
     }
     return type;
 }
@@ -31,7 +32,7 @@ std::string Parameters::getDescription(const std::string & _paramKey) {
     if (iter != descriptions_.end()) {
         description = iter->second;
     } else {
-        std::cout << "Parameters " << _paramKey << " doesn't exist!" << std::endl;
+        LOG_WARN << "Parameters " << _paramKey << " doesn't exist!";
     }
     return description;
 }

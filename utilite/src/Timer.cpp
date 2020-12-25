@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "Timer.h"
+#include "Log.h"
 
 
 UTimer::UTimer() {
@@ -32,7 +33,7 @@ boost::posix_time::millisec_posix_time_system_config::time_duration_type UTimer:
 boost::posix_time::millisec_posix_time_system_config::time_duration_type UTimer::elapsed(const std::string & _string) {
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     boost::posix_time::millisec_posix_time_system_config::time_duration_type duration = now - timeStart_;
-    std::cout << _string << "  " << duration << std::endl;
+    LOG_INFO << _string << "  " << duration;
     return duration;    
 }
 

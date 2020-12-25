@@ -6,6 +6,7 @@
 #include "Stl.h"
 #include "Math.h"
 #include "Timer.h"
+#include "Log.h"
 
 namespace VISFS {
 
@@ -69,7 +70,7 @@ void Tracker::threadProcess() {
             if (estimator_) {
                 estimator_->inputSignature(signature);
             } else {
-                std::cout << "[Error]: Estimator not set!" << std::endl;
+                LOG_FATAL << "Estimator not set!";
             }
 
             lastSignature_ = signature;
@@ -165,7 +166,7 @@ void Tracker::pretreatment(Signature & _fromSignature, const std::set<std::size_
 
 void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
     if (_fromSignature.empty() || _toSignature.empty()) {
-        std::cout << "[Error]: The from signature or the to signature is empty."  << std::endl;
+        LOG_ERROR << "The from signature or the to signature is empty.";
         return;
     }
 
@@ -196,7 +197,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
     if (kptsFrom.size() == _fromSignature.getWords3d().size()) {
         kptsFrom3D = uValues(_fromSignature.getWords3d());
     } else {
-        std::cout << "Generate the kptsFrom3D new calculate.  kptsFrom.size(): " << kptsFrom.size() << " ,_fromSignature.getWords3d().size(): " << _fromSignature.getWords3d().size() << std::endl;
+        LOG_WARN << "Generate the kptsFrom3D new calculate.  kptsFrom.size(): " << kptsFrom.size() << " ,_fromSignature.getWords3d().size(): " << _fromSignature.getWords3d().size();
         if (trackingMethod_ == STEREO) {
             // opticalFlow fromSignatrue right image to match corners.
             std::vector<unsigned char> status;
@@ -214,7 +215,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
             // _fromSignature.setKeyPointMatchesImageRight(kptsFromRight);
             // _fromSignature.setLeftRightPairStatus(status);
             // generate3DPoints
-            std::cout << "From signature, cornersFrom size: " << kptsFrom.size() << " , cornersFromRight: " << kptsFromRight.size() << " , status: " << status.size() << std::endl;
+            LOG_INFO << "From signature, cornersFrom size: " << kptsFrom.size() << " , cornersFromRight: " << kptsFromRight.size() << " , status: " << status.size();
             kptsFrom3D = generateKeyPoints3DStereo(kptsFrom, kptsFromRight, _fromSignature.getCameraModelLeft(), _fromSignature.getCameraModelRight(), minDepth_, maxDepth_);
             assert(orignalWordsFromIds.size() == kptsFrom3D.size());
             std::map<std::size_t, cv::Point3f> words3d;
@@ -224,7 +225,7 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
             _fromSignature.setWords3d(words3d);
 
         } else if (trackingMethod_ == RGBD) {
-            std::cout << "TODO" << std::endl;
+            LOG_FATAL << "TODO";
         }
     }
     assert(kptsFrom.size() == kptsFrom3D.size());
@@ -300,8 +301,8 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
     cornersToKept.resize(index);
 
     if (kptsTo.size() < minInliers_) {
-        std::cout << "After Reduce feature vector, kptsTo.size(): " << kptsTo.size() << std::endl;
-        std::cout << "Lost tracking !!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+        LOG_ERROR << "After Reduce feature vector, kptsTo.size(): " << kptsTo.size();
+        LOG_ERROR << "Lost tracking !!!!!!!!!!!!!!!!!!!!!!!!";
         return;
     }
     
@@ -398,7 +399,9 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
 
     assert(wordsTo.size() == wordsToRight.size());
     assert(wordsTo.size() == wordsTo3D.size());
-    // std::cout << "Valiable words count: " << wordsTo.size() << std::endl;
+
+    LOG_DEBUG << "After tracker pocess, valiable words count: " << wordsTo.size();
+
     _toSignature.setKeyPointMatchesImageRight(wordsToRight);
     _toSignature.setWords(wordsTo);
     _toSignature.setWords3d(wordsTo3D);

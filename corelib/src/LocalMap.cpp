@@ -2,6 +2,7 @@
 #include "MultiviewGeometry.h"
 #include "Stl.h"
 #include "Timer.h"
+#include "Log.h"
 
 namespace VISFS {
 
@@ -27,7 +28,7 @@ LocalMap::LocalMap(const ParametersMap & _parameters) :
 
 bool LocalMap::insertSignature(const Signature & _signature, const Eigen::Vector3d & _translation) {
     if (_signature.getWords3d().size() == 0 || _signature.empty()) {
-        std::cout << "Error: LocalMap::insertSignature failed." << std::endl;
+        LOG_ERROR << "Error: LocalMap::insertSignature failed.";
         return false;
     }
 
@@ -64,7 +65,6 @@ bool LocalMap::insertSignature(const Signature & _signature, const Eigen::Vector
             if (jter->second.getObservedTimes() > (localMapSize_)) {
                 if (jter->second.getFeatureState() == Feature::eFeatureState::NEW_ADDED) {
                     jter->second.setFeatureState(Feature::eFeatureState::STABLE);
-                    // std::cout << "featrue:" << jter->first << " become stable here!!!!!!!" << std::endl; 
                 }
             }
         }
@@ -105,6 +105,9 @@ bool LocalMap::insertSignature(const Signature & _signature, const Eigen::Vector
             // std::cout << "Keyframe condition satisfied!. parallax!, compute result= " << parallaxCount_ << ", minParallax_= " << minParallax_ << "." << std::endl; 
         }
     }
+
+    LOG_DEBUG << "Signature: " << _signature.getId() << " is " << (keySignature_? "key" : "none key") << " signature.";
+
     return true;
 }
 
@@ -113,7 +116,7 @@ void LocalMap::removeSignature() {
         if (signatures_.size() <= localMapSize_) {
             return;
         } else {
-            std::cout << "Error: size of local Map is : " << signatures_.size() << " . Which is larger than " << localMapSize_ + 1 << std::endl;
+            LOG_FATAL << "Error: size of local Map is : " << signatures_.size() << " . Which is larger than " << localMapSize_ + 1;
             assert(signatures_.size() < localMapSize_ + 2);
         }
     } else {
@@ -142,7 +145,7 @@ void LocalMap::removeSignature() {
         signatures_.erase(rmId);
     }
 
-    // std::cout << "After remove, size of local Map is : " << signatures_.size() << " feature size: " << features_.size() << std::endl;
+    LOG_DEBUG << "After remove, size of local Map is : " << signatures_.size() << " feature size: " << features_.size();
 }
 
 void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _poses, std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _point3d, std::set<std::size_t> & _outliers) {
@@ -150,7 +153,7 @@ void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _
         if (!(signatures_.find(pose.first) == signatures_.end())) {
             signatures_.at(pose.first).setPose(pose.second);
         } else {
-            std::cout << "[Error]: LocalMap, update signature pose unexist." << std::endl;
+            LOG_FATAL << "[Error]: LocalMap, update signature pose unexist.";
         }
     }
     for (auto featurePose : _point3d) {
@@ -161,7 +164,7 @@ void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _
                 feature.setFeaturePose(pose);
             }
         } else {
-            std::cout << "[Error]: LocalMap, update feature pose unexist." << std::endl;
+            LOG_FATAL << "[Error]: LocalMap, update feature pose unexist.";
         }
     }
     int i = 0;
@@ -175,7 +178,7 @@ void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _
                 _outliers.erase(outlier);
             }
         } else {
-            std::cout << "[Error]: LocalMap, cull out unexist feature." << std::endl;
+            LOG_ERROR << "[Error]: LocalMap, cull out unexist feature.";
         }
     }
 }

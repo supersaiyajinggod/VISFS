@@ -7,6 +7,7 @@
 #include "Math.h"
 #include "Stl.h"
 #include "Conversion.h"
+#include "Log.h"
 
 namespace VISFS {
 
@@ -185,11 +186,11 @@ Eigen::Isometry3d estimateMotion3DTo2D(
                     assert(uIsFinite(medianErrSqr));
                     _covariance(cv::Range(3, 6), cv::Range(3, 6)) *= medianErrSqr;
                 } else {
-                    std::cout << "Not enough close points to compute covariance!" << std::endl;
+                    LOG_ERROR << "Not enough close points to compute covariance!";
                 }
 
                 if (static_cast<float>(oi) / static_cast<float>(inliers.size()) < 0.2f) {
-                    std::cout << "A very low number of inliers have valid depth " << oi << " / " << inliers.size() << " , the transform returned may be wrong!" << std::endl;
+                    LOG_WARN << "A very low number of inliers have valid depth " << oi << " / " << inliers.size() << " , the transform returned may be wrong!";
                 }
             } else {
                 // compute variance, which is the rms of reprojection errors
@@ -300,10 +301,10 @@ void solvePnPRansac(
 
         // If the new set of inliers is empty, we didn't do a good job refineing.
         if (static_cast<int>(prevInliers.size()) < _minInliersCount) {
-            std::cout << "RANSAC refineModel: Refinement failed: got very low inliers " << prevInliers.size() << "." << std::endl;
+            LOG_ERROR << "RANSAC refineModel: Refinement failed: got very low inliers " << prevInliers.size() << ".";
         }
         if (oscillating) {
-            std::cout << "RANSAC refineModel: Detected oscillations in the model refinement." << std::endl;
+            LOG_WARN << "RANSAC refineModel: Detected oscillations in the model refinement.";
         }
 
         std::swap(_inliers, newInliers);
@@ -320,11 +321,11 @@ cv::Mat computeCovariance(
 	const std::vector<std::size_t> & _inliers) {
         cv::Mat covariance = cv::Mat::eye(6, 6, CV_64FC1);
     if (_inliers.empty()) {
-        std::cout << "[Error]: The corresponding index is empty. return huge covariance." << std::endl;
+        LOG_ERROR << "The corresponding index is empty. return huge covariance.";
         covariance *= 9999.0;
         return covariance;
     } else if (_pointsInCoor1.empty() || _pointsInCoor2.empty()) {
-        std::cout << "[Error]: The input points are empty. return huge covariance." << std::endl;
+        LOG_ERROR << "The input points are empty. return huge covariance.";
         covariance *= 9999.0;
         return covariance;
     } else {
@@ -358,11 +359,11 @@ cv::Mat computeCovariance(
             assert(uIsFinite(medianErrSqr));
             covariance(cv::Range(3, 6), cv::Range(3, 6)) *= medianErrSqr;
         } else {
-            std::cout << "Not enough close points to compute covariance!" << std::endl;
+            LOG_WARN << "Not enough close points to compute covariance!";
         }
 
         if (static_cast<float>(oi) / static_cast<float>(_inliers.size()) < 0.2f) {
-            std::cout << "A very low number of inliers have valid depth " << oi << " / " << _inliers.size() << " , the transform returned may be wrong!" << std::endl;
+            LOG_WARN << "A very low number of inliers have valid depth " << oi << " / " << _inliers.size() << " , the transform returned may be wrong!";
         }
     }
 }

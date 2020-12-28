@@ -2,6 +2,7 @@
 #include <pcl/common/common.h>
 #include "System.h"
 #include "Conversion.h"
+#include "Timer.h"
 
 namespace VISFS {
 
@@ -23,7 +24,8 @@ System::System(const ParametersMap & _parameters) :
     previousTimeStamp_(0.0),
     monitorSwitch_(Parameters::defaultSystemMonitor()),
     sensorStrategy_(Parameters::defaultSystemSensorStrategy()),
-    wheelFreq_(Parameters::defaultSystemWheelOdometryFreq()) {
+    wheelFreq_(Parameters::defaultSystemWheelOdometryFreq()),
+	claheSwitch_(Parameters::defaultSystemCLAHE()) {
     
     Parameters::parse(_parameters, Parameters::kSystemMonitor(), monitorSwitch_);
     Parameters::parse(_parameters, Parameters::kSystemSensorStrategy(), sensorStrategy_);
@@ -31,6 +33,7 @@ System::System(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kSystemLogLevel(), logLevel_);
     Parameters::parse(_parameters, Parameters::kSystemLogOnConsole(), console_);
     Parameters::parse(_parameters, Parameters::kSystemLogFolder(), logFolder_);
+	Parameters::parse(_parameters, Parameters::kSystemCLAHE(), claheSwitch_);
 
     logger_ = new Logger(static_cast<SeverityLevel>(logLevel_), console_, logFolder_);
     // Logger lg(static_cast<SeverityLevel>(logLevel_), console_, logFolder_);
@@ -335,6 +338,14 @@ void System::inputStereoImage(const double _time, const cv::Mat & _imageLeft, co
     Eigen::Isometry3d globalWheelPose;
     Eigen::Isometry3d deltaOdomPose;
     Signature signature;
+
+    UTimer timer;
+	if (claheSwitch_) {
+		cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
+		clahe->apply(_imageLeft, _imageLeft);
+		clahe->apply(_imageRight, _imageRight);
+	}
+	timer.elapsed("CLAHE");
 
     if (sensorStrategy_ == 0 || sensorStrategy_ == 1) {     // stereo or rgbd
         if (!velocityGuess_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && !(previousTimeStamp_ == 0.0)) {

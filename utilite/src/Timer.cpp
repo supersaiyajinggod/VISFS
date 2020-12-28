@@ -33,7 +33,7 @@ boost::posix_time::millisec_posix_time_system_config::time_duration_type UTimer:
 boost::posix_time::millisec_posix_time_system_config::time_duration_type UTimer::elapsed(const std::string & _string) {
     boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
     boost::posix_time::millisec_posix_time_system_config::time_duration_type duration = now - timeStart_;
-    LOG_INFO << _string << "  " << duration;
+    LOG_DEBUG << _string << "  " << duration;
     return duration;    
 }
 

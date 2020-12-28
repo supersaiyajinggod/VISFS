@@ -48,6 +48,7 @@
 
     <param name="System/SensorStrategy"             type="int"          value="2"/>
     <param name="System/Monitor"                    type="bool"         value="true"/>
+    <param name="System/CLAHE"                      type="bool"         value="true"/>
     <param name="System/LogLevel"                   type="int"          value="1"/>
     <param name="System/LogOnConsole"               type="bool"         value="true"/>
     <param name="System/LogFolder"                  type="string"       value="/home/eddy/Documents/VISFS/logs"/>

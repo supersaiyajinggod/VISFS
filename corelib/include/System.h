@@ -111,6 +111,7 @@ private:
     bool monitorSwitch_;
     int sensorStrategy_;    // 0 Stereo, 1 rgbd, 2 stereo + wheel.
     int wheelFreq_;
+	bool claheSwitch_;		// Contrast Limited Adaptive Histogram Equalization
 
 };
 

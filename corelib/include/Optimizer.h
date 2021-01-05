@@ -55,7 +55,7 @@ public:
      * \param[in] cameraModels The camera models.
      * \param[in&out] points3D The points in space.
      * \param[in] wordReferences The points3D in images.
-     * \param[out] outliers The outliers of points3D.
+     * \param[out] outliers The outliers of the pair of local point and signature.
      * \author eddy
      */
     std::map<std::size_t, Eigen::Isometry3d> localOptimize(
@@ -65,7 +65,7 @@ public:
         const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
         std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points3D,   // map<feature id, <feature global pose, fixed?>>
         const std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _wordReferences,
-        std::set<std::size_t> & _outliers
+        std::vector<std::tuple<std::size_t, std::size_t>> & _outliers   //  tuple<feature id, signature id>
     );
 
 private:

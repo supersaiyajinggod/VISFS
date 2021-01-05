@@ -49,7 +49,7 @@
     <param name="System/SensorStrategy"             type="int"          value="2"/>
     <param name="System/Monitor"                    type="bool"         value="true"/>
     <param name="System/CLAHE"                      type="bool"         value="true"/>
-    <param name="System/LogLevel"                   type="int"          value="1"/>
+    <param name="System/LogLevel"                   type="int"          value="0"/>
     <param name="System/LogOnConsole"               type="bool"         value="true"/>
     <param name="System/LogFolder"                  type="string"       value="/home/eddy/Documents/VISFS/logs"/>
     <param name="Tracker/MaxFeatures"               type="int"          value="150"/>
@@ -67,8 +67,8 @@
     <param name="Estimator/Force3DoF"               type="bool"         value="true"/>
     <param name="Optimizer/Solver"                  type="int"          value="3"/>
     <param name="Optimizer/PixelVariance"           type="double"       value="1.5"/>
-    <param name="Optimizer/Iterations"              type="int"          value="30"/>
-    <param name="Optimizer/RobustKernelDelta"       type="double"       value="3.0"/>
+    <param name="Optimizer/Iterations"              type="int"          value="20"/>
+    <param name="Optimizer/RobustKernelDelta"       type="double"       value="8.0"/>
 </node>
 
 <node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="--Rtabmap/ImagesAlreadyRectified false --delete_db_on_start">

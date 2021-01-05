@@ -148,7 +148,7 @@ void LocalMap::removeSignature() {
     LOG_DEBUG << "After remove, size of local Map is : " << signatures_.size() << " feature size: " << features_.size();
 }
 
-void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _poses, std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _point3d, std::set<std::size_t> & _outliers) {
+void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _poses, const std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _point3d, const std::vector<std::tuple<std::size_t, std::size_t>> & _outliers, std::set<std::size_t> & _errorVertex) {
     for (auto pose : _poses) {
         if (!(signatures_.find(pose.first) == signatures_.end())) {
             signatures_.at(pose.first).setPose(pose.second);
@@ -169,16 +169,39 @@ void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _
     }
     int i = 0;
     for (auto outlier : _outliers) {
-        if (!(features_.find(outlier) == features_.end())) {
-            const Feature & feature = features_.at(outlier);
-            if (feature.getObservedTimes() >= 2) {
-                features_.erase(outlier);
-                i++;
+        // if (!(features_.find(outlier) == features_.end())) {
+        //     const Feature & feature = features_.at(outlier);
+        //     if (feature.getObservedTimes() >= 2) {
+        //         features_.erase(outlier);
+        //         i++;
+        //     } else {
+        //         _outliers.erase(outlier);
+        //     }
+        // } else {
+        //     LOG_ERROR << "[Error]: LocalMap, cull out unexist feature.";
+        // }
+        auto [featureId, signatureId] = outlier;
+        auto iter = features_.find(featureId);
+        if (iter != features_.end()) {
+            auto jter = iter->second.featureStatusInSigantures_.find(signatureId);
+            if (jter != iter->second.featureStatusInSigantures_.end()) {
+                iter->second.featureStatusInSigantures_.erase(jter);
+                // Discuss which vertex should be blocked.
+                bool c1 = iter->second.getObservedTimes() == 0;
+                bool c2 = iter->second.getFeatureState() == Feature::NEW_ADDED;
+                auto secondSignature = signatures_.rbegin();
+                secondSignature++;
+                secondSignature++;
+                bool c3 = iter->second.getStartSignatureId() < secondSignature->second.getId();
+                if (c1 && c2 && c3) {
+                    _errorVertex.emplace(featureId);
+                    LOG_INFO << "Cull out feature: " << featureId << ". With condition c1: " << c1 << " c2: " << c2 << " c3: " << c3; 
+                }
             } else {
-                _outliers.erase(outlier);
+                LOG_ERROR << "LocalMap: find feature but not find observation matches signature.";
             }
         } else {
-            LOG_ERROR << "[Error]: LocalMap, cull out unexist feature.";
+            LOG_ERROR << "LocalMap: No such feature in localmap";
         }
     }
 }

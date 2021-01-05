@@ -316,7 +316,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
     const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
     std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points3D,
     const std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _wordReferences,
-    std::set<std::size_t> & _outliers) {
+    std::vector<std::tuple<std::size_t, std::size_t>> & _outliers) {
 
 	assert(_cameraModels.size() >= 1);
 	std::map<std::size_t, Eigen::Isometry3d> optimizedPoses;
@@ -470,9 +470,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		optimizer.initializeOptimization();
 		assert(optimizer.verifyInformationMatrices());
 
-		optimizer.optimize(iterations_);
+		optimizer.optimize(iterations_/2);
 
-		// Optimize end.
+		// Early stop condition
 		int outliersCount = 0;
 		int outliersCountFar = 0;
 		optimizer.computeActiveErrors();
@@ -483,37 +483,48 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		}
 
 		if (chi2 > 1000000000000.0 || !std::isfinite(chi2)) {
-			LOG_ERROR << "g2o: Large optimization error detected, aborting optimization!";
+			LOG_ERROR << "g2o: Large optimization error detected in the first time optimize, aborting optimization!";
 			return optimizedPoses;
 		}
 
+		// Optimize again
 		if (robustKernelDelta_ > 0.0) {
 			for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
 				if ((*iter)->level() == 0 && (*iter)->chi2() > (*iter)->robustKernel()->delta()) {
+					(*iter)->setLevel(1);
 					++outliersCount;
 					double d = 0.0;
 
 					if (dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter) != 0) {
 						d = dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[0] - dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[2];
 					}
-					// std::cout << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((EdgeStereoSE3PointXYZ*)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2() << std::endl;
 
-					_outliers.insert((*iter)->vertex(0)->id() - stepVertexId);
+					LOG_DEBUG << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((g2o::EdgeStereoSE3ProjectXYZ *)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2();
+
+					// _outliers.insert((*iter)->vertex(0)->id() - stepVertexId);
+					_outliers.emplace_back(std::make_tuple<std::size_t, std::size_t>((*iter)->vertex(0)->id() - stepVertexId, (*iter)->vertex(1)->id()));
 
 					if (d < 5.0) {
 						++outliersCountFar;
 					}
 				}
 			}
+			LOG_DEBUG << "Optimizer: find outliers: " << _outliers.size();
 
-			// if (_outliers.size() > _wordReferences.size()/2) {
-			// 	std::cout << "g2o: Large outliers detect, _outliers.size(): " << _outliers.size() << std::endl;
-			// 	return optimizedPoses;
-			// }
+			if (_outliers.size() > _wordReferences.size()/2) {
+				LOG_WARN << "Optimizer: large outliers detect, outliers size: " << _outliers.size();
+				// return optimizedPoses;
+			}
+
+			optimizer.initializeOptimization(0);
+			optimizer.optimize(iterations_/2);
 		}
 
-		LOG_DEBUG << "Optimizer: find outliers: " << _outliers.size();
-
+		// Optimize end.
+		if (optimizer.activeRobustChi2() > 1000000000000.0) {
+			LOG_ERROR << "g2o: Large optimization error detected in the second time optimize, aborting optimization!";
+			return optimizedPoses;
+		}
 		// Update poses
 		for (auto iter = _poses.begin(); iter != _poses.end(); ++iter) {
 			if (iter->first > 0) {

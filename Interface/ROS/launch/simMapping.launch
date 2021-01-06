@@ -71,7 +71,7 @@
     <param name="Optimizer/RobustKernelDelta"       type="double"       value="8.0"/>
 </node>
 
-<node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="--Rtabmap/ImagesAlreadyRectified false --delete_db_on_start">
+<node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="--Rtabmap/ImagesAlreadyRectified true --delete_db_on_start">
     <param name="subscribe_stereo"      type="bool"     value="false"/>
     <param name="subscribe_depth"       type="bool"     value="false"/>
     <param name="subscribe_scan"        type="bool"     value="true"/>

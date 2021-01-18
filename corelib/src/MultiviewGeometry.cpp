@@ -16,12 +16,12 @@ bool isFinite(const cv::Point3f & _point) {
 }
 
 cv::Point3f transformPoint(const cv::Point3f & _points, const GeometricCamera & _model) {
-    Eigen::Vector4d tempPoint = _model.getTansformImageToRobot() * Eigen::Vector4d(_points.x, _points.y, _points.z, 1.0);
+    Eigen::Vector4d tempPoint = _model.getTansformImageToRobot() * Eigen::Vector4d(_points.x, _points.y, _points.z, 1.f);
     return cv::Point3f(tempPoint[0], tempPoint[1], tempPoint[2]);
 }
 
 cv::Point3f transformPoint(const cv::Point3f & _points, const Eigen::Isometry3d & _transform) {
-    Eigen::Vector4d tempPoint = _transform * Eigen::Vector4d(_points.x, _points.y, _points.z, 1.0);
+    Eigen::Vector4d tempPoint = _transform * Eigen::Vector4d(_points.x, _points.y, _points.z, 1.f);
     return cv::Point3f(tempPoint[0], tempPoint[1], tempPoint[2]);
 }
 

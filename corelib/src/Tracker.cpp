@@ -325,6 +325,8 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
     if (backUpCornersCnt > 0 && !_toSignature.getImage().empty()) {
         cv::Mat mask = getMask(wordsTo, imageTo.rows, imageTo.cols, _fromSignature.getBlockedWords());
         cv::goodFeaturesToTrack(imageTo, newCornersInTo, backUpCornersCnt, qualityLevel_, minFeatureDistance_, mask);
+        // cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 20, 0.01);
+        // cv::cornerSubPix(imageTo, newCornersInTo, cv::Size(5, 5), cv::Size(-1, -1), criteria);
         std::map<std::size_t, cv::KeyPoint> wordsToNewExtract;
         for (auto corner : newCornersInTo) {
             cv::KeyPoint tempKpts(corner, 1.f);
@@ -401,6 +403,13 @@ void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
     assert(wordsTo.size() == wordsTo3D.size());
 
     LOG_DEBUG << "After tracker pocess, valiable words count: " << wordsTo.size();
+
+    // Debug info
+    // wordsToIds = uKeys(wordsTo);
+    // LOG_INFO << "Feature infomation in signature: " << _toSignature.getId() << ", before optimization.";
+    // for (auto wordId : wordsToIds) {
+    //     LOG_INFO << "word id : " << wordId << ", local pose is : " << wordsTo3D.at(wordId) << ", coor in left image: " << wordsTo.at(wordId).pt << ", coor in right: " << wordsToRight.at(wordId).pt; 
+    // }
 
     _toSignature.setKeyPointMatchesImageRight(wordsToRight);
     _toSignature.setWords(wordsTo);

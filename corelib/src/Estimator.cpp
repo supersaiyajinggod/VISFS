@@ -108,7 +108,7 @@ void Estimator::process(Signature & _signature) {
     TrackInfo & trackInfo = _signature.getTrackInfo();
     EstimateInfo & estimateInfo = _signature.getEstimateInfo();
     Eigen::Isometry3d transform;
-    Eigen::Isometry3d currentGlobalPose(Eigen::Matrix4d::Zero());
+    Eigen::Isometry3d currentGlobalPose(Eigen::Isometry3d::Identity());
     cv::Mat covariance = cv::Mat::eye(6, 6, CV_64FC1);
     std::vector<std::size_t> matches;
     std::vector<std::size_t> inliers;
@@ -209,20 +209,29 @@ void Estimator::process(Signature & _signature) {
                 // std::cout << "transform: \n" << transform.matrix() << std::endl;
             }
 
+            // {
+            //     for (auto pose : optimizedPoses) {
+            //         LOG_INFO << "signature id is : " << pose.first << ", after optimization translation is: " << pose.second.translation().transpose();
+            //     }
+            // }
+
             // covariance = computeCovariance(words3dFrom, _signature.getWords3d(), transform, inliers);
             covariance = cv::Mat::eye(6, 6, CV_64FC1);
             // std::cout << "covariance: \n" << covariance << std::endl;
 
-            if(monitor_){}
             // Update 3d points in signture.
-            // TODO: cull ba outliers.
-            // std::map<std::size_t, cv::Point3f> cpyWords3dTo = _signature.getWords3d();
-            // Eigen::Isometry3d invT = currentGlobalPose.inverse();
-            // for (auto iter = points3D.begin(); iter != points3D.end(); ++iter) {
-            //     if (cpyWords3dTo.find(iter->first) != cpyWords3dTo.end())
-            //         cpyWords3dTo.find(iter->first)->second = transformPoint(cv::Point3f(iter->second[0], iter->second[1], iter->second[2]), invT);
-            // }
-            // _signature.setWords3d(cpyWords3dTo);
+            if (monitor_) {
+                std::map<std::size_t, cv::Point3f> cpyWords3dTo = _signature.getWords3d();
+                Eigen::Isometry3d invT = currentGlobalPose.inverse();
+                for (auto iter = points3D.begin(); iter != points3D.end(); ++iter) {
+                    if (cpyWords3dTo.find(iter->first) != cpyWords3dTo.end()) {
+                        auto [point, fixSymbol] = iter->second;
+                        cpyWords3dTo.find(iter->first)->second = transformPoint(cv::Point3f(point.x(), point.y(), point.z()), invT);
+                        // LOG_INFO << "After optimization, feaure " << iter->first << " has local pose with " << cpyWords3dTo.find(iter->first)->second;
+                    }
+                }
+                _signature.setWords3d(cpyWords3dTo);
+            }
                       
         } else {
             currentGlobalPose = pose_ * transform;
@@ -230,7 +239,7 @@ void Estimator::process(Signature & _signature) {
         }
     }
 
-    if (_signature.getWheelOdomPose(wheelOdom)) {
+    if (_signature.getWheelOdomPose(wheelOdom) && localMap_->checkMapAvaliable()) {
         //TODO: calculate pnp to do some abnormal process work.
         // std::cout << "wheelOdom pose: \n" << wheelOdom.matrix() << std::endl;
         Eigen::Isometry3d deltaWheelOdom = previousWheelOdom_.inverse() * wheelOdom;

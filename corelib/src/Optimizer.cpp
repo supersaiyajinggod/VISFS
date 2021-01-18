@@ -499,9 +499,8 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 						d = dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[0] - dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[2];
 					}
 
-					LOG_DEBUG << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((g2o::EdgeStereoSE3ProjectXYZ *)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2();
+					// LOG_INFO << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((g2o::EdgeStereoSE3ProjectXYZ *)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2();
 
-					// _outliers.insert((*iter)->vertex(0)->id() - stepVertexId);
 					_outliers.emplace_back(std::make_tuple<std::size_t, std::size_t>((*iter)->vertex(0)->id() - stepVertexId, (*iter)->vertex(1)->id()));
 
 					if (d < 5.0) {
@@ -555,7 +554,10 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 			v = dynamic_cast<const g2o::VertexSBAPointXYZ *>(optimizer.vertex(stepVertexId + id));
 			if (v) {
 				auto [oldPose, fixSymbol] = iter->second;
-				iter->second = std::make_tuple(v->estimate(), fixSymbol);
+				const g2o::Vector3 & newPose = v->estimate();
+				if (uNorm(oldPose[0]-newPose[0], oldPose[1]-newPose[1], oldPose[2]-newPose[2]) < 5.0) {
+					iter->second = std::make_tuple(v->estimate(), fixSymbol);
+				}
 			} else {
 				auto [oldPose, fixSymbol] = iter->second;
 				oldPose[0] = oldPose[1] = oldPose[2] = std::numeric_limits<float>::quiet_NaN();

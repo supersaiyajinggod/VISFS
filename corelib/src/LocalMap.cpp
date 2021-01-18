@@ -195,7 +195,7 @@ void LocalMap::updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _
                 bool c3 = iter->second.getStartSignatureId() < secondSignature->second.getId();
                 if (c1 && c2 && c3) {
                     _errorVertex.emplace(featureId);
-                    LOG_INFO << "Cull out feature: " << featureId << ". With condition c1: " << c1 << " c2: " << c2 << " c3: " << c3; 
+                    LOG_DEBUG << "Cull out feature: " << featureId << ". With condition c1: " << c1 << " c2: " << c2 << " c3: " << c3; 
                 }
             } else {
                 LOG_ERROR << "LocalMap: find feature but not find observation matches signature.";
@@ -211,7 +211,7 @@ bool LocalMap::getSignaturePoses(std::map<std::size_t, Eigen::Isometry3d> & _pos
         _poses.emplace(iter->first, iter->second.getPose());
     }
     // for (auto pose : _poses) {
-    //     std::cout << "signature id in _pose: " << pose.first << std::endl;
+    //     LOG_INFO << "signature id in _pose: " << pose.first << ", with pose:\n" << pose.second.matrix();
     // }
     return true;
 }
@@ -219,11 +219,11 @@ bool LocalMap::getSignaturePoses(std::map<std::size_t, Eigen::Isometry3d> & _pos
 bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links) {
     Eigen::Matrix<double, 6, 6> covariance, information;
     covariance.setZero();
-    covariance(0, 0) = 0.00001;
-    covariance(1, 1) = 0.00001;
-    covariance(2, 2) = 0.00001;
-    covariance(3, 3) = 0.00001;
-    covariance(4, 4) = 0.00001;
+    covariance(0, 0) = 0.0001;
+    covariance(1, 1) = 0.0001;
+    covariance(2, 2) = 0.0001;
+    covariance(3, 3) = 0.0001;
+    covariance(4, 4) = 0.0001;
     covariance(5, 5) = 0.0001;
     information = covariance.inverse();
 

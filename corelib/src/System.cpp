@@ -183,7 +183,7 @@ Eigen::Isometry3d System::velMotionModel(const double _deltaTime, const Eigen::I
 }
 
 Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d> & _lastOdom, const std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d> & _secondLastOdom) const {
-    Eigen::Isometry3d alignPose(Eigen::Matrix4d::Zero());
+    Eigen::Isometry3d alignPose(Eigen::Isometry3d::Identity());
     auto [lastTime, lastPose, lastVelocity] = _lastOdom;
     auto [secondLastTime, secondLastPose, secondLastVelocity] = _secondLastOdom;
     const int timeInterval = 1000 / wheelFreq_;   // millisecond
@@ -215,7 +215,7 @@ Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<
 
 Eigen::Isometry3d System::predictAlignPose(const double _time, const std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d> & _lastOdom, const std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d> & _secondLastOdom,
                                                         const std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d> & _thridLastOdom) const {
-    Eigen::Isometry3d alignPose(Eigen::Matrix4d::Zero());
+    Eigen::Isometry3d alignPose(Eigen::Isometry3d::Identity());
     auto [lastTime, lastPose, lastVelocity] = _lastOdom;
     auto [secondLastTime, secondLastPose, secondLastVelocity] = _secondLastOdom;
     auto [thirdLastTime, thirdLastPose, thirdLastVelocity] = _thridLastOdom;

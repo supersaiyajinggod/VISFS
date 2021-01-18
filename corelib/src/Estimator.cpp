@@ -108,7 +108,7 @@ void Estimator::process(Signature & _signature) {
     TrackInfo & trackInfo = _signature.getTrackInfo();
     EstimateInfo & estimateInfo = _signature.getEstimateInfo();
     Eigen::Isometry3d transform;
-    Eigen::Isometry3d currentGlobalPose(Eigen::Matrix4d::Zero());
+    Eigen::Isometry3d currentGlobalPose(Eigen::Isometry3d::Identity());
     cv::Mat covariance = cv::Mat::eye(6, 6, CV_64FC1);
     std::vector<std::size_t> matches;
     std::vector<std::size_t> inliers;
@@ -149,13 +149,14 @@ void Estimator::process(Signature & _signature) {
     // If motion of guess > threshold, do bundle adjustment.
     std::map<std::size_t, Eigen::Isometry3d> optimizedPoses;
     std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> points3D;
-    std::set<std::size_t> sbaOutliers;
+    std::map<std::size_t, std::map<std::size_t, FeatureBA>> wordReferences;
+    std::vector<std::tuple<std::size_t, std::size_t>> sbaOutliers;
     if (!transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && inliers.size() > minInliers_ && localMap_->checkMapAvaliable()) {
         std::map<std::size_t, Eigen::Isometry3d> poses;
         std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> links;
         std::vector<boost::shared_ptr<GeometricCamera>> cameraModels;
-        std::map<std::size_t, std::map<std::size_t, FeatureBA>> wordReferences;
-        std::set<std::size_t> outliers;
+        // std::map<std::size_t, std::map<std::size_t, FeatureBA>> wordReferences;
+        // std::set<std::size_t> outliers;
 
         localMap_->getSignaturePoses(poses);
         if (sensorStrategy_ == 2)
@@ -170,13 +171,6 @@ void Estimator::process(Signature & _signature) {
 
         std::size_t rootId = poses.rbegin()->first - 1;
         optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
-        // std::cout << "sbaOutliers.size(): " << sbaOutliers.size() << std::endl;
-        // for (auto iter = poses.begin(); iter != poses.end(); ++ iter) {
-        //     std::cout << "poses id : " << iter->first << "  pose is :\n" << iter->second.matrix() << std::endl;
-        // }
-        // for (auto iter = optimizedPoses.begin(); iter != optimizedPoses.end(); ++ iter) {
-        //     std::cout << "optimizedPoses id : " << iter->first << "  pose is :\n" << iter->second.matrix() << std::endl;
-        // }
 
         // if (force3Dof_) {
         //     for (auto pose : optimizedPoses) {
@@ -192,14 +186,16 @@ void Estimator::process(Signature & _signature) {
         if (optimizedPoses.size() == 6 && !optimizedPoses.begin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))
                 && !optimizedPoses.rbegin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
             if (sbaOutliers.size()) {
-                std::vector<std::size_t> newInliers(inliers.size());
-                std::size_t oi = 0;
-                for (std::size_t i = 0; i < inliers.size(); ++i) {
-                    if (sbaOutliers.find(inliers[i]) == sbaOutliers.end()) {
-                        newInliers[oi++] = inliers[i];
+                std::vector<std::size_t> newInliers;
+                std::set<std::size_t> inliersSet(inliers.begin(), inliers.end());
+
+                for (auto outlierEdge : sbaOutliers) {
+                    auto [featureId, signatureId] = outlierEdge;
+                    if (inliersSet.find(featureId) != inliersSet.end()) {
+                        inliersSet.erase(featureId);
                     }
                 }
-                newInliers.resize(oi);
+                newInliers.assign(inliersSet.begin(), inliersSet.end());
                 inliers = newInliers;
             }
             if (static_cast<int>(inliers.size()) < minInliers_) {
@@ -213,19 +209,29 @@ void Estimator::process(Signature & _signature) {
                 // std::cout << "transform: \n" << transform.matrix() << std::endl;
             }
 
+            // {
+            //     for (auto pose : optimizedPoses) {
+            //         LOG_INFO << "signature id is : " << pose.first << ", after optimization translation is: " << pose.second.translation().transpose();
+            //     }
+            // }
+
             // covariance = computeCovariance(words3dFrom, _signature.getWords3d(), transform, inliers);
             covariance = cv::Mat::eye(6, 6, CV_64FC1);
             // std::cout << "covariance: \n" << covariance << std::endl;
 
             // Update 3d points in signture.
-            // TODO: cull ba outliers.
-            // std::map<std::size_t, cv::Point3f> cpyWords3dTo = _signature.getWords3d();
-            // Eigen::Isometry3d invT = currentGlobalPose.inverse();
-            // for (auto iter = points3D.begin(); iter != points3D.end(); ++iter) {
-            //     if (cpyWords3dTo.find(iter->first) != cpyWords3dTo.end())
-            //         cpyWords3dTo.find(iter->first)->second = transformPoint(cv::Point3f(iter->second[0], iter->second[1], iter->second[2]), invT);
-            // }
-            // _signature.setWords3d(cpyWords3dTo);
+            if (monitor_) {
+                std::map<std::size_t, cv::Point3f> cpyWords3dTo = _signature.getWords3d();
+                Eigen::Isometry3d invT = currentGlobalPose.inverse();
+                for (auto iter = points3D.begin(); iter != points3D.end(); ++iter) {
+                    if (cpyWords3dTo.find(iter->first) != cpyWords3dTo.end()) {
+                        auto [point, fixSymbol] = iter->second;
+                        cpyWords3dTo.find(iter->first)->second = transformPoint(cv::Point3f(point.x(), point.y(), point.z()), invT);
+                        // LOG_INFO << "After optimization, feaure " << iter->first << " has local pose with " << cpyWords3dTo.find(iter->first)->second;
+                    }
+                }
+                _signature.setWords3d(cpyWords3dTo);
+            }
                       
         } else {
             currentGlobalPose = pose_ * transform;
@@ -233,7 +239,7 @@ void Estimator::process(Signature & _signature) {
         }
     }
 
-    if (_signature.getWheelOdomPose(wheelOdom)) {
+    if (_signature.getWheelOdomPose(wheelOdom) && localMap_->checkMapAvaliable()) {
         //TODO: calculate pnp to do some abnormal process work.
         // std::cout << "wheelOdom pose: \n" << wheelOdom.matrix() << std::endl;
         Eigen::Isometry3d deltaWheelOdom = previousWheelOdom_.inverse() * wheelOdom;
@@ -285,10 +291,11 @@ void Estimator::process(Signature & _signature) {
         LOG_DEBUG << "CurrentGlobalPose After force 3d: \n" << currentGlobalPose.matrix() << std::endl;
     }
 
+    std::set<std::size_t> errorFeature;
     if (optimizedPoses.size() == 6 && !optimizedPoses.begin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))
             && !optimizedPoses.rbegin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
         optimizedPoses.rbegin()->second = currentGlobalPose;
-        localMap_->updateLocalMap(optimizedPoses, points3D, sbaOutliers);
+        localMap_->updateLocalMap(optimizedPoses, points3D, sbaOutliers, errorFeature);
     }
 
     trackInfo.inliersIDs = inliers;
@@ -325,12 +332,20 @@ void Estimator::process(Signature & _signature) {
     previousStamps_ = _signature.getTimeStamp();
     // std::cout << "visual pose: \n" << _signature.getPose().matrix() << std::endl;
     localMap_->removeSignature();
-    outputOutliers(sbaOutliers);
+    outputOutliers(errorFeature);
 
     std::map<std::size_t, cv::KeyPoint> blockWords;
-    for (auto outlier : sbaOutliers) {
+    for (auto outlier : errorFeature) {
         if (wordsTo.find(outlier) != wordsTo.end()) {
             blockWords.emplace(outlier, wordsTo.at(outlier));
+        }
+        
+        std::map<std::size_t, std::map<std::size_t, FeatureBA>>::const_iterator it = wordReferences.find(outlier);
+        if (it != wordReferences.end()) {
+            LOG_DEBUG << "Outlier id : " << it->first;
+            for (auto eachFrame : it->second) {
+                LOG_DEBUG << "Outlier : " << it->first << " in signature: " << eachFrame.first << ", depth is: " << eachFrame.second.depth;
+            }
         }
     }
     _signature.setBlockedWords(blockWords);

@@ -64,10 +64,11 @@ public:
 	/** \brief Update the local map.
       * \param[in] poses The pair of signature id and signature global pose.  
       * \param[in] point3d The pair of feature id and feature global pose. 
-      * \param[in] outliers The outliers in the local map, calculated by local optimize.
+      * \param[in] outliers The error edge in the local map, calculated by local optimize.
+      * \param[out] errorVertex The error vertex in local map, which should be blocked.
 	  * \author eddy
       */      
-    void updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _poses, std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _point3d, std::set<std::size_t> & _outliers);
+    void updateLocalMap(const std::map<std::size_t, Eigen::Isometry3d> & _poses, const std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _point3d, const std::vector<std::tuple<std::size_t, std::size_t>> & _outliers, std::set<std::size_t> & _errorVertex);
 
 	/** \brief Get all signature's poses.
       * \param[out] poses The signature vertexs of local map graph. With map strcture: <signature id, signature pose>.  

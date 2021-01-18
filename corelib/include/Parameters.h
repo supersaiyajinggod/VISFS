@@ -140,6 +140,7 @@ class Parameters {
     VISFS_PARAM(System,     SensorStrategy,         int,    0,      "System use sensors type: 0 stereo, 1 rgbd, 2 stereo + wheel.");
     VISFS_PARAM(System,     WheelOdometryFreq,      int,    100,    "The frequence of wheel odometry.");
     VISFS_PARAM(System,     Monitor,                bool,   false,  "Monitor");
+	VISFS_PARAM(System,		CLAHE,					bool,	false,	"CLAHE");
     VISFS_PARAM(System,     LogLevel,               int,    1,      "0-DEBUG, 1-INFO, 2-WARN, 3-ERROR, 5-FATAL");
     VISFS_PARAM(System,     LogOnConsole,           bool,   false,  "Display the log on the console.");
     VISFS_PARAM_STR(System, LogFolder,              "~/.VISFS/logs","");

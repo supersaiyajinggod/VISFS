@@ -1,6 +1,7 @@
 set(SRC_FILES
     src/CameraModels/PinholeModel.cpp
     src/Estimator.cpp
+    src/Extrapolator.cpp
     src/LocalMap.cpp
     src/Monitor.cpp
     src/MultiviewGeometry.cpp

@@ -177,6 +177,13 @@ class Parameters {
     VISFS_PARAM(Optimizer,  PixelVariance,          double,  1.5,   "Pixel variance used for bundle adjustment.");
     VISFS_PARAM(Optimizer,  RobustKernelDelta,      double,  8.0,   "Robust kernel delta used for bundle adjustment (0 means don't use robust kernel). Observations with chi2 over this threshold will be ignored in the second optimization pass.");
 
+    VISFS_PARAM(Map,        2dNumRangeData,         int,    90,     "The limits used to insert range data into new submaps, when reaches the limits, the new map will use to scan-match, the old need to destory.");
+    VISFS_PARAM(Map,        2dGridType,             int,     0,     "0=Probability map.");
+    VISFS_PARAM(Map,        2dResolution,           double, 0.05,   "The resolution of the map");
+    VISFS_PARAM(Map,        2dInsertFreeSpace,      bool,   true,   "Automatic insert the free status between origin and hit.");
+    VISFS_PARAM(Map,        2dHitProbability,       double, 0.55,   "");
+    VISFS_PARAM(Map,        2dMissProbability,      double, 0.49,   "");
+
 public:
     virtual ~Parameters();
 

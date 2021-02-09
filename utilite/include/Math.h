@@ -5,7 +5,26 @@
 #include <vector>
 #include <list>
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
+
+/** \brief Clamps 'value' to be in the range [_min, _max]
+  * \param[in] value The number.
+  * \param[in] min The minimums number can achieve.
+  * \param[in] max The maximums number can achieve.
+  * \return The clamped number.
+  * \author eddy
+  */
+template <typename T>
+T uClamp(const T _value, const T _min, const T _max) {
+  if (_value > _max) {
+    return _max;
+  }
+  if (_value < _min) {
+    return _min;
+  }
+  return _value;
+}
 
 /** \brief Return true if the number is finite.
   * \param[in] value The number. 

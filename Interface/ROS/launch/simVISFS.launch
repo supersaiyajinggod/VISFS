@@ -15,6 +15,7 @@
 
 <node pkg="VISFS" type="VISFSInterfaceROSNode" name="VISFSInterfaceROSNode" output="screen" launch-prefix="gdb -ex run --args">
     <remap from="wheel_odom"            to="/odom"/>
+    <remap from="laser_scan"            to="/scan"/>
     <remap from="left/image"            to="/camera/infra1/image_rect_raw"/> 
     <remap from="right/image"           to="/camera/infra2/image_rect_raw"/>
 	<remap from="left/info"				to="/camera/infra1/camera_info"/>
@@ -23,6 +24,7 @@
 	<param name="right/image_transport" type="string"       value="compressed"/>
 
     <param name="subscribe_wheel_odom"  type="bool"         value="true"/>
+    <param name="subscribe_laser_scan"  type="bool"         value="true"/>
     <param name="approx_sync"           type="bool"			value="true"/>
 	<param name="queue_size"			type="int"			value="10"/>
     <param name="camera_frame_id"       type="string"       value="camera_link"/>
@@ -34,7 +36,12 @@
 
     <param name="System/SensorStrategy"             type="int"          value="2"/>
     <param name="System/Monitor"                    type="bool"         value="true"/>
-    <param name="Tracker/MaxFeatures"               type="int"          value="80"/>
+    <param name="System/CLAHE"                      type="bool"         value="true"/>
+    <param name="System/LogLevel"                   type="int"          value="1"/>
+    <param name="System/LogOnConsole"               type="bool"         value="true"/>
+    <param name="System/LogFolder"                  type="string"       value="/home/eddy/Documents/VISFS/logs"/>
+    <param name="Tracker/MaxFeatures"               type="int"          value="120"/>
+    <param name="Tracker/QualityLevel"              type="double"       value="0.05"/>
     <param name="Tracker/MinDistance"               type="int"          value="40"/>
     <param name="Tracker/FlowBack"                  type="bool"         value="true"/>
     <param name="Tracker/CullByFundationMatrix"     type="bool"         value="false"/>
@@ -49,8 +56,8 @@
     <param name="Estimator/Force3DoF"               type="bool"         value="true"/>
     <param name="Optimizer/Solver"                  type="int"          value="3"/>
     <param name="Optimizer/PixelVariance"           type="double"       value="1.5"/>
-    <param name="Optimizer/Iterations"              type="int"          value="30"/>
-    <param name="Optimizer/RobustKernelDelta"       type="double"       value="3.0"/>
+    <param name="Optimizer/Iterations"              type="int"          value="20"/>
+    <param name="Optimizer/RobustKernelDelta"       type="double"       value="10.0"/>
 </node>
 
 </launch>

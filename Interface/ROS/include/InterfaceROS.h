@@ -8,6 +8,7 @@
 #include <image_geometry/pinhole_camera_model.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
@@ -36,38 +37,11 @@ public:
 private:
     void parametersInit(ros::NodeHandle & _pnh);
 
-    inline double timestampFromROS(const ros::Time & _stamp) { return double(_stamp.sec) + double(_stamp.nsec)/1000000000.0; }
-
-    void transformToGeometryMsg(const Eigen::Isometry3d & _transform, geometry_msgs::Transform & _msg);
-
-    void odomInfoToROS(const VISFS::TrackInfo & _trackInfo, const VISFS::EstimateInfo & _estimateInfo, rtabmap_ros::OdomInfo & _msg);
-
-    cv::KeyPoint keypointFromROS(const rtabmap_ros::KeyPoint & _msg);
-
-    void keypointToROS(const cv::KeyPoint & _kpt, rtabmap_ros::KeyPoint & _msg);
-
-    void keypointsToROS(const std::vector<cv::KeyPoint> & _kpts, std::vector<rtabmap_ros::KeyPoint> & _msg);
-
-    void point2fToROS(const cv::Point2f & _kpt, rtabmap_ros::Point2f & _msg);
-
-    void points2fToROS(const std::vector<cv::Point2f> & _kpts, std::vector<rtabmap_ros::Point2f> & _msg);
-
-    void point3fToROS(const cv::Point3f & _kpt, rtabmap_ros::Point3f & _msg);
-
-    void points3fToROS(const std::vector<cv::Point3f> & _kpts, std::vector<rtabmap_ros::Point3f> & _msg);
-
-    std::vector<cv::KeyPoint> keypointsFromROS(const std::vector<rtabmap_ros::KeyPoint> & _msg);
-
-    cv::Mat getImageFromROS(const sensor_msgs::ImageConstPtr & _imageMsg);
-
     void wheelOdometryCallback(const nav_msgs::Odometry & _wheelOdom);
 
-	/** \brief Callback for process stereo image coming. 
-      * \param[in] Left image. 
-      * \param[in] Right iamge.
-	  * \author eddy
-      */
     void stereoImageCallback(const sensor_msgs::ImageConstPtr & _leftImage, const sensor_msgs::ImageConstPtr & _rightImage);
+
+    void stereoImageScanCallback(const sensor_msgs::ImageConstPtr & _leftImage, const sensor_msgs::ImageConstPtr & _rightImage, const sensor_msgs::LaserScanConstPtr & _laserScan);
 
 	/** \brief Dynamic reconfigure callback. 
       * \param[in] Dynamic reconfigure object. 
@@ -78,6 +52,7 @@ private:
 
     ros::NodeHandle pnh_;
     ros::Subscriber wheelOdomSub_;
+    message_filters::Subscriber<sensor_msgs::LaserScan> laserScanSub_;
     image_transport::SubscriberFilter imageLeftSub_;
     image_transport::SubscriberFilter imageRightSub_;
     image_geometry::PinholeCameraModel cameraModelLeft_;
@@ -85,9 +60,14 @@ private:
     tf::TransformListener tfListener_;
     // dynamic_reconfigure::Server<xxxxx> srv_;
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> ImageApproxSyncPolicy;
-    message_filters::Synchronizer<ImageApproxSyncPolicy> * approxSync_;
+    message_filters::Synchronizer<ImageApproxSyncPolicy> * imageApproxSync_;
     typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image> ImageExactSyncPolicy;
-    message_filters::Synchronizer<ImageExactSyncPolicy> * exactSync_;
+    message_filters::Synchronizer<ImageExactSyncPolicy> * imageExactSync_;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::LaserScan> ImageScanApproxSyncPolicy;
+    message_filters::Synchronizer<ImageScanApproxSyncPolicy> * imageScanApproxSync_;
+    typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::LaserScan> ImageScanExactSyncPolicy;
+    message_filters::Synchronizer<ImageScanExactSyncPolicy> * imageScanExactSync_;;
+
 	ros::Publisher odomPub_;
 	ros::Publisher odomInfoPub_;
     tf2_ros::TransformBroadcaster tfBroadcaster_;

@@ -19,6 +19,8 @@ Extrapolator::Extrapolator(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kSystemWheelOdometryFreq(), wheelFreq_);
 }
 
+Extrapolator::~Extrapolator() {}
+
 void Extrapolator::addOdometry(const std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d> & _odom) {
     boost::lock_guard<boost::mutex> lock(mutexWheelOdometryBuf_);
     wheelOdometryBuf_.emplace_back(_odom);

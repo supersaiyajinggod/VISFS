@@ -1,6 +1,7 @@
 #include <pcl/common/common.h>
 #include <pcl/common/eigen.h>
 #include "InterfaceROS.h"
+#include "MsgConversion.h"
 #include "Stl.h"
 
 VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pnh) :
@@ -13,10 +14,12 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     publishTf_(false) {
 
     bool subscribeWheelOdometry = false;
+    bool subscribeLaserScan = false;
     bool approxSync = true;
     double baseLine = 0.05;
 
     _pnh.param("subscribe_wheel_odom", subscribeWheelOdometry, subscribeWheelOdometry);
+    _pnh.param("subscribe_laser_scan", subscribeLaserScan, subscribeLaserScan);
     _pnh.param("approx_sync", approxSync, approxSync);
     _pnh.param("queue_size", queueSize_, queueSize_);
     _pnh.param("camera_frame_id", cameraFrameId_, cameraFrameId_);
@@ -26,6 +29,7 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     _pnh.param("base_line", baseLine, baseLine);
 
     ROS_INFO("VISFS_ROS_INTERFACE: subscribe_wheel_odom     = %s", subscribeWheelOdometry ? "true" : "false");
+    ROS_INFO("VISFS_ROS_INTERFACE: subscribe_laser_scan     = %s", subscribeLaserScan ? "true" : "false");
     ROS_INFO("VISFS_ROS_INTERFACE: approx_sync              = %s", approxSync ? "true" : "false");
     ROS_INFO("VISFS_ROS_INTERFACE: queue_size               = %d", queueSize_);
     ROS_INFO("VISFS_ROS_INTERFACE: camera_frame_id          = %s", cameraFrameId_.c_str());
@@ -66,20 +70,32 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
         wheelOdomSub_ = _n.subscribe("wheel_odom", 10, &VISFSInterfaceROS::wheelOdometryCallback, this, ros::TransportHints().tcpNoDelay());
     }
 
-    // Get stereo image and register callback 
     image_transport::ImageTransport leftIT(leftImageNodeHandle);
     image_transport::ImageTransport rightIT(rightImageNodeHandle);
     image_transport::TransportHints hintsLeft("raw", ros::TransportHints(), leftImagePrivateNodeHandle);
     image_transport::TransportHints hintsRight("raw", ros::TransportHints(), rightImagePrivateNodeHandle);
     imageLeftSub_.subscribe(leftIT, leftImageNodeHandle.resolveName("image"), 1, hintsLeft);
     imageRightSub_.subscribe(rightIT, rightImageNodeHandle.resolveName("image"), 1, hintsRight);
-    if (approxSync) {
-        approxSync_ = new message_filters::Synchronizer<ImageApproxSyncPolicy>(ImageApproxSyncPolicy(queueSize_), imageLeftSub_, imageRightSub_);
-        approxSync_->registerCallback(boost::bind(&VISFSInterfaceROS::stereoImageCallback, this, _1, _2));
+    if (subscribeLaserScan) {
+        laserScanSub_.subscribe(_n, "laser_scan", queueSize_);
+        if (approxSync) {
+            imageScanApproxSync_ = new message_filters::Synchronizer<ImageScanApproxSyncPolicy>(ImageScanApproxSyncPolicy(queueSize_), imageLeftSub_, imageRightSub_, laserScanSub_);
+            imageScanApproxSync_->registerCallback(boost::bind(&VISFSInterfaceROS::stereoImageScanCallback, this, _1, _2, _3));
+        } else {
+            imageScanExactSync_ = new message_filters::Synchronizer<ImageScanExactSyncPolicy>(ImageScanExactSyncPolicy(queueSize_), imageLeftSub_, imageRightSub_, laserScanSub_);
+            imageScanExactSync_->registerCallback(boost::bind(&VISFSInterfaceROS::stereoImageScanCallback, this, _1, _2, _3));
+        }
     } else {
-        exactSync_ = new message_filters::Synchronizer<ImageExactSyncPolicy>(ImageExactSyncPolicy(queueSize_), imageLeftSub_, imageLeftSub_);
-        exactSync_->registerCallback(boost::bind(&VISFSInterfaceROS::stereoImageCallback, this, _1, _2));
+        if (approxSync) {
+            imageApproxSync_ = new message_filters::Synchronizer<ImageApproxSyncPolicy>(ImageApproxSyncPolicy(queueSize_), imageLeftSub_, imageRightSub_);
+            imageApproxSync_->registerCallback(boost::bind(&VISFSInterfaceROS::stereoImageCallback, this, _1, _2));
+        } else {
+            imageExactSync_ = new message_filters::Synchronizer<ImageExactSyncPolicy>(ImageExactSyncPolicy(queueSize_), imageLeftSub_, imageLeftSub_);
+            imageExactSync_->registerCallback(boost::bind(&VISFSInterfaceROS::stereoImageCallback, this, _1, _2));
+        }
     }
+
+
 	odomPub_ = pnh_.advertise<nav_msgs::Odometry>("odom", 1);
 	odomInfoPub_ = pnh_.advertise<rtabmap_ros::OdomInfo>("odom_info", 1);
 
@@ -158,6 +174,33 @@ void VISFSInterfaceROS::stereoImageCallback(const sensor_msgs::ImageConstPtr & _
     }
 
     system_->inputStereoImage(_leftImage->header.stamp.toSec(), cvImageLeft, cvImageRight);
+}
+
+void VISFSInterfaceROS::stereoImageScanCallback(const sensor_msgs::ImageConstPtr & _leftImage, const sensor_msgs::ImageConstPtr & _rightImage, const sensor_msgs::LaserScanConstPtr & _laserScan) {
+    std::cout << "right!!!!!!!!" << std::endl;
+    std::cout.precision(18);
+    std::cout << "time image: " << _leftImage->header.stamp.toSec() << std::endl;
+    std::cout << "time scan: " << _laserScan->header.stamp.toSec() << std::endl;
+
+    cv::Mat cvImageLeft, cvImageRight;
+    try {
+        cvImageLeft = getImageFromROS(_leftImage);
+    } catch (cv_bridge::Exception & e) {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+
+    cv_bridge::CvImageConstPtr cvPtrRight;
+    try {
+        cvImageRight = getImageFromROS(_rightImage);
+    } catch (cv_bridge::Exception & e) {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+
+    VISFS::Sensor::TimedPointCloudWithIntensities pointCloud;
+    laserScanToTimedPointCloudWithIntensities(_laserScan, pointCloud);
+    
 }
 
 void VISFSInterfaceROS::publishMessage() {
@@ -258,154 +301,4 @@ void VISFSInterfaceROS::publishMessage() {
         }
     }
  
-}
-
-void VISFSInterfaceROS::transformToGeometryMsg(const Eigen::Isometry3d & _transform, geometry_msgs::Transform & _msg) {
-	if (!_transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
-        tf::StampedTransform transformMsg;
-		tf::transformEigenToTF(_transform, transformMsg);
-		// make sure the quaternion is normalized
-        tf::Quaternion q = transformMsg.getRotation();
-        q.normalize();
-        transformMsg.setRotation(q);
-        transformTFToMsg(transformMsg, _msg);
-	} else {
-		_msg = geometry_msgs::Transform();
-	}
-}
-
-void VISFSInterfaceROS::odomInfoToROS(const VISFS::TrackInfo & _trackInfo, const VISFS::EstimateInfo & _estimateInfo, rtabmap_ros::OdomInfo & _msg) {
-    _msg.lost = _estimateInfo.lost;
-    _msg.matches = _trackInfo.matches;
-    if (_estimateInfo.covariance.type() == CV_64FC1 && _estimateInfo.covariance.cols == 6 && _estimateInfo.covariance.rows == 6) {
-        memcpy(_msg.covariance.data(), _estimateInfo.covariance.data, 36*sizeof(double));
-    }
-    _msg.features = _estimateInfo.features;
-    _msg.localMapSize = _estimateInfo.localMapSize;
-    _msg.localKeyFrames = _estimateInfo.localKeyFrames;
-    _msg.localBundleOutliers = _estimateInfo.localBundleOutliers;
-    _msg.localBundleConstraints = _estimateInfo.localBundleConstraints;
-    _msg.localBundleTime = _estimateInfo.localBundleTime;
-    _msg.timeEstimation = _estimateInfo.timeEstimation;
-    _msg.timeParticleFiltering = _estimateInfo.timeParticleFiltering;
-    _msg.stamp = _estimateInfo.stamp;
-    _msg.interval = _estimateInfo.interval;
-    _msg.distanceTravelled = _estimateInfo.distanceTravelled;
-    _msg.memoryUsage = _estimateInfo.memoryUsage;
-
-    std::vector<std::size_t> keys = uKeys(_estimateInfo.words);
-    std::vector<int> wordsId(keys.size());
-    for (std::size_t i = 0; i < keys.size(); ++i) {
-        wordsId[i] = keys[i];
-    }
-    _msg.wordsKeys = wordsId;
-    keypointsToROS(uValues(_estimateInfo.words), _msg.wordsValues);
-
-    std::vector<int> matchesIDs;
-    std::vector<int> inliersIDs;
-    matchesIDs.resize(_trackInfo.matchesIDs.size());
-    inliersIDs.resize(_trackInfo.inliersIDs.size());
-    for (std::size_t i = 0; i < _trackInfo.matchesIDs.size(); ++i) {
-        matchesIDs[i] = _trackInfo.matchesIDs[i];
-    }
-    for (std::size_t i = 0; i < _trackInfo.inliersIDs.size(); ++i) {
-        inliersIDs[i] = _trackInfo.inliersIDs[i];
-    }
-    _msg.wordMatches = matchesIDs;
-    _msg.wordInliers = inliersIDs;
-
-	points2fToROS(_estimateInfo.refCorners, _msg.refCorners);
-	points2fToROS(_estimateInfo.newCorners, _msg.newCorners);
-    std::vector<int> cornerInliers;
-    cornerInliers.resize(_estimateInfo.cornerInliers.size());
-    for (std::size_t i = 0; i < _estimateInfo.cornerInliers.size(); ++i) {
-        cornerInliers[i] = _estimateInfo.cornerInliers[i];
-    }
-    _msg.cornerInliers = cornerInliers;
-
-	transformToGeometryMsg(_estimateInfo.transform, _msg.transform);
-	transformToGeometryMsg(_estimateInfo.transformFiltered, _msg.transformFiltered);
-	transformToGeometryMsg(_estimateInfo.transformGroundTruth, _msg.transformGroundTruth);
-	transformToGeometryMsg(_estimateInfo.guessVelocity, _msg.guessVelocity);
-
-    keys = uKeys(_estimateInfo.localMap);
-    std::vector<int> localMapKeys(keys.size());
-    for (std::size_t i = 0; i < keys.size(); ++i) {
-        localMapKeys[i] = keys[i];
-    }
-    _msg.localMapKeys = localMapKeys;
-    points3fToROS(uValues(_estimateInfo.localMap), _msg.localMapValues);
-}
-
-cv::KeyPoint VISFSInterfaceROS::keypointFromROS(const rtabmap_ros::KeyPoint & _msg) {
-	return cv::KeyPoint(_msg.pt.x, _msg.pt.y, _msg.size, _msg.angle, _msg.response, _msg.octave, _msg.class_id);
-}
-
-void VISFSInterfaceROS::keypointToROS(const cv::KeyPoint & _kpt, rtabmap_ros::KeyPoint & _msg) {
-	_msg.angle = _kpt.angle;
-	_msg.class_id = _kpt.class_id;
-	_msg.octave = _kpt.octave;
-	_msg.pt.x = _kpt.pt.x;
-	_msg.pt.y = _kpt.pt.y;
-	_msg.response = _kpt.response;
-	_msg.size = _kpt.size;
-}
-
-std::vector<cv::KeyPoint> VISFSInterfaceROS::keypointsFromROS(const std::vector<rtabmap_ros::KeyPoint> & _msg) {
-	std::vector<cv::KeyPoint> v(_msg.size());
-	for (unsigned int i = 0; i < _msg.size(); ++i) {
-		v[i] = keypointFromROS(_msg[i]);
-	}
-	return v;
-}
-
-void VISFSInterfaceROS::keypointsToROS(const std::vector<cv::KeyPoint> & _kpts, std::vector<rtabmap_ros::KeyPoint> & _msg) {
-	_msg.resize(_kpts.size());
-	for (unsigned int i = 0; i < _msg.size(); ++i) {
-		keypointToROS(_kpts[i], _msg[i]);
-	}
-}
-
-void VISFSInterfaceROS::point2fToROS(const cv::Point2f & _kpt, rtabmap_ros::Point2f & _msg) {
-	_msg.x = _kpt.x;
-	_msg.y = _kpt.y;
-}
-
-void VISFSInterfaceROS::points2fToROS(const std::vector<cv::Point2f> & _kpts, std::vector<rtabmap_ros::Point2f> & _msg) {
-	_msg.resize(_kpts.size());
-	for (unsigned int i = 0; i < _msg.size(); ++i) {
-		point2fToROS(_kpts[i], _msg[i]);
-	}
-}
-
-void VISFSInterfaceROS::point3fToROS(const cv::Point3f & _kpt, rtabmap_ros::Point3f & _msg) {
-	_msg.x = _kpt.x;
-	_msg.y = _kpt.y;
-	_msg.z = _kpt.z;
-}
-
-void VISFSInterfaceROS::points3fToROS(const std::vector<cv::Point3f> & _kpts, std::vector<rtabmap_ros::Point3f> & _msg) {
-	_msg.resize(_kpts.size());
-	for (unsigned int i = 0; i < _msg.size(); ++i) {
-		point3fToROS(_kpts[i], _msg[i]);
-	}
-}
-
-cv::Mat VISFSInterfaceROS::getImageFromROS(const sensor_msgs::ImageConstPtr & _imageMsg) {
-    cv_bridge::CvImageConstPtr ptr;
-    if (_imageMsg->encoding == "8UC1") {
-        sensor_msgs::Image image;
-        image.header = _imageMsg->header;
-        image.height = _imageMsg->height;
-        image.width = _imageMsg->width;
-        image.is_bigendian = _imageMsg->is_bigendian;
-        image.step = _imageMsg->is_bigendian;
-        image.data = _imageMsg->data;
-        image.encoding = "mono8";
-        ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::MONO8);
-    } else {
-        ptr = cv_bridge::toCvCopy(_imageMsg, sensor_msgs::image_encodings::MONO8);
-    }
-    cv::Mat cvImage = ptr->image.clone();
-    return cvImage;
 }

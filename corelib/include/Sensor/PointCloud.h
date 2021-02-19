@@ -69,6 +69,13 @@ private:
 
 };
 
+using TimedPointCloud = std::vector<TimedRangefinderPoint>;
+struct TimedPointCloudWithIntensities {
+    TimedPointCloud points;
+    std::vector<float> intensities;
+    double time;
+};
+
 PointCloud trimPointCloud(const PointCloud & _pointCloud, const std::string & _flied,
     const double _intervalBegin = DBL_MIN, const double _intervalEnd = DBL_MAX);
 

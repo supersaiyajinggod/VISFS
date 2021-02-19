@@ -29,6 +29,7 @@
 
 <node pkg="VISFS" type="VISFSInterfaceROSNode" name="VISFSInterfaceROSNode" output="screen">
     <remap from="wheel_odom"            to="/odom"/>
+    <remap from="laser_scan"            to="/scan"/>
     <remap from="left/image"            to="/camera/infra1/image_rect_raw"/> 
     <remap from="right/image"           to="/camera/infra2/image_rect_raw"/>
 	<remap from="left/info"				to="/camera/infra1/camera_info"/>
@@ -37,6 +38,7 @@
 	<param name="right/image_transport" type="string"       value="compressed"/>
 
     <param name="subscribe_wheel_odom"  type="bool"         value="true"/>
+    <param name="subscribe_laser_scan"  type="bool"         value="false"/>
     <param name="approx_sync"           type="bool"			value="true"/>
 	<param name="queue_size"			type="int"			value="10"/>
     <param name="camera_frame_id"       type="string"       value="camera_link"/>

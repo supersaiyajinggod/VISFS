@@ -81,9 +81,10 @@ link_directories(
     ${LIB_DIR}
 )
 
-add_definitions(-DBOOST_LOG_DYN_LINK)
-
-add_library(VISFSInterfaceROS src/InterfaceROS.cpp)
+add_library(VISFSInterfaceROS 
+    src/InterfaceROS.cpp
+    src/MsgConversion.cpp
+)
 target_link_libraries(VISFSInterfaceROS
     ${Boost_LIBRARIES}
     ${OpenCV_LIBRARIES}

@@ -38,7 +38,7 @@
 	<param name="right/image_transport" type="string"       value="compressed"/>
 
     <param name="subscribe_wheel_odom"  type="bool"         value="true"/>
-    <param name="subscribe_laser_scan"  type="bool"         value="false"/>
+    <param name="subscribe_laser_scan"  type="bool"         value="true"/>
     <param name="approx_sync"           type="bool"			value="true"/>
 	<param name="queue_size"			type="int"			value="10"/>
     <param name="camera_frame_id"       type="string"       value="camera_link"/>

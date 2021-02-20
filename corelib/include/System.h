@@ -31,12 +31,13 @@ public:
                 const double cxr, const double cyr, const double baseline);
 
 	/** \brief Interface to put the stereo image to our system.
-      * \param[in] The time stamps of the images.  
-      * \param[in] Left image. 
-      * \param[in] Right iamge.
+      * \param[in] time The time stamps of the images.  
+      * \param[in] imageLeft Left image. 
+      * \param[in] imageRight Right image.
+      * \param[in] timedPointCloud Timed point Cloud.
 	  * \author eddy
       */    
-    void inputStereoImage(const double _time, const cv::Mat & _imageLeft, const cv::Mat & _imageRight);
+    void inputPrimarySensorData(const double _time, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const Sensor::TimedPointCloudWithIntensities & _timedPointCloud);
 
 	/** \brief Interface to put the wheel odometry to our system.
       * \param[in] The time stamps of the wheel odometry.  
@@ -67,7 +68,7 @@ private:
 	Extrapolator * extrapolator_;
 
     bool monitorSwitch_;
-    int sensorStrategy_;    // 0 Stereo, 1 rgbd, 2 stereo + wheel.
+    int sensorStrategy_;    // 0 Stereo, 1 rgbd, 2 stereo + wheel, 3 stereo + laser + wheel.
 	bool claheSwitch_;		// Contrast Limited Adaptive Histogram Equalization
 
 };

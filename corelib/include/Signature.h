@@ -9,6 +9,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "CameraModels/GeometricCamera.h"
+#include "Sensor/PointCloud.h"
 
 namespace VISFS {
 
@@ -94,6 +95,8 @@ public:
     Signature();
     Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight, const Eigen::Isometry3d & _guessPose);
     Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight, const Eigen::Isometry3d & _guessPose, const Eigen::Isometry3d & _wheelOdom);
+    Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight,
+                const Eigen::Isometry3d & _guessPose, const Eigen::Isometry3d & _wheelOdom, const Sensor::TimedPointCloudWithIntensities & _timedPointCloud);
 
     std::size_t getId() const { return id_; }
     double getTimeStamp() const { return timestamp_; }
@@ -105,6 +108,8 @@ public:
     bool getWheelOdomPose(Eigen::Isometry3d & _wheelOdom) const { _wheelOdom= wheelOdom_; return wheelOdom_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) ? false : true; }
     Eigen::Isometry3d getWheelOdomPose() const { return wheelOdom_; }
     void setWheelOdomPose(const Eigen::Isometry3d & _wheelOdom) { wheelOdom_ = _wheelOdom; }
+    const Sensor::TimedPointCloudWithIntensities & getTimedPointCloudWithIntensities() const { return timedPointCloud_; }
+
 
     const std::map<std::size_t, cv::KeyPoint> & getWords() const { return words_; }
     void setWords(const std::map<std::size_t, cv::KeyPoint> & _words) { words_ = _words; }
@@ -153,6 +158,7 @@ private:
     Eigen::Isometry3d pose_;    // signature's global pose.
     Eigen::Isometry3d deltaGuess_;  // The guess of Tk,k+1.
     Eigen::Isometry3d wheelOdom_;   // The measurement of wheel at the timestamp of this signature.
+    Sensor::TimedPointCloudWithIntensities timedPointCloud_;
 
     std::map<std::size_t, cv::KeyPoint> words_;   // all words, both covisible and new extract.
     std::map<std::size_t, cv::Point3f> words3d_;  // word in robot/base_link

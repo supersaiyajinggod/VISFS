@@ -9,7 +9,7 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/LaserScan.h>
 
-#include "System.h"
+#include "Signature.h"
 #include "Sensor/PointCloud.h"
 
 inline double timestampFromROS(const ros::Time & _stamp) { return double(_stamp.sec) + double(_stamp.nsec)/1000000000.0; }

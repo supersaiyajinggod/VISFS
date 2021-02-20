@@ -3,6 +3,7 @@
 
 #include <tuple>
 #include <vector>
+#include <list>
 #include <Eigen/Geometry>
 #include <boost/thread.hpp>
 
@@ -45,6 +46,10 @@ private:
     Eigen::Isometry3d predictAlignPose(const double _time, const std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d> & _lastOdom, const std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d> & _secondLastOdom,
                                                            const std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d> & _thridLastOdom) const;
 
+    inline bool hasAvaliableOdometry() const { return !wheelOdometryBuf_.empty() && wheelOdometryBuf_.size() > 2; }
+
+    std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> getApproximateOdometry(const double _time);
+
     Eigen::Isometry3d accMotionModel(const double _deltaTime, const bool _dirction, const Eigen::Isometry3d & _pose, const Eigen::Isometry3d & _v1, const Eigen::Isometry3d & _v2) const;
 
     Eigen::Isometry3d velMotionModel(const double _deltaTime, const Eigen::Isometry3d & _basePose, const double & _time1, const double & _time2, Eigen::Isometry3d & _pose1, const Eigen::Isometry3d & _pose2) const;
@@ -56,7 +61,7 @@ private:
 
     // data buf
     boost::mutex mutexWheelOdometryBuf_;
-    std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> wheelOdometryBuf_;  // timestamp, pose, velocity
+    std::list<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> wheelOdometryBuf_;  // timestamp, pose, velocity
 
     int sensorStrategy_;    // 0 Stereo, 1 rgbd, 2 stereo + wheel.
     int wheelFreq_;

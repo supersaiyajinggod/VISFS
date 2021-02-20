@@ -33,7 +33,7 @@ void Monitor::threadProcess() {
 }
 
 void Monitor::process(Signature & _signature) {
-    if (sensorStrategy_ == 0 || sensorStrategy_ == 2) {                 // Stereo && Stereo + wheel
+    if (sensorStrategy_ == 0 || sensorStrategy_ >= 2) {                 // Stereo && Stereo + wheel
         cv::Mat imageLeft = _signature.getImageLeft();
         cv::Mat imageRight = _signature.getImageRight();
         std::vector<cv::KeyPoint> kptsMatchesFormer = uValues(_signature.getKeyPointsMatchesFormer());

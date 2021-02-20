@@ -77,7 +77,7 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     imageLeftSub_.subscribe(leftIT, leftImageNodeHandle.resolveName("image"), 1, hintsLeft);
     imageRightSub_.subscribe(rightIT, rightImageNodeHandle.resolveName("image"), 1, hintsRight);
     if (subscribeLaserScan) {
-        laserScanSub_.subscribe(_n, "laser_scan", queueSize_);
+        laserScanSub_.subscribe(_n, "laser_scan", queueSize_, ros::TransportHints().tcpNoDelay());
         if (approxSync) {
             imageScanApproxSync_ = new message_filters::Synchronizer<ImageScanApproxSyncPolicy>(ImageScanApproxSyncPolicy(queueSize_), imageLeftSub_, imageRightSub_, laserScanSub_);
             imageScanApproxSync_->registerCallback(boost::bind(&VISFSInterfaceROS::stereoImageScanCallback, this, _1, _2, _3));
@@ -173,15 +173,11 @@ void VISFSInterfaceROS::stereoImageCallback(const sensor_msgs::ImageConstPtr & _
         return;
     }
 
-    system_->inputStereoImage(_leftImage->header.stamp.toSec(), cvImageLeft, cvImageRight);
+    VISFS::Sensor::TimedPointCloudWithIntensities pointCloud;
+    system_->inputPrimarySensorData(_leftImage->header.stamp.toSec(), cvImageLeft, cvImageRight, pointCloud);
 }
 
 void VISFSInterfaceROS::stereoImageScanCallback(const sensor_msgs::ImageConstPtr & _leftImage, const sensor_msgs::ImageConstPtr & _rightImage, const sensor_msgs::LaserScanConstPtr & _laserScan) {
-    std::cout << "right!!!!!!!!" << std::endl;
-    std::cout.precision(18);
-    std::cout << "time image: " << _leftImage->header.stamp.toSec() << std::endl;
-    std::cout << "time scan: " << _laserScan->header.stamp.toSec() << std::endl;
-
     cv::Mat cvImageLeft, cvImageRight;
     try {
         cvImageLeft = getImageFromROS(_leftImage);
@@ -200,6 +196,8 @@ void VISFSInterfaceROS::stereoImageScanCallback(const sensor_msgs::ImageConstPtr
 
     VISFS::Sensor::TimedPointCloudWithIntensities pointCloud;
     laserScanToTimedPointCloudWithIntensities(_laserScan, pointCloud);
+
+    system_->inputPrimarySensorData(_leftImage->header.stamp.toSec(), cvImageLeft, cvImageRight, pointCloud);
     
 }
 

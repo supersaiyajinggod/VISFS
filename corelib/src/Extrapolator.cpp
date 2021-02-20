@@ -31,6 +31,47 @@ void Extrapolator::addOdometry(const double _time, const Eigen::Isometry3d & _po
     wheelOdometryBuf_.emplace_back(std::make_tuple(_time, _pose, _velocity));
 }
 
+std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> Extrapolator::getApproximateOdometry(const double _time) {
+    std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> vOdom;
+
+    boost::lock_guard<boost::mutex> lock(mutexWheelOdometryBuf_);
+    // wheelOdometryBuf_.size() must larger then 2, due to hasValiableOdometry().
+    // std::cout << "wheelOdometryBuf_.size(): " << wheelOdometryBuf_.size() << std::endl;
+    // for (auto odom : wheelOdometryBuf_) {
+    //     std::cout.precision(18);
+    //     std::cout << "timestamp: " << std::get<0>(odom)  << " image time: " << _time << std::endl;
+    // }
+
+    double bestScore = 1.0;
+    std::list<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>>::iterator bestCandidate = wheelOdometryBuf_.begin();
+    std::list<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>>::iterator secondBestCandidate = wheelOdometryBuf_.begin();
+    for (auto it = wheelOdometryBuf_.begin(); it != wheelOdometryBuf_.end(); ++it) {
+        auto [time, pose, velocity] = *it;
+        double score = std::abs(_time - time);
+        if (std::abs(_time - time) < bestScore) {
+            bestScore = score;
+            secondBestCandidate = bestCandidate;
+            bestCandidate = it;
+        }
+    }
+
+    if (std::get<0>(*bestCandidate) > std::get<0>(*secondBestCandidate)) {
+        vOdom.emplace_back(*bestCandidate);
+        vOdom.emplace_back(*secondBestCandidate);
+    } else {
+        vOdom.emplace_back(*secondBestCandidate);
+        vOdom.emplace_back(*bestCandidate);
+    }
+
+    while (wheelOdometryBuf_.size() > wheelFreq_ / 10) {
+        wheelOdometryBuf_.pop_front();
+    }
+    
+
+    return vOdom;
+
+}
+
 void Extrapolator::extrapolatorPose(const double _time, Eigen::Isometry3d & _globalPose, Eigen::Isometry3d & _deltaPose) {
     if (sensorStrategy_ == 0 || sensorStrategy_ == 1) {     // stereo | rgbd
         if (!velocityGuess_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && !(previousTimeStamp_ == 0.0)) {
@@ -39,24 +80,12 @@ void Extrapolator::extrapolatorPose(const double _time, Eigen::Isometry3d & _glo
             _deltaPose = Eigen::Isometry3d::Identity();
         }
     } else if (sensorStrategy_ == 2) {  // stereo + wheel
-        if (!wheelOdometryBuf_.empty() && wheelOdometryBuf_.size() > 2) {
+        if (hasAvaliableOdometry()) {
             // get wheel odometry
             std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> vOdom;
-            const int odomCount = wheelOdometryBuf_.size();
-            {
-                boost::lock_guard<boost::mutex> lock(mutexWheelOdometryBuf_);
-                auto rit = wheelOdometryBuf_.rbegin();
-                vOdom.emplace_back(*rit);
-                vOdom.emplace_back(*++rit);
-                if (odomCount >= 3) vOdom.emplace_back(*++rit);
-                wheelOdometryBuf_.clear();
-            }
+            vOdom = getApproximateOdometry(_time);
             // process wheel odometry, calculate guess pose.
-            if (odomCount == 2) {
-                _globalPose = predictAlignPose(_time, vOdom[0], vOdom[1]);
-            } else if (odomCount >= 3) {
-                _globalPose = predictAlignPose(_time, vOdom[0], vOdom[1], vOdom[2]);
-            }
+            _globalPose = predictAlignPose(_time, vOdom[0], vOdom[1]);
 
             if (!_globalPose.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
                 if (previousWheelOdom_.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
@@ -180,7 +209,7 @@ Eigen::Isometry3d Extrapolator::predictAlignPose(const double _time, const std::
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(lastTime) - uTimeDouble2Boost(secondLastTime);
         if (timeElapse.total_milliseconds() > 2*timeInterval) {
-            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;         
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime - floor(lastTime) << ", time second last wheel: " << secondLastTime - floor(secondLastTime) << ", the image:" << _time - floor(_time);         
         } else {
             const double deltaTime = _time - secondLastTime;
             alignPose = velMotionModel(deltaTime, secondLastPose, secondLastTime, lastTime, secondLastPose, lastPose);
@@ -189,14 +218,14 @@ Eigen::Isometry3d Extrapolator::predictAlignPose(const double _time, const std::
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(_time) - uTimeDouble2Boost(lastTime);
         if (timeElapse.total_milliseconds() > timeInterval) {
-            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;      
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime - floor(lastTime) << ", time second last wheel: " << secondLastTime - floor(secondLastTime) << ", the image:" << _time - floor(_time);     
         } else {
             const double deltaTime = _time - lastTime;
             // alignPose = accMotionModel(deltaTime, true, lastPose, secondLastVelocity, lastVelocity);
             alignPose = velMotionModel(deltaTime, secondLastPose, secondLastTime, lastTime, secondLastPose, lastPose);
         }
     } else {
-        LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;     
+        LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime - floor(lastTime) << ", time second last wheel: " << secondLastTime - floor(secondLastTime) << ", the image:" << _time - floor(_time);    
     }
 
     return alignPose;
@@ -213,7 +242,7 @@ Eigen::Isometry3d Extrapolator::predictAlignPose(const double _time, const std::
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(lastTime) - uTimeDouble2Boost(secondLastTime);
         if (timeElapse.total_milliseconds() > 2*timeInterval) {
-            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;         
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime - floor(lastTime) << ", time second last wheel: " << secondLastTime - floor(secondLastTime) << ", the image:" << _time - floor(_time);        
         } else {
             const double deltaTime = _time - secondLastTime;
             alignPose = velMotionModel(deltaTime, secondLastPose, secondLastTime, lastTime, secondLastPose, lastPose);
@@ -222,7 +251,7 @@ Eigen::Isometry3d Extrapolator::predictAlignPose(const double _time, const std::
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(_time) - uTimeDouble2Boost(lastTime);
         if (timeElapse.total_milliseconds() > timeInterval) {
-            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", the image:" << _time;      
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime - floor(lastTime) << ", time second last wheel: " << secondLastTime - floor(secondLastTime) << ", the image:" << _time - floor(_time);     
         } else {
             const double deltaTime = _time - lastTime;
             // alignPose = accMotionModel(deltaTime, true, lastPose, secondLastVelocity, lastVelocity);
@@ -232,7 +261,7 @@ Eigen::Isometry3d Extrapolator::predictAlignPose(const double _time, const std::
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(secondLastTime) - uTimeDouble2Boost(thirdLastTime);
         if (timeElapse.total_milliseconds() > 2*timeInterval) {
-            LOG_ERROR << "Time stamps error, Time second last wheel: " << secondLastTime << ", time third last wheel: " << thirdLastTime << ", the image:" << _time;         
+            LOG_ERROR << "Time stamps error, Time second last wheel: " << secondLastTime - floor(secondLastTime) << ", time third last wheel: " << thirdLastTime - floor(thirdLastTime) << ", the image:" << _time - floor(_time);       
         } else {
             const double deltaTime = _time - thirdLastTime;
             alignPose = velMotionModel(deltaTime, thirdLastPose, thirdLastTime, secondLastTime, thirdLastPose, secondLastPose);
@@ -241,13 +270,13 @@ Eigen::Isometry3d Extrapolator::predictAlignPose(const double _time, const std::
         boost::posix_time::time_duration timeElapse;
         timeElapse = uTimeDouble2Boost(thirdLastTime) - uTimeDouble2Boost(_time);
         if (timeElapse.total_milliseconds() > 2*timeInterval) {
-            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", time third last wheel: " << thirdLastTime << ", the image:" << _time; 
+            LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime - floor(lastTime) << ", time second last wheel: " << secondLastTime - floor(secondLastTime) << ", time third last wheel: " << thirdLastTime - floor(thirdLastTime) << ", the image:" << _time - floor(_time); 
         } else {
             const double deltaTime = thirdLastTime - _time;
             alignPose = velMotionModel(deltaTime, thirdLastPose, thirdLastTime, secondLastTime, secondLastPose, thirdLastPose);
         }
     } else {
-    	LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime << ", time second last wheel: " << secondLastTime << ", time third last wheel: " << thirdLastTime << ", the image:" << _time;     
+    	LOG_ERROR << "Time stamps error, Time last wheel: " << lastTime - floor(lastTime) << ", time second last wheel: " << secondLastTime - floor(secondLastTime) << ", time third last wheel: " << thirdLastTime - floor(thirdLastTime) << ", the image:" << _time - floor(_time); 
     }
 
     return alignPose;

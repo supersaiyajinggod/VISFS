@@ -91,9 +91,9 @@ void System::init(const double fxl, const double fyl, const double cxl, const do
 	LOG_INFO << "System initialization over!";
 }
 
-void System::inputStereoImage(const double _time, const cv::Mat & _imageLeft, const cv::Mat & _imageRight) {
+void System::inputPrimarySensorData(const double _time, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const Sensor::TimedPointCloudWithIntensities & _timedPointCloud) {
     Eigen::Isometry3d guessPose;
-    Eigen::Isometry3d globalWheelPose;
+    Eigen::Isometry3d globalWheelPose(Eigen::Isometry3d(Eigen::Matrix4d::Zero()));
     Signature signature;
 
     UTimer timer;
@@ -109,19 +109,18 @@ void System::inputStereoImage(const double _time, const cv::Mat & _imageLeft, co
     if (sensorStrategy_ == 0 || sensorStrategy_ == 1) {     // stereo or rgbd
         signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose);
     } else if (sensorStrategy_ == 2) {      // stereo + wheel
-        if (!globalWheelPose.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
-            signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose, globalWheelPose);
-        } else {
-            // Error no odom, use pure stereo.
-            signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose);
-        }
+        signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose, globalWheelPose);
+    } else if (sensorStrategy_ == 3) {      // stereo + laser + wheel
+        signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose, globalWheelPose, _timedPointCloud);
+        LOG_INFO << "timedPointCloudMessage: image time " << signature.getTimeStamp() << " scan time: " << signature.getTimedPointCloudWithIntensities().time
+                << " scan size: " << signature.getTimedPointCloudWithIntensities().points.size();
     }
 
     tracker_->inputSignature(signature);
 }
 
 void System::inputWheelOdometry(const double _time, const Eigen::Isometry3d & _pose, const Eigen::Isometry3d & _velocity) {
-    if (sensorStrategy_ == 2) {
+    if (sensorStrategy_ == 2 || sensorStrategy_ == 3) {
         extrapolator_->addOdometry(_time, _pose, _velocity);
     } else {
         LOG_WARN << "System no need for wheel Odometry, please check prameters.";

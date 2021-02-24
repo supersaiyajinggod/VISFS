@@ -33,14 +33,7 @@ void Extrapolator::addOdometry(const double _time, const Eigen::Isometry3d & _po
 
 std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> Extrapolator::getApproximateOdometry(const double _time) {
     std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> vOdom;
-
     boost::lock_guard<boost::mutex> lock(mutexWheelOdometryBuf_);
-    // wheelOdometryBuf_.size() must larger then 2, due to hasValiableOdometry().
-    // std::cout << "wheelOdometryBuf_.size(): " << wheelOdometryBuf_.size() << std::endl;
-    // for (auto odom : wheelOdometryBuf_) {
-    //     std::cout.precision(18);
-    //     std::cout << "timestamp: " << std::get<0>(odom)  << " image time: " << _time << std::endl;
-    // }
 
     double bestScore = 1.0;
     std::list<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>>::iterator bestCandidate = wheelOdometryBuf_.begin();
@@ -79,7 +72,7 @@ void Extrapolator::extrapolatorPose(const double _time, Eigen::Isometry3d & _glo
         } else {
             _deltaPose = Eigen::Isometry3d::Identity();
         }
-    } else if (sensorStrategy_ == 2) {  // stereo + wheel
+    } else if (sensorStrategy_ >= 2) {  // stereo + wheel
         if (hasAvaliableOdometry()) {
             // get wheel odometry
             std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> vOdom;

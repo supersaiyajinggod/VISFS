@@ -74,6 +74,7 @@ private:
 
     int queueSize_;
     std::string cameraFrameId_;
+    std::string laserFrameId_;
     std::string robotFrameId_;
     std::string odomFrameId_;
     bool publishTf_;

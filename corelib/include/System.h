@@ -26,9 +26,11 @@ public:
     System(const ParametersMap & _parameters = ParametersMap());
     ~System();
 
-    void init(const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight);
+    void init(const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight,
+                    const Eigen::Isometry3d & _transformCamera2Robot, const Eigen::Isometry3d & _transformLaser2Robot);
     void init(const double fxl, const double fyl, const double cxl, const double cyl, const double fxr, const double fyr,
-                const double cxr, const double cyr, const double baseline);
+                const double cxr, const double cyr, const double baseline,
+                const Eigen::Isometry3d & _transformCamera2Robot, const Eigen::Isometry3d & _transformLaser2Robot);
 
 	/** \brief Interface to put the stereo image to our system.
       * \param[in] time The time stamps of the images.  
@@ -64,6 +66,8 @@ private:
 
     boost::shared_ptr<GeometricCamera> cameraLeft_;
     boost::shared_ptr<GeometricCamera> cameraRight_;
+    Eigen::Isometry3d transformCamera2Robot_;
+    Eigen::Isometry3d transformLaser2Robot_;
 
 	Extrapolator * extrapolator_;
 

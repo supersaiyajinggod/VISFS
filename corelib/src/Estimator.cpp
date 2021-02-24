@@ -27,7 +27,8 @@ Estimator::Estimator(const ParametersMap & _parameters) :
     refineIterations_(Parameters::defaultEstimatorRefineIterations()),
     toleranceTranslation_(Parameters::defaultEstimatorToleranceTranslation()),
     toleranceRotation_(Parameters::defaultEstimatorToleranceRotation()),
-    force3Dof_(Parameters::defaultEstimatorForce3DoF()) {
+    force3Dof_(Parameters::defaultEstimatorForce3DoF()),
+    numSubdivisionsPerScan_(Parameters::defaultEstimatorNumSubDivisionPreScan()) {
 
     Parameters::parse(_parameters, Parameters::kSystemSensorStrategy(), sensorStrategy_);
     Parameters::parse(_parameters, Parameters::kEstimatorMinInliers(), minInliers_);
@@ -38,6 +39,7 @@ Estimator::Estimator(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kEstimatorToleranceTranslation(), toleranceTranslation_);
     Parameters::parse(_parameters, Parameters::kEstimatorToleranceRotation(), toleranceRotation_);
     Parameters::parse(_parameters, Parameters::kEstimatorForce3DoF(), force3Dof_);
+    Parameters::parse(_parameters, Parameters::kEstimatorNumSubDivisionPreScan(), numSubdivisionsPerScan_);
 
     optimizer_ = new Optimizer(_parameters);
     localMap_ = new LocalMap(_parameters);
@@ -104,6 +106,14 @@ void Estimator::threadProcess() {
     }
 }
 
+void Estimator::laserPretreatment(Sensor::TimedPointCloudWithIntensities & _pointCloud) {
+    std::vector<Sensor::TimedPointCloudWithIntensities> subdivisions;
+    for (int i = 0; i != numSubdivisionsPerScan_; ++i) {
+        
+    }
+
+}
+
 void Estimator::process(Signature & _signature) {
     TrackInfo & trackInfo = _signature.getTrackInfo();
     EstimateInfo & estimateInfo = _signature.getEstimateInfo();
@@ -117,7 +127,7 @@ void Estimator::process(Signature & _signature) {
     std::map<std::size_t, cv::Point3f> words3dTo = _signature.getWords3d();
 
     Eigen::Isometry3d wheelOdom;
-    if (_signature.getWheelOdomPose(wheelOdom) && sensorStrategy_ == 2) {
+    if (_signature.getWheelOdomPose(wheelOdom) && sensorStrategy_ >= 2) {
         transform = previousWheelOdom_.inverse() * wheelOdom;
         matches = findCorrespondences(words3dFrom, wordsTo);
         inliers = matches;
@@ -130,7 +140,7 @@ void Estimator::process(Signature & _signature) {
                                                 pnpReprojError_, pnpFlags_, refineIterations_, words3dTo, covariance, matches, inliers,
                                                 _signature.getDeltaPoseGuess());
             _signature.setPose(pose_ * transform);
-            if (sensorStrategy_ == 2)
+            if (sensorStrategy_ >= 2)
                 _signature.setWheelOdomPose(previousWheelOdom_ * transform);
 
         } else {
@@ -139,6 +149,9 @@ void Estimator::process(Signature & _signature) {
         }
         LOG_DEBUG << "Signature id : " << _signature.getId() << ", pose 3d->2d pnp is :\n" << transform.matrix();
     }
+
+    // process laser
+    
 
     if (transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
         LOG_ERROR << "Error: transform is Zero. The initial estimate failed.";
@@ -159,7 +172,7 @@ void Estimator::process(Signature & _signature) {
         // std::set<std::size_t> outliers;
 
         localMap_->getSignaturePoses(poses);
-        if (sensorStrategy_ == 2)
+        if (sensorStrategy_ >= 2)
             localMap_->getSignatureLinks(links);
 
         //camera model

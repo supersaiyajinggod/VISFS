@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <float.h>
+#include <Eigen/Core>
 
 #include "Sensor/RangeFinderPoint.h"
 
@@ -72,6 +73,7 @@ private:
 using TimedPointCloud = std::vector<TimedRangefinderPoint>;
 struct TimedPointCloudWithIntensities {
     TimedPointCloud points;
+    Eigen::Vector3d origin;
     std::vector<float> intensities;
     double time;
 };

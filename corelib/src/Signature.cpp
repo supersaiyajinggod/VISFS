@@ -10,54 +10,21 @@ Signature::Signature() :
     cameraLeft_(nullptr),
     cameraRight_(nullptr),
     pose_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
+    transformCamera2Robot_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
+    transformLaser2Robot_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
+    transformLaser2Camera_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
     deltaGuess_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
     wheelOdom_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) {}
 
-Signature::Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight, const Eigen::Isometry3d & _guessPose) :
-    timestamp_(_timestamp), imageLeft_(_imageLeft), imageRight_(_imageRight), cameraLeft_(_cameraLeft), cameraRight_(_cameraRight),
-    deltaGuess_(_guessPose), wheelOdom_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) {
-    // Set signature id
-    id_ = nextId_++;
-    pose_ = Eigen::Isometry3d::Identity();
-
-    if (imageLeft_.channels() > 1) {
-        cv::Mat temp;
-        cv::cvtColor(imageLeft_, temp, cv::COLOR_BGR2GRAY);
-        imageLeft_ = temp;
-    }
-    if (imageRight_.channels() > 1) {
-        cv::Mat temp;
-        cv::cvtColor(imageRight_, temp, cv::COLOR_BGR2GRAY);
-        imageRight_ = temp;
-    }
-}
-
-Signature::Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight, const Eigen::Isometry3d & _guessPose, const Eigen::Isometry3d & _wheelOdom) :
-    timestamp_(_timestamp), imageLeft_(_imageLeft), imageRight_(_imageRight), cameraLeft_(_cameraLeft), cameraRight_(_cameraRight),
-    deltaGuess_(_guessPose), wheelOdom_(_wheelOdom) {
-    // Set signature id
-    id_ = nextId_++;
-    pose_ = Eigen::Isometry3d::Identity();
-
-    if (imageLeft_.channels() > 1) {
-        cv::Mat temp;
-        cv::cvtColor(imageLeft_, temp, cv::COLOR_BGR2GRAY);
-        imageLeft_ = temp;
-    }
-    if (imageRight_.channels() > 1) {
-        cv::Mat temp;
-        cv::cvtColor(imageRight_, temp, cv::COLOR_BGR2GRAY);
-        imageRight_ = temp;
-    }
-}
-
 Signature::Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight,
+                const Eigen::Isometry3d & _transformCamera2Robot, const Eigen::Isometry3d & _transformLaser2Robot,
                 const Eigen::Isometry3d & _guessPose, const Eigen::Isometry3d & _wheelOdom, const Sensor::TimedPointCloudWithIntensities & _timedPointCloud) :
     timestamp_(_timestamp), imageLeft_(_imageLeft), imageRight_(_imageRight), cameraLeft_(_cameraLeft), cameraRight_(_cameraRight),
-    deltaGuess_(_guessPose), wheelOdom_(_wheelOdom), timedPointCloud_(_timedPointCloud) {
+    transformCamera2Robot_(_transformCamera2Robot), transformLaser2Robot_(_transformLaser2Robot), deltaGuess_(_guessPose), wheelOdom_(_wheelOdom), timedPointCloud_(_timedPointCloud) {
     // Set signature id
     id_ = nextId_++;
     pose_ = Eigen::Isometry3d::Identity();
+    transformLaser2Camera_ = transformCamera2Robot_.inverse() * transformLaser2Robot_;
 
     if (imageLeft_.channels() > 1) {
         cv::Mat temp;

@@ -69,15 +69,19 @@ System::~System() {
     delete logger_;
 }
 
-void System::init(const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight) {
+void System::init(const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight,
+                const Eigen::Isometry3d & _transformCamera2Robot, const Eigen::Isometry3d & _transformLaser2Robot) {
     cameraLeft_ = _cameraLeft;
     cameraRight_ = _cameraRight;
+    transformCamera2Robot_ = _transformCamera2Robot;
+    transformLaser2Robot_ = _transformLaser2Robot;
 
     LOG_INFO << "System initialization over!";
 }
 
 void System::init(const double fxl, const double fyl, const double cxl, const double cyl, const double fxr, const double fyr,
-            const double cxr, const double cyr, const double baseline) {
+            const double cxr, const double cyr, const double baseline,
+            const Eigen::Isometry3d & _transformCamera2Robot, const Eigen::Isometry3d & _transformLaser2Robot) {
     Eigen::Matrix3d Kl, Kr;
     Kl << fxl, 0.0, cxl, 0.0, fyl, cyl, 0, 0, 1;
     Kr << fxr, 0.0, cxr, 0.0, fyr, cyr, 0, 0, 1;
@@ -87,6 +91,8 @@ void System::init(const double fxl, const double fyl, const double cxl, const do
     boost::shared_ptr<GeometricCamera> spcameraRight(cameraRight);
     cameraLeft_ = spcameraLeft;
     cameraRight_ = spcameraRight;
+    transformCamera2Robot_ = _transformCamera2Robot;
+    transformLaser2Robot_ = _transformLaser2Robot;
 
 	LOG_INFO << "System initialization over!";
 }
@@ -107,13 +113,11 @@ void System::inputPrimarySensorData(const double _time, const cv::Mat & _imageLe
     extrapolator_->extrapolatorPose(_time, globalWheelPose, guessPose);
 
     if (sensorStrategy_ == 0 || sensorStrategy_ == 1) {     // stereo or rgbd
-        signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose);
+        signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, transformCamera2Robot_, transformLaser2Robot_, guessPose, Eigen::Isometry3d(Eigen::Matrix4d::Zero()), _timedPointCloud);
     } else if (sensorStrategy_ == 2) {      // stereo + wheel
-        signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose, globalWheelPose);
+        signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, transformCamera2Robot_, transformLaser2Robot_, guessPose, globalWheelPose, _timedPointCloud);
     } else if (sensorStrategy_ == 3) {      // stereo + laser + wheel
-        signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, guessPose, globalWheelPose, _timedPointCloud);
-        LOG_INFO << "timedPointCloudMessage: image time " << signature.getTimeStamp() << " scan time: " << signature.getTimedPointCloudWithIntensities().time
-                << " scan size: " << signature.getTimedPointCloudWithIntensities().points.size();
+        signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, transformCamera2Robot_, transformLaser2Robot_, guessPose, globalWheelPose, _timedPointCloud);
     }
 
     tracker_->inputSignature(signature);

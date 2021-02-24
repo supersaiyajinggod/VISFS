@@ -9,6 +9,7 @@
 #include "LocalMap.h"
 #include "Tracker.h"
 #include "Monitor.h"
+#include "Sensor/PointCloud.h"
 
 namespace VISFS {
 
@@ -25,7 +26,6 @@ public:
     void threadProcess();
 
     void setMonitor(Monitor * _monitor) { monitor_ = _monitor; }
-    Monitor * getMonitor() const { return monitor_; }
     void setTracker(Tracker * _tracker) { tracker_ = _tracker; }
     Tracker * getTracker() const { return tracker_; }
 
@@ -33,6 +33,7 @@ private:
     const double COVARIANCE_EPSILON = 0.000000001;
     
     void process(Signature & _signature);
+    void laserPretreatment(Sensor::TimedPointCloudWithIntensities & _pointCloud);
     void outputSignature(const Signature & _signature);
     void outputOutliers(const std::set<std::size_t> & _outliers);
     Eigen::Isometry3d guessVelocity(const Eigen::Isometry3d & _t, const double _dt);
@@ -64,6 +65,7 @@ private:
     double toleranceTranslation_;
     double toleranceRotation_;
     bool force3Dof_;
+    int numSubdivisionsPerScan_;
 
     Eigen::Vector3d tempWheel = Eigen::Vector3d(0.0, 0.0 ,0.0);
     Eigen::Vector3d tempVisual = Eigen::Vector3d(0.0, 0.0, 0.0);

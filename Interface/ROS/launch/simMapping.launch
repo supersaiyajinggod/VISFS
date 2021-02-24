@@ -42,13 +42,14 @@
     <param name="approx_sync"           type="bool"			value="true"/>
 	<param name="queue_size"			type="int"			value="10"/>
     <param name="camera_frame_id"       type="string"       value="camera_link"/>
+    <param name="laser_frame_id"        type="string"       value="sick_laser_link"/>
     <param name="robot_frame_id"        type="string"       value="base_link"/>
     <param name="publish_tf"            type="bool"         value="false"/>
 
     <param name="base_line"             type="double"       value="0.0502569"/>
     <!-- <param name="base_line"             type="double"       value="0.051569"/> -->
 
-    <param name="System/SensorStrategy"             type="int"          value="2"/>
+    <param name="System/SensorStrategy"             type="int"          value="3"/>
     <param name="System/Monitor"                    type="bool"         value="true"/>
     <param name="System/CLAHE"                      type="bool"         value="true"/>
     <param name="System/LogLevel"                   type="int"          value="1"/>

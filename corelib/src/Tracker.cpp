@@ -64,7 +64,7 @@ void Tracker::threadProcess() {
             // UTimer timer;
             std::set<std::size_t> outliers = estimator_->getOutliers();
             pretreatment(lastSignature_, outliers);
-            process(lastSignature_, signature);
+            imageProcess(lastSignature_, signature);
             // timer.elapsed("Tracker");
             
             if (estimator_) {
@@ -164,7 +164,7 @@ void Tracker::pretreatment(Signature & _fromSignature, const std::set<std::size_
     _fromSignature.setBlockedWords(blockedWords);
 }
 
-void Tracker::process(Signature & _fromSignature, Signature & _toSignature) {
+void Tracker::imageProcess(Signature & _fromSignature, Signature & _toSignature) {
     if (_fromSignature.empty() || _toSignature.empty()) {
         LOG_ERROR << "The from signature or the to signature is empty.";
         return;

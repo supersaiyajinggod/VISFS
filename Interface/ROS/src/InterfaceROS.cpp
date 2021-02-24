@@ -9,6 +9,7 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     // srv_(_pnh),
     queueSize_(10),
     cameraFrameId_("camera_link"),
+    laserFrameId_("laser_link"),
     robotFrameId_("base_link"),
     odomFrameId_("odom"),
     publishTf_(false) {
@@ -23,6 +24,7 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     _pnh.param("approx_sync", approxSync, approxSync);
     _pnh.param("queue_size", queueSize_, queueSize_);
     _pnh.param("camera_frame_id", cameraFrameId_, cameraFrameId_);
+    _pnh.param("laser_frame_id", laserFrameId_, laserFrameId_);
     _pnh.param("robot_frame_id", robotFrameId_, robotFrameId_);
     _pnh.param("odom_frame_id", odomFrameId_, odomFrameId_);
     _pnh.param("publish_tf", publishTf_, publishTf_);
@@ -33,6 +35,7 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     ROS_INFO("VISFS_ROS_INTERFACE: approx_sync              = %s", approxSync ? "true" : "false");
     ROS_INFO("VISFS_ROS_INTERFACE: queue_size               = %d", queueSize_);
     ROS_INFO("VISFS_ROS_INTERFACE: camera_frame_id          = %s", cameraFrameId_.c_str());
+    ROS_INFO("VISFS_ROS_INTERFACE: laser_frame_id           = %s", laserFrameId_.c_str());
     ROS_INFO("VISFS_ROS_INTERFACE: robot_frame_id           = %s", robotFrameId_.c_str());
     ROS_INFO("VISFS_ROS_INTERFACE: odom_frame_id            = %s", odomFrameId_.c_str());
     ROS_INFO("VISFS_ROS_INTERFACE: publish_tf               = %s", publishTf_ ? "true" : "false");
@@ -44,6 +47,7 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
     ros::NodeHandle rightImageNodeHandle(_n, "right");
     ros::NodeHandle leftImagePrivateNodeHandle(_pnh, "left");
     ros::NodeHandle rightImagePrivateNodeHandle(_pnh, "right");
+
     // Get stereo camera info
     boost::shared_ptr<sensor_msgs::CameraInfo const> cameraInfoLeft = nullptr;
     boost::shared_ptr<sensor_msgs::CameraInfo const> cameraInfoRight = nullptr;
@@ -59,11 +63,28 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
                                               << "\nRight fx, fy, cx, cy: " << cameraModelRight_.fx() << " " << cameraModelRight_.fy() << " " << cameraModelRight_.cx() << " " << cameraModelRight_.cy());
     }
 
+    // Get frame transform
+    tf::StampedTransform transform;
+    Eigen::Isometry3d Trc, Trl;
+    try {
+        tfListener_.lookupTransform(robotFrameId_, cameraFrameId_, ros::Time(0), transform);
+    } catch (tf::TransformException ex) {
+        ROS_ERROR("%s",ex.what());
+    }
+    tf::transformTFToEigen(transform, Trc);
+
+    try {
+        tfListener_.lookupTransform(robotFrameId_, laserFrameId_, ros::Time(0), transform);
+    } catch (tf::TransformException ex) {
+        ROS_ERROR("%s",ex.what());
+    }
+    tf::transformTFToEigen(transform, Trl);
+
     parametersInit(pnh_);
 
     system_ = new VISFS::System(parameters_);
     system_->init(cameraModelLeft_.fx(), cameraModelLeft_.fy(), cameraModelLeft_.cx(), cameraModelLeft_.cy(), 
-                    cameraModelRight_.fx(), cameraModelRight_.fy(), cameraModelRight_.cx(), cameraModelRight_.cy(), baseLine);
+                    cameraModelRight_.fx(), cameraModelRight_.fy(), cameraModelRight_.cx(), cameraModelRight_.cy(), baseLine, Trc, Trl);
 
     // Get wheel odom
     if (subscribeWheelOdometry) {

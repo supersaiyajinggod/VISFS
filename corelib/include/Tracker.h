@@ -6,6 +6,8 @@
 #include "Parameters.h"
 #include "Signature.h"
 #include "Estimator.h"
+#include "Extrapolator.h"
+#include "Sensor/PointCloud.h"
 
 namespace VISFS {
 
@@ -60,7 +62,7 @@ private:
      * \param[in] guess The guess motion between fromSignature and toSignature. (from wheel odom or imu)
      * \author eddy
      */    
-    void process(Signature & _fromSignature, Signature & _toSignature);
+    void imageProcess(Signature & _fromSignature, Signature & _toSignature);
 
     /** \brief Pretreatment of the signature. For now, cull out the outliers, can add toSignature or other parameters to do other things.
      * \param[in] fromSignature The former signature.

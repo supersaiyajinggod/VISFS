@@ -170,6 +170,7 @@ class Parameters {
     VISFS_PARAM(Estimator,  ToleranceTranslation,   double, 0.32,   "The max translation percentage difference between all sensors. The lower, we trust other sensor more.");
     VISFS_PARAM(Estimator,  ToleranceRotation,      double, 0.40,   "The max rotation percentage difference between all sensors. The lower, we trust other sensor more.");
     VISFS_PARAM(Estimator,  Force3DoF,              bool,   false,  "Force 3 degrees-of-freedom transform (3Dof: x,y and yaw). Parameters z, roll and pitch will be set to 0.");
+    VISFS_PARAM(Estimator,  NumSubDivisionPreScan,  int,    5,      "The numbers of division parts for each complete laser scan.");
 
     VISFS_PARAM(Optimizer,  Iterations,             int,      10,   "Optimization iterations.");
     VISFS_PARAM(Optimizer,  Solver,                 int,       0,   "0=csparse 1=cholmod 2=pcg 3=Eigen");

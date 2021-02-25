@@ -55,6 +55,7 @@
     <param name="Estimator/ToleranceTranslation"    type="double"       value="0.40"/>
     <param name="Estimator/ToleranceRotation"       type="double"       value="0.40"/>
     <param name="Estimator/Force3DoF"               type="bool"         value="true"/>
+    <param name="Estimator/NumSubDivisionPreScan"   type="int"          value="6"/>
     <param name="Optimizer/Solver"                  type="int"          value="3"/>
     <param name="Optimizer/PixelVariance"           type="double"       value="1.5"/>
     <param name="Optimizer/Iterations"              type="int"          value="20"/>

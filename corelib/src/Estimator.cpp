@@ -106,11 +106,34 @@ void Estimator::threadProcess() {
     }
 }
 
-void Estimator::laserPretreatment(Sensor::TimedPointCloudWithIntensities & _pointCloud) {
+void Estimator::laserPretreatment(const Sensor::TimedPointCloudWithIntensities & _pointCloud, const Eigen::Isometry3d & _transformationLaser2Camera) {
+    if (_pointCloud.points.empty()) {
+        return;
+    }
+    // seperate a laser scan to several part.
     std::vector<Sensor::TimedPointCloudWithIntensities> subdivisions;
     for (int i = 0; i != numSubdivisionsPerScan_; ++i) {
-        
+        const size_t startIndex = _pointCloud.points.size() * i / numSubdivisionsPerScan_;
+        const size_t endIndex = _pointCloud.points.size() * (i+1) / numSubdivisionsPerScan_;
+        Sensor::TimedPointCloud subdivision(_pointCloud.points.begin() + startIndex, _pointCloud.points.begin() + endIndex);
+        if (startIndex == endIndex) {
+            continue;
+        }
+        const double timeToSubdivisionEnd = subdivision.back().time;    // The minus time to the end of whole point cloud.
+        const double subdivisionTime = _pointCloud.time + timeToSubdivisionEnd;
+        for (auto & point : subdivision) {
+            point.time -= timeToSubdivisionEnd;
+        }
+        subdivisions.emplace_back(Sensor::TimedPointCloudWithIntensities{subdivision, {}, {}, subdivisionTime});
     }
+    // change the laser scan from the laser frame to the camera frame. 
+    for (auto & subdivision : subdivisions) {
+        for(auto & point : subdivision.points) {
+            point.position = _transformationLaser2Camera * point.position;
+        }
+    }
+    // get global pose for each laser
+    
 
 }
 
@@ -151,7 +174,7 @@ void Estimator::process(Signature & _signature) {
     }
 
     // process laser
-    
+    laserPretreatment(_signature.getTimedPointCloudWithIntensities(), _signature.getTransformLaser2Camera());
 
     if (transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
         LOG_ERROR << "Error: transform is Zero. The initial estimate failed.";

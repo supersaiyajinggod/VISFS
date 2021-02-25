@@ -40,6 +40,8 @@ std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> Extrapolat
     std::list<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>>::iterator secondBestCandidate = wheelOdometryBuf_.begin();
     for (auto it = wheelOdometryBuf_.begin(); it != wheelOdometryBuf_.end(); ++it) {
         auto [time, pose, velocity] = *it;
+        std::cout.precision(18);
+        std::cout << "odom time : " << time << std::endl;
         double score = std::abs(_time - time);
         if (std::abs(_time - time) < bestScore) {
             bestScore = score;

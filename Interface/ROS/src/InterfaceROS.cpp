@@ -93,10 +93,10 @@ VISFSInterfaceROS::VISFSInterfaceROS(ros::NodeHandle & _n, ros::NodeHandle & _pn
 
     image_transport::ImageTransport leftIT(leftImageNodeHandle);
     image_transport::ImageTransport rightIT(rightImageNodeHandle);
-    image_transport::TransportHints hintsLeft("raw", ros::TransportHints(), leftImagePrivateNodeHandle);
-    image_transport::TransportHints hintsRight("raw", ros::TransportHints(), rightImagePrivateNodeHandle);
-    imageLeftSub_.subscribe(leftIT, leftImageNodeHandle.resolveName("image"), 1, hintsLeft);
-    imageRightSub_.subscribe(rightIT, rightImageNodeHandle.resolveName("image"), 1, hintsRight);
+    image_transport::TransportHints hintsLeft("raw", ros::TransportHints().tcpNoDelay(), leftImagePrivateNodeHandle);
+    image_transport::TransportHints hintsRight("raw", ros::TransportHints().tcpNoDelay(), rightImagePrivateNodeHandle);
+    imageLeftSub_.subscribe(leftIT, leftImageNodeHandle.resolveName("image"), queueSize_, hintsLeft);
+    imageRightSub_.subscribe(rightIT, rightImageNodeHandle.resolveName("image"), queueSize_, hintsRight);
     if (subscribeLaserScan) {
         laserScanSub_.subscribe(_n, "laser_scan", queueSize_, ros::TransportHints().tcpNoDelay());
         if (approxSync) {

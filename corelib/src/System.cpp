@@ -110,6 +110,9 @@ void System::inputPrimarySensorData(const double _time, const cv::Mat & _imageLe
 	}
 	timer.elapsed("CLAHE");
 
+    std::cout.precision(18);
+    std::cout << "image time: " << _time << std::endl;
+    std::cout << "scan time: " << _timedPointCloud.time << std::endl;
     extrapolator_->extrapolatorPose(_time, globalWheelPose, guessPose);
 
     if (sensorStrategy_ == 0 || sensorStrategy_ == 1) {     // stereo or rgbd

@@ -141,6 +141,7 @@ public:
     const boost::shared_ptr<GeometricCamera> & getCameraModelRightPtr() const { return cameraRight_; }
     const Eigen::Isometry3d & getTransformCamera2Robot() const { return transformCamera2Robot_; }
     const Eigen::Isometry3d & getTransformLaser2Robot() const { return transformLaser2Robot_; }
+    const Eigen::Isometry3d & getTransformLaser2Camera() const { return transformLaser2Camera_; }
 
     TrackInfo & getTrackInfo() { return trackInfo_; }
     void setTrackInfo(const TrackInfo & _trackInfo) { trackInfo_ = _trackInfo; }

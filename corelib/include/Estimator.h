@@ -33,7 +33,7 @@ private:
     const double COVARIANCE_EPSILON = 0.000000001;
     
     void process(Signature & _signature);
-    void laserPretreatment(Sensor::TimedPointCloudWithIntensities & _pointCloud);
+    void laserPretreatment(const Sensor::TimedPointCloudWithIntensities & _pointCloud, const Eigen::Isometry3d & _transformationLaser2Camera);
     void outputSignature(const Signature & _signature);
     void outputOutliers(const std::set<std::size_t> & _outliers);
     Eigen::Isometry3d guessVelocity(const Eigen::Isometry3d & _t, const double _dt);

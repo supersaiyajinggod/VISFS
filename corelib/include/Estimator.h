@@ -10,6 +10,7 @@
 #include "Tracker.h"
 #include "Monitor.h"
 #include "Sensor/PointCloud.h"
+#include "Sensor/RangeData.h"
 
 namespace VISFS {
 
@@ -33,7 +34,7 @@ private:
     const double COVARIANCE_EPSILON = 0.000000001;
     
     void process(Signature & _signature);
-    void laserPretreatment(const Sensor::TimedPointCloudWithIntensities & _pointCloud, const Eigen::Isometry3d & _transformationLaser2Camera);
+    void laserPretreatment(const Sensor::TimedPointCloudWithIntensities & _pointCloud, const Eigen::Isometry3d & _transformationLaser2Camera, std::vector<Sensor::RangeData> & _result);
     void outputSignature(const Signature & _signature);
     void outputOutliers(const std::set<std::size_t> & _outliers);
     Eigen::Isometry3d guessVelocity(const Eigen::Isometry3d & _t, const double _dt);
@@ -66,6 +67,9 @@ private:
     double toleranceRotation_;
     bool force3Dof_;
     int numSubdivisionsPerScan_;
+    double minLaserRange_;
+    double maxLaserRange_;
+    double missingDataRayLength_;
 
     Eigen::Vector3d tempWheel = Eigen::Vector3d(0.0, 0.0 ,0.0);
     Eigen::Vector3d tempVisual = Eigen::Vector3d(0.0, 0.0, 0.0);

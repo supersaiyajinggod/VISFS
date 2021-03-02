@@ -4,6 +4,7 @@
 #include "Signature.h"
 #include "Optimizer.h"
 #include "Parameters.h"
+#include "Map/2d/Submap2D.h"
 
 namespace VISFS {
 
@@ -89,6 +90,10 @@ public:
       */  
     bool getFeaturePosesAndObservations(std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points, std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _observations);
 
+    const std::vector<Sensor::PointCloud> getLaserHitPointCloud(std::size_t _signatureId); 
+
+    inline std::shared_ptr<const Map::Submap2D> getMatchingSubmap2D() { return activeSubmap2D_->submaps().front(); }
+
 private:
 	/** \brief Find corresponding pairs between two groups of features.
       * \param[in] wordsFrom The a group of features.
@@ -110,6 +115,12 @@ private:
     float minParallax_;
     double minTranslation_; // To convenient calculation, we automatically calculate 3*translation^2.
     int minInliers_;
+    int numRangeDataLimit_;
+    Map::GridType gridType_;
+    double mapResolution_;
+    bool insertFreeSpace_;
+    double hitProbability_;
+    double missProbability_;
     
     int newFeatureCount_;   // Count the number of new feature since the last key signature.
     int signatureCount_;    // Count the number of signature since the last key signature.
@@ -118,6 +129,7 @@ private:
 
     std::map<std::size_t, Signature> signatures_;
     std::map<std::size_t, Feature> features_;
+    std::unique_ptr<Map::ActiveSubmaps2D> activeSubmap2D_;
 
 };
 

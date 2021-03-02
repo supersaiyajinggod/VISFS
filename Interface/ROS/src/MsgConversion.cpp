@@ -193,4 +193,5 @@ void laserScanToTimedPointCloudWithIntensities(const sensor_msgs::LaserScanConst
         }
     }
     _pointCloud.time = timeStamp;
+    _pointCloud.origin = Eigen::Vector3d(0., 0., 0.);
 }

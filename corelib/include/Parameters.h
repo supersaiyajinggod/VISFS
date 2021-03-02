@@ -161,6 +161,12 @@ class Parameters {
     VISFS_PARAM(LocalMap,   MapSize,                int,    5,      "The size of Local map. The value means the quantity of signatures that we are estimating.");
     VISFS_PARAM(LocalMap,   MinParallax,            float,  60.0,   "Keysignature selection threshold (pixel).");
     VISFS_PARAM(LocalMap,   MinTranslation,         double, 0.5,    "Min distance condition to judge key signature.");
+    VISFS_PARAM(LocalMap,   NumRangeDataLimit,      int,    50,     "The number of range data will be inserted to submap.");
+    VISFS_PARAM(LocalMap,   GridMapType,            int,    0,      "0-ProbabilityGrid, 1-TSDF.");
+    VISFS_PARAM(LocalMap,   MapResolution,          double, 0.05,   "The resolution of the map.");
+    VISFS_PARAM(LocalMap,   InsertFreeSpace,        bool,   true,   "Fill the space in map automatically.");
+    VISFS_PARAM(LocalMap,   HitProbability,         double, 0.55,   "");
+    VISFS_PARAM(LocalMap,   MissProbability,        double, 0.49,   "");
 
     VISFS_PARAM(Estimator,  MinInliers,             int,    12,     "Minimal inliers between two images.");
     VISFS_PARAM(Estimator,  PnPIterations,          int,    50,     "Maximal interation times in ransac.");
@@ -171,6 +177,9 @@ class Parameters {
     VISFS_PARAM(Estimator,  ToleranceRotation,      double, 0.40,   "The max rotation percentage difference between all sensors. The lower, we trust other sensor more.");
     VISFS_PARAM(Estimator,  Force3DoF,              bool,   false,  "Force 3 degrees-of-freedom transform (3Dof: x,y and yaw). Parameters z, roll and pitch will be set to 0.");
     VISFS_PARAM(Estimator,  NumSubDivisionPreScan,  int,    5,      "The numbers of division parts for each complete laser scan.");
+    VISFS_PARAM(Estimator,  MinLaserRange,          double, 0.1,    "The minimum range the laser is avaliable.");
+    VISFS_PARAM(Estimator,  MaxLaserRange,          double, 30.0,   "The maximum range the laser is avaliable.");
+    VISFS_PARAM(Estimator,  MissingDataRayLength,   double, 5.0,    "The cast ray length of missing data.");
 
     VISFS_PARAM(Optimizer,  Iterations,             int,      10,   "Optimization iterations.");
     VISFS_PARAM(Optimizer,  Solver,                 int,       0,   "0=csparse 1=cholmod 2=pcg 3=Eigen");

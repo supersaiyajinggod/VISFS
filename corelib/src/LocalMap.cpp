@@ -4,6 +4,8 @@
 #include "Timer.h"
 #include "Log.h"
 
+#include <memory>
+
 namespace VISFS {
 
 LocalMap::LocalMap(const ParametersMap & _parameters) :
@@ -16,7 +18,13 @@ LocalMap::LocalMap(const ParametersMap & _parameters) :
     signatureCount_(0),
     parallaxCount_(0.f),
     translationCount_(Eigen::Vector3d(0.0, 0.0, 0.0)),
-    minInliers_(Parameters::defaultEstimatorMinInliers()) {
+    minInliers_(Parameters::defaultEstimatorMinInliers()),
+    numRangeDataLimit_(Parameters::defaultLocalMapNumRangeDataLimit()),
+    gridType_(static_cast<Map::GridType>(Parameters::defaultLocalMapGridMapType())),
+    mapResolution_(Parameters::defaultLocalMapMapResolution()),
+    insertFreeSpace_(Parameters::defaultLocalMapInsertFreeSpace()),
+    hitProbability_(Parameters::defaultLocalMapHitProbability()),
+    missProbability_(Parameters::defaultLocalMapMissProbability()) {
 
     Parameters::parse(_parameters, Parameters::kLocalMapMapSize(), localMapSize_);
     Parameters::parse(_parameters, Parameters::kTrackerMaxFeatures(), maxFeature_);
@@ -24,6 +32,17 @@ LocalMap::LocalMap(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kLocalMapMinTranslation(), minTranslation_);
     minTranslation_ = 3 * minTranslation_ * minTranslation_;
     Parameters::parse(_parameters, Parameters::kEstimatorMinInliers(), minInliers_);
+    Parameters::parse(_parameters, Parameters::kLocalMapNumRangeDataLimit(), numRangeDataLimit_);
+    int gridType;
+    Parameters::parse(_parameters, Parameters::kLocalMapGridMapType(), gridType);
+    gridType_ = static_cast<Map::GridType>(gridType);
+    Parameters::parse(_parameters, Parameters::kLocalMapMapResolution(), mapResolution_);
+    Parameters::parse(_parameters, Parameters::kLocalMapInsertFreeSpace(), insertFreeSpace_);
+    Parameters::parse(_parameters, Parameters::kLocalMapHitProbability(), hitProbability_);
+    Parameters::parse(_parameters, Parameters::kLocalMapMissProbability(), missProbability_);
+
+    activeSubmap2D_ = std::make_unique<Map::ActiveSubmaps2D>(numRangeDataLimit_, gridType_, mapResolution_, insertFreeSpace_, hitProbability_, missProbability_);
+
 }
 
 bool LocalMap::insertSignature(const Signature & _signature, const Eigen::Vector3d & _translation) {
@@ -318,6 +337,18 @@ inline bool LocalMap::checkCounters() {
         return true;
     
     return false;
+}
+
+const std::vector<Sensor::PointCloud> LocalMap::getLaserHitPointCloud(std::size_t _signatureId) {
+    std::vector<Sensor::PointCloud> result;
+    auto it = signatures_.find(_signatureId);
+    if (it != signatures_.end()) {
+        auto rangeDataes = it->second.getPretreatedRangeData();
+        for (auto rangeData : rangeDataes) {
+            result.emplace_back(rangeData.returns);
+        }
+    }
+    return result;
 }
 
 }   // namespace

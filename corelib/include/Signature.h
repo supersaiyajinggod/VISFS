@@ -10,6 +10,7 @@
 
 #include "CameraModels/GeometricCamera.h"
 #include "Sensor/PointCloud.h"
+#include "Sensor/RangeData.h"
 
 namespace VISFS {
 
@@ -108,7 +109,8 @@ public:
     Eigen::Isometry3d getWheelOdomPose() const { return wheelOdom_; }
     void setWheelOdomPose(const Eigen::Isometry3d & _wheelOdom) { wheelOdom_ = _wheelOdom; }
     const Sensor::TimedPointCloudWithIntensities & getTimedPointCloudWithIntensities() const { return timedPointCloud_; }
-
+    const std::vector<Sensor::RangeData> & getPretreatedRangeData() const { return preteatedRangeData_; }
+    void setPretreatedRangeData(const std::vector<Sensor::RangeData> & _pretreatedRangeData) { preteatedRangeData_ = _pretreatedRangeData; }
 
     const std::map<std::size_t, cv::KeyPoint> & getWords() const { return words_; }
     void setWords(const std::map<std::size_t, cv::KeyPoint> & _words) { words_ = _words; }
@@ -165,6 +167,7 @@ private:
     Eigen::Isometry3d wheelOdom_;   // The measurement of wheel at the timestamp of this signature.
 
     Sensor::TimedPointCloudWithIntensities timedPointCloud_;
+    std::vector<Sensor::RangeData> preteatedRangeData_;
 
     std::map<std::size_t, cv::KeyPoint> words_;   // all words, both covisible and new extract.
     std::map<std::size_t, cv::Point3f> words3d_;  // word in robot/base_link

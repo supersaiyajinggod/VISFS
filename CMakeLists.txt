@@ -11,6 +11,18 @@ set(PROJECT_MAJOR_VERSION ${VISFS_MAJOR_VERSION})
 set(PROJECT_MINOR_VERSION ${VISFS_MINOR_VERSION})
 set(PROJECT_PATCH_VERSION ${VISFS_PATCH_VERSION})
 
+####### local cmake modules #######
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake_modules")
+
+find_package(Eigen3 3.1.0 REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(PCL 1.7 REQUIRED REQUIRED)
+find_package(G2O REQUIRED)
+
+find_package(Boost 1.65 REQUIRED COMPONENTS
+   log
+)
+
 option(BUILD_SHARED_LIBS "Set to OFF to build static libraries" ON)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -21,6 +33,7 @@ message("Build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -fpermissive")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -w -fpermissive")
 set(CMAKE_CXX_FLAGS "-fPIC")
+set(CMAKE_CXX_STANDARD 17)
 
 # Check C++17, C++11 or C++0x support
 include(CheckCXXCompilerFlag)
@@ -52,18 +65,6 @@ endif()
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
-
-####### local cmake modules #######
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake_modules")
-
-find_package(Eigen3 3.1.0 REQUIRED)
-find_package(OpenCV REQUIRED)
-find_package(PCL 1.7 REQUIRED REQUIRED)
-find_package(G2O REQUIRED)
-
-find_package(Boost 1.65 REQUIRED COMPONENTS
-   log
-)
 
 message(STATUS "--------------------------------------------")
 message(STATUS "  Info :")

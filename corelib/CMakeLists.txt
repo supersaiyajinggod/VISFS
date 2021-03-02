@@ -1,5 +1,12 @@
 set(SRC_FILES
     src/CameraModels/PinholeModel.cpp
+    src/Map/ProbabilityValues.cpp
+    src/Map/ValueConversionTables.cpp
+    src/Map/2d/Grid2d.cpp
+    src/Map/2d/ProbabilityGrid.cpp
+    src/Map/2d/ProbabilityGridRangeDataInserter2D.cpp
+    src/Map/2d/RayToPixelMask.cpp
+    src/Map/2d/Submap2D.cpp
     src/Estimator.cpp
     src/Extrapolator.cpp
     src/LocalMap.cpp

@@ -28,7 +28,10 @@ Estimator::Estimator(const ParametersMap & _parameters) :
     toleranceTranslation_(Parameters::defaultEstimatorToleranceTranslation()),
     toleranceRotation_(Parameters::defaultEstimatorToleranceRotation()),
     force3Dof_(Parameters::defaultEstimatorForce3DoF()),
-    numSubdivisionsPerScan_(Parameters::defaultEstimatorNumSubDivisionPreScan()) {
+    numSubdivisionsPerScan_(Parameters::defaultEstimatorNumSubDivisionPreScan()),
+    minLaserRange_(Parameters::defaultEstimatorMinLaserRange()),
+    maxLaserRange_(Parameters::defaultEstimatorMaxLaserRange()),
+    missingDataRayLength_(Parameters::defaultEstimatorMissingDataRayLength()) {
 
     Parameters::parse(_parameters, Parameters::kSystemSensorStrategy(), sensorStrategy_);
     Parameters::parse(_parameters, Parameters::kEstimatorMinInliers(), minInliers_);
@@ -40,6 +43,9 @@ Estimator::Estimator(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kEstimatorToleranceRotation(), toleranceRotation_);
     Parameters::parse(_parameters, Parameters::kEstimatorForce3DoF(), force3Dof_);
     Parameters::parse(_parameters, Parameters::kEstimatorNumSubDivisionPreScan(), numSubdivisionsPerScan_);
+    Parameters::parse(_parameters, Parameters::kEstimatorMinLaserRange(), minLaserRange_);
+    Parameters::parse(_parameters, Parameters::kEstimatorMaxLaserRange(), maxLaserRange_);
+    Parameters::parse(_parameters, Parameters::kEstimatorMissingDataRayLength(), missingDataRayLength_);
 
     optimizer_ = new Optimizer(_parameters);
     localMap_ = new LocalMap(_parameters);
@@ -106,7 +112,7 @@ void Estimator::threadProcess() {
     }
 }
 
-void Estimator::laserPretreatment(const Sensor::TimedPointCloudWithIntensities & _pointCloud, const Eigen::Isometry3d & _transformationLaser2Camera) {
+void Estimator::laserPretreatment(const Sensor::TimedPointCloudWithIntensities & _pointCloud, const Eigen::Isometry3d & _transformationLaser2Camera, std::vector<Sensor::RangeData> & _result) {
     if (_pointCloud.points.empty()) {
         return;
     }
@@ -127,13 +133,32 @@ void Estimator::laserPretreatment(const Sensor::TimedPointCloudWithIntensities &
         subdivisions.emplace_back(Sensor::TimedPointCloudWithIntensities{subdivision, {}, {}, subdivisionTime});
     }
     // change the laser scan from the laser frame to the camera frame. 
+    // Drop any returns below the minimum range and convert returns beyond the
+    // maximum range into misses.
     for (auto & subdivision : subdivisions) {
+        subdivision.origin = _transformationLaser2Camera * subdivision.origin;
+        Sensor::RangeData rangeData;
+        rangeData.origin = subdivision.origin;
         for(auto & point : subdivision.points) {
             point.position = _transformationLaser2Camera * point.position;
+            const Eigen::Vector3d delta = point.position - subdivision.origin;
+            const double range = delta.norm();
+            if (range >= minLaserRange_) {
+                if (range <= maxLaserRange_) {
+                    rangeData.returns.push_back(Sensor::RangefinderPoint{point.position});
+                } else {
+                    point.position = subdivision.origin + missingDataRayLength_ / range * delta;
+                    rangeData.misses.push_back(Sensor::RangefinderPoint{point.position});
+                }        
+            }
         }
+        _result.emplace_back(rangeData);
     }
-    // get global pose for each laser
-    
+    // Transform to gravity aligned.
+
+    // Filter.
+
+    // Correlative scan match.
 
 }
 
@@ -174,7 +199,11 @@ void Estimator::process(Signature & _signature) {
     }
 
     // process laser
-    laserPretreatment(_signature.getTimedPointCloudWithIntensities(), _signature.getTransformLaser2Camera());
+    if (sensorStrategy_ == 3) {
+        std::vector<Sensor::RangeData> rangeData;
+        laserPretreatment(_signature.getTimedPointCloudWithIntensities(), _signature.getTransformLaser2Camera(), rangeData);
+        _signature.setPretreatedRangeData(rangeData);
+    }
 
     if (transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
         LOG_ERROR << "Error: transform is Zero. The initial estimate failed.";
@@ -206,7 +235,12 @@ void Estimator::process(Signature & _signature) {
         localMap_->getFeaturePosesAndObservations(points3D, wordReferences);
 
         std::size_t rootId = poses.rbegin()->first - 1;
-        optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
+        if (sensorStrategy_ == 3) {
+            // optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, localMap_->getLaserHitPointCloud(_signature.getId()), *(localMap_->getMatchingSubmap2D()->getGrid()), sbaOutliers);
+            optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
+        } else {
+            optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
+        }
 
         // if (force3Dof_) {
         //     for (auto pose : optimizedPoses) {
@@ -219,7 +253,7 @@ void Estimator::process(Signature & _signature) {
         // }
 
         // Update BA result
-        if (optimizedPoses.size() == 6 && !optimizedPoses.begin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))
+        if (optimizedPoses.size() == poses.size() && !optimizedPoses.begin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))
                 && !optimizedPoses.rbegin()->second.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
             if (sbaOutliers.size()) {
                 std::vector<std::size_t> newInliers;

@@ -7,13 +7,13 @@ set(SRC_FILES
     src/Map/2d/ProbabilityGridRangeDataInserter2D.cpp
     src/Map/2d/RayToPixelMask.cpp
     src/Map/2d/Submap2D.cpp
+    src/Optimizer/Optimizer.cpp
+    src/Optimizer/OptimizeTypeDefine.cpp
     src/Estimator.cpp
     src/Extrapolator.cpp
     src/LocalMap.cpp
     src/Monitor.cpp
     src/MultiviewGeometry.cpp
-    src/Optimizer.cpp
-    src/OptimizeTypeDefine.cpp
     src/Parameters.cpp
     src/Signature.cpp
     src/System.cpp

@@ -10,6 +10,7 @@
 
 
 namespace VISFS {
+namespace Optimizer {
 
 /**
  * \brief SE3 Vertex parameterized internally with a transformation matrix
@@ -258,6 +259,7 @@ public:
 
 // };
 
-}	// namespace
+}	// Optimizer
+}	// VISFS
 
 #endif  // OPTIMIZER_TYPE_DEFINE_H

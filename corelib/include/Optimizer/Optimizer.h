@@ -15,6 +15,7 @@
 #include "Map/2d/Grid2d.h"
 
 namespace VISFS {
+namespace Optimizer {
 
 struct FeatureBA {
     cv::KeyPoint kpt;
@@ -101,6 +102,7 @@ private:
 
 };
 
-}   // namespace
+}   // Optimizer
+}   // VISFS
 
 #endif  // VISFS_OPTIMIZER_H

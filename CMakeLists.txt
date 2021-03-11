@@ -17,6 +17,8 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake_modules")
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(PCL 1.7 REQUIRED REQUIRED)
+find_package(Cholmod)
+find_package(CSparse)
 find_package(G2O REQUIRED)
 
 find_package(Boost 1.65 REQUIRED COMPONENTS
@@ -86,6 +88,8 @@ endif(OpenCV_FOUND)
 
 if(G2O_FOUND)
 	message(STATUS " *With g2o                  = YES (License: BSD)")
+   message(STATUS " G2O_INCLUDE_DIRS           = ${G2O_INCLUDE_DIRS}")
+   message(STATUS " G2O_LIBRARIES              = ${G2O_LIBRARIES}") 
 endif(G2O_FOUND)
 
 add_subdirectory(utilite)

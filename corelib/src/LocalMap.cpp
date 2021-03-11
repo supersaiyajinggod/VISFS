@@ -270,18 +270,18 @@ bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, st
     return true;
 }
 
-bool LocalMap::getFeaturePosesAndObservations(std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points, std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _observations) {
+bool LocalMap::getFeaturePosesAndObservations(std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points, std::map<std::size_t, std::map<std::size_t, Optimizer::FeatureBA>> & _observations) {
     const Eigen::Isometry3d transformRobotToImage = signatures_.begin()->second.getCameraModel().getTansformImageToRobot().inverse();
     for (auto feature : features_) {
         if (feature.second.getObservedTimes() > 1) {
             bool fixSymbol = feature.second.getFeatureState() == Feature::STABLE ? true : false;
             _points.emplace(feature.first, std::make_tuple(feature.second.getFeaturePose(), fixSymbol));
 
-            std::map<std::size_t, FeatureBA> ptMap;
+            std::map<std::size_t, Optimizer::FeatureBA> ptMap;
             for (auto observation : feature.second.featureStatusInSigantures_) {
                 float depth = transformPoint(observation.second.point3d, transformRobotToImage).z;
                 const cv::KeyPoint kpt = cv::KeyPoint(observation.second.uv, 1.f);
-                ptMap.emplace(observation.first, FeatureBA(kpt, depth));
+                ptMap.emplace(observation.first, Optimizer::FeatureBA(kpt, depth));
             }
 
             _observations.emplace(feature.first, ptMap);

@@ -1,7 +1,8 @@
-#include "OptimizeTypeDefine.h"
+#include "Optimizer/OptimizeTypeDefine.h"
 #include "Math.h"
 
 namespace VISFS {
+namespace Optimizer {
 
 VertexSE3::VertexSE3() : BaseVertex<6, g2o::SE3Quat>() {
 }
@@ -48,4 +49,5 @@ void EdgeSE3Expmap::linearizeOplus() {
 
 }
 
-}
+}	// Optimizer
+}	// VISFS

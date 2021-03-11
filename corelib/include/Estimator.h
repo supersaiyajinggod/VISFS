@@ -5,7 +5,7 @@
 #include <boost/thread.hpp>
 
 #include "Signature.h"
-#include "Optimizer.h"
+#include "Optimizer/Optimizer.h"
 #include "LocalMap.h"
 #include "Tracker.h"
 #include "Monitor.h"
@@ -47,7 +47,7 @@ private:
     std::set<std::size_t> outliersBuf_;
     boost::mutex mutexOutliersRw_;
 
-    Optimizer * optimizer_;
+    Optimizer::Optimizer * optimizer_;
     LocalMap * localMap_;
     Tracker * tracker_;
     Monitor * monitor_;

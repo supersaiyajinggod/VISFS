@@ -47,7 +47,7 @@ Estimator::Estimator(const ParametersMap & _parameters) :
     Parameters::parse(_parameters, Parameters::kEstimatorMaxLaserRange(), maxLaserRange_);
     Parameters::parse(_parameters, Parameters::kEstimatorMissingDataRayLength(), missingDataRayLength_);
 
-    optimizer_ = new Optimizer(_parameters);
+    optimizer_ = new Optimizer::Optimizer(_parameters);
     localMap_ = new LocalMap(_parameters);
 }
 
@@ -214,13 +214,13 @@ void Estimator::process(Signature & _signature) {
     // If motion of guess > threshold, do bundle adjustment.
     std::map<std::size_t, Eigen::Isometry3d> optimizedPoses;
     std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> points3D;
-    std::map<std::size_t, std::map<std::size_t, FeatureBA>> wordReferences;
+    std::map<std::size_t, std::map<std::size_t, Optimizer::FeatureBA>> wordReferences;
     std::vector<std::tuple<std::size_t, std::size_t>> sbaOutliers;
     if (!transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && inliers.size() > minInliers_ && localMap_->checkMapAvaliable()) {
         std::map<std::size_t, Eigen::Isometry3d> poses;
         std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> links;
         std::vector<boost::shared_ptr<GeometricCamera>> cameraModels;
-        // std::map<std::size_t, std::map<std::size_t, FeatureBA>> wordReferences;
+        // std::map<std::size_t, std::map<std::size_t, Optimizer::FeatureBA>> wordReferences;
         // std::set<std::size_t> outliers;
 
         localMap_->getSignaturePoses(poses);
@@ -410,7 +410,7 @@ void Estimator::process(Signature & _signature) {
             blockWords.emplace(outlier, wordsTo.at(outlier));
         }
         
-        std::map<std::size_t, std::map<std::size_t, FeatureBA>>::const_iterator it = wordReferences.find(outlier);
+        std::map<std::size_t, std::map<std::size_t, Optimizer::FeatureBA>>::const_iterator it = wordReferences.find(outlier);
         if (it != wordReferences.end()) {
             LOG_DEBUG << "Outlier id : " << it->first;
             for (auto eachFrame : it->second) {

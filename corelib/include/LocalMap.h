@@ -2,7 +2,7 @@
 #define VISFS_LOCAL_MAP
 
 #include "Signature.h"
-#include "Optimizer.h"
+#include "Optimizer/Optimizer.h"
 #include "Parameters.h"
 #include "Map/2d/Submap2D.h"
 
@@ -88,7 +88,7 @@ public:
       * \param[out] observations The observations of every feature. With map structure: <feature id, <signature id, observation>>
 	  * \author eddy
       */  
-    bool getFeaturePosesAndObservations(std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points, std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _observations);
+    bool getFeaturePosesAndObservations(std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points, std::map<std::size_t, std::map<std::size_t, Optimizer::FeatureBA>> & _observations);
 
     const std::vector<Sensor::PointCloud> getLaserHitPointCloud(std::size_t _signatureId); 
 

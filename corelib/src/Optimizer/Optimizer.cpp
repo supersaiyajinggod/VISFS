@@ -1,5 +1,5 @@
-#include "Optimizer.h"
-#include "OptimizeTypeDefine.h"
+#include "Optimizer/Optimizer.h"
+#include "Optimizer/OptimizeTypeDefine.h"
 #include "Stl.h"
 #include "Math.h"
 #include "Log.h"
@@ -27,7 +27,7 @@
 #endif
 
 namespace VISFS {
-
+namespace Optimizer {
 Optimizer::Optimizer(const ParametersMap & _parameters) :
 	iterations_(Parameters::defaultOptimizerIterations()),
 	solver_(Parameters::defaultOptimizerSolver()),
@@ -133,7 +133,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 			int id = iter->first;
 			if (_points3D.find(id) != _points3D.end()) {
 				// Set vertex
-				g2o::VertexSBAPointXYZ* vpt3d = new g2o::VertexSBAPointXYZ();
+				g2o::VertexPointXYZ* vpt3d = new g2o::VertexPointXYZ();
 				vpt3d->setEstimate(_points3D.at(id));
 				vpt3d->setId(stepVertexId + id);
 				vpt3d->setMarginalized(true);
@@ -236,7 +236,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 						
 						Eigen::Vector3d pt3d;
 						pt3d = _points3D.at((*iter)->vertex(0)->id() - stepVertexId);
-						dynamic_cast<g2o::VertexSBAPointXYZ *>((*iter)->vertex(0))->setEstimate(pt3d);
+						dynamic_cast<g2o::VertexPointXYZ *>((*iter)->vertex(0))->setEstimate(pt3d);
 
 						_outliers.insert((*iter)->vertex(0)->id() - stepVertexId);
 
@@ -289,9 +289,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 
 		// update point3d
 		for (auto iter = _points3D.begin(); iter != _points3D.end(); ++ iter) {
-			const g2o::VertexSBAPointXYZ * v;
+			const g2o::VertexPointXYZ * v;
 			int id = iter->first;
-			v = dynamic_cast<const g2o::VertexSBAPointXYZ *>(optimizer.vertex(stepVertexId + id));
+			v = dynamic_cast<const g2o::VertexPointXYZ *>(optimizer.vertex(stepVertexId + id));
 			if (v) {
 				iter->second = v->estimate();
 			} else {
@@ -401,7 +401,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 			if (_points3D.find(id) != _points3D.end()) {
 				// Set vertex
 				auto [pointPose, fixSymbol] = _points3D.at(id);
-				g2o::VertexSBAPointXYZ* vpt3d = new g2o::VertexSBAPointXYZ();
+				g2o::VertexPointXYZ* vpt3d = new g2o::VertexPointXYZ();
 				vpt3d->setEstimate(pointPose);
 				vpt3d->setId(stepVertexId + id);
 				vpt3d->setFixed(fixSymbol);
@@ -549,9 +549,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 
 		// update point3d
 		for (auto iter = _points3D.begin(); iter != _points3D.end(); ++ iter) {
-			const g2o::VertexSBAPointXYZ * v;
+			const g2o::VertexPointXYZ * v;
 			int id = iter->first;
-			v = dynamic_cast<const g2o::VertexSBAPointXYZ *>(optimizer.vertex(stepVertexId + id));
+			v = dynamic_cast<const g2o::VertexPointXYZ *>(optimizer.vertex(stepVertexId + id));
 			if (v) {
 				auto [oldPose, fixSymbol] = iter->second;
 				const g2o::Vector3 & newPose = v->estimate();
@@ -668,7 +668,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 			if (_points3D.find(id) != _points3D.end()) {
 				// Set vertex
 				auto [pointPose, fixSymbol] = _points3D.at(id);
-				g2o::VertexSBAPointXYZ* vpt3d = new g2o::VertexSBAPointXYZ();
+				g2o::VertexPointXYZ* vpt3d = new g2o::VertexPointXYZ();
 				vpt3d->setEstimate(pointPose);
 				vpt3d->setId(stepVertexId + id);
 				vpt3d->setFixed(fixSymbol);
@@ -731,6 +731,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 				}
 			}
 		}
+
+		// Set range points to g2o
+		g2o::VertexSE3Expmap * latestPose = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(_poses.rbegin()->first));
 
 		// Optimize
 		optimizer.setVerbose(false);
@@ -816,9 +819,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 
 		// update point3d
 		for (auto iter = _points3D.begin(); iter != _points3D.end(); ++ iter) {
-			const g2o::VertexSBAPointXYZ * v;
+			const g2o::VertexPointXYZ * v;
 			int id = iter->first;
-			v = dynamic_cast<const g2o::VertexSBAPointXYZ *>(optimizer.vertex(stepVertexId + id));
+			v = dynamic_cast<const g2o::VertexPointXYZ *>(optimizer.vertex(stepVertexId + id));
 			if (v) {
 				auto [oldPose, fixSymbol] = iter->second;
 				const g2o::Vector3 & newPose = v->estimate();
@@ -841,4 +844,5 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 	return optimizedPoses;
 }
 
-}   // namespace
+}	// Optimizer
+}   // VISFS

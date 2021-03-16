@@ -1,5 +1,6 @@
 #include "Optimizer/Optimizer.h"
 #include "Optimizer/OptimizeTypeDefine.h"
+#include "Optimizer/TypeOccupiedSpace2D.h"
 #include "Stl.h"
 #include "Math.h"
 #include "Log.h"
@@ -581,7 +582,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
     const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
     std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points3D,
     const std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _wordReferences,
-    const std::vector<Sensor::PointCloud> & _pointCloud,
+    const std::vector<Sensor::PointCloud> & _pointClouds,
     const Map::Grid2D & _grid,
     std::vector<std::tuple<std::size_t, std::size_t>> & _outliers) {
 
@@ -733,7 +734,35 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		}
 
 		// Set range points to g2o
+		const int pointStepVertexId = static_cast<int>(_poses.rbegin()->first + 1) + static_cast<int>(_wordReferences.rbegin()->first) + 1;
 		g2o::VertexSE3Expmap * latestPose = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(_poses.rbegin()->first));
+		const Map::MapLimits& limits = _grid.limits();
+		const GridArrayAdapter adapter(_grid);
+		std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator = std::make_shared<ceres::BiCubicInterpolator<GridArrayAdapter>>(adapter);
+		Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << 0.1;
+		int index = 0;
+		for (auto pointCloud : _pointClouds) {
+			for (auto point : pointCloud.points()) {
+				// Set Vertex
+				VertexPoint3D * vRangePoint = new VertexPoint3D();
+				vRangePoint->setEstimate(point.position);
+				vRangePoint->setId(pointStepVertexId + (++index));
+				vRangePoint->setFixed(true);
+				vRangePoint->setMarginalized(true);
+				optimizer.addVertex(vRangePoint);
+
+				// Set Edge
+				// EdgeOccupiedObservation * eo = new EdgeOccupiedObservation(interpolator, limits);
+				// eo->setVertex(0, latestPose);
+				// eo->setVertex(1, vRangePoint);
+				// eo->setInformation(informationRangePoint);
+
+				// if (!optimizer.addEdge(eo)) {
+				// 	delete eo;
+				// 	LOG_ERROR << "Optimizer: Failed adding " << index << "'th observation of grid map";
+				// }
+			}
+		}
 
 		// Optimize
 		optimizer.setVerbose(false);

@@ -40,5 +40,14 @@ PointCloud trimPointCloud(const PointCloud & _pointCloud, const std::string & _f
     });
 }
 
+PointCloud transformPointCloud(const PointCloud & _pointCloud, const Eigen::Isometry3d & _transform) {
+    std::vector<RangefinderPoint> points;
+    points.reserve(_pointCloud.size());
+    for (const RangefinderPoint & point : _pointCloud.points()) {
+        points.emplace_back(_transform * point);
+    }
+    return PointCloud(points, _pointCloud.intensities());
+}
+
 }   // namespace Sensor 
 }   // namespace VISFS

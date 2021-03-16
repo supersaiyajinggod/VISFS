@@ -12,6 +12,8 @@ struct RangeData {
     PointCloud misses;
 };
 
+RangeData transformRangeData(const RangeData & _rangeData, const Eigen::Isometry3d & _transform);
+
 RangeData trimRangeData(const RangeData & _rangeData, const std::string & _flied,
     const double _intervalBegin = DBL_MIN, const double _intervalEnd = DBL_MAX);
 

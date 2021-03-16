@@ -6,7 +6,7 @@
 #include <g2o/core/base_binary_edge.h>
 #include <g2o/core/auto_differentiation.h>
 #include <g2o/types/sba/types_six_dof_expmap.h>
-#include <EXTERNAL/ceres/autodiff.h>
+#include <g2o/EXTERNAL/ceres/autodiff.h>
 #include <ceres/cubic_interpolation.h>
 
 #include "Sensor/PointCloud.h"
@@ -75,7 +75,7 @@ public:
 class EdgeOccupiedObservation : public g2o::BaseBinaryEdge<1, double, g2o::VertexSE3Expmap, VertexPoint3D> {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	EdgeOccupiedObservation(const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> & _interpolator, Map::MapLimits & _limits) :
+	EdgeOccupiedObservation(const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> & _interpolator, const Map::MapLimits & _limits) :
 		interpolator_(_interpolator),
 		limits_(_limits) {}
 
@@ -84,7 +84,7 @@ public:
 		return false;
 	}
 
-	virtual bool write(std::ostream &) {
+	virtual bool write(std::ostream &) const {
 		std::cerr << __PRETTY_FUNCTION__ << " not implemented yet" << std::endl;
 		return false;
 	}
@@ -93,25 +93,83 @@ public:
 	bool operator()(const T * _pose, const T * _point, T * _error) const {
 		// _pose: t1 t2 t3 x y z w
 		// _point: x y z
-		const Eigen::Quaterniond q(_pose[6], _pose[3], _pose[4], _pose[5]);
-		const Eigen::Vector3d t(_pose[0], _pose[1], _pose[2]);
-		Eigen::Isometry3d Tcw = Eigen::Isometry3d::Identity();
+		typename g2o::VectorN<7, T>::ConstMapType pose(_pose);
+		typename g2o::VectorN<3, T>::ConstMapType point(_point);
+		typename g2o::VectorN<1, T>::MapType error(_error);
+
+		const Eigen::Quaternion<T> q(pose[6], pose[3], pose[4], pose[5]);
+		const Eigen::Matrix<T, 3, 1> t(pose[0], pose[1], pose[2]);
+		Eigen::Transform<T, 3, 1> Tcw = Eigen::Transform<T, 3, 1>::Identity();
 		Tcw.prerotate(q);
 		Tcw.pretranslate(t);
-		const Eigen::Isometry3d Twc = Tcw.inverse();
-		const Eigen::Vector3d Pc(_point[0], _point[1], _point[2]);
-		const Eigen::Vector3d Pw = Twc * Pc;
+		auto Twc = Tcw.inverse();
+		const Eigen::Matrix<T, 3, 1> Pc(point[0], point[1], point[2]);
+		Eigen::Matrix<T, 3, 1> Pw = Twc * Pc;
 
 		interpolator_->Evaluate(
 			(limits_.max().x() - Pw[0]) / limits_.resolution() - 0.5 + static_cast<double>(kPadding),
 			(limits_.max().y() - Pw[1]) / limits_.resolution() - 0.5 + static_cast<double>(kPadding),
-			_error
+			&error[0]
 		);
 
+		(void)error;
 		return true;
 	}
 
-	G2O_MAKE_AUTO_AD_FUNCTIONS
+	virtual void computeError() override {
+		const g2o::VertexSE3Expmap * Tcw = dynamic_cast<const g2o::VertexSE3Expmap *>(vertex(0));
+		const VertexPoint3D * point = dynamic_cast<const VertexPoint3D *>(vertex(1));
+
+		(*this)(Tcw->estimate().toVector().data(), point->estimate().data(), _error.data());
+	}
+
+	template <int EdgeDimension, int VertexDimension>
+	using ADJacobianType = typename Eigen::Matrix<number_t, EdgeDimension, VertexDimension, Eigen::RowMajor>;
+
+	//! helper function to perform a = b
+	template <typename A, typename B>
+	static EIGEN_STRONG_INLINE void assign(const Eigen::MatrixBase<A>& a,
+											const Eigen::MatrixBase<B>& b) {
+		Eigen::MatrixBase<A>& aux = const_cast<Eigen::MatrixBase<A>&>(a);
+		aux = b;
+	}
+
+	virtual void linearizeOplus() override {
+		const g2o::VertexSE3Expmap * Tcw = dynamic_cast<const g2o::VertexSE3Expmap *>(vertex(0));
+		const VertexPoint3D * point = dynamic_cast<const VertexPoint3D *>(vertex(1));
+
+		if (this->allVerticesFixed()) {
+			int unused[] = {(this->jacobianOplusXn<0>().setZero(), 0), (this->jacobianOplusXn<1>().setZero(), 0)};
+			(void)unused;
+			return;
+		}
+
+		std::tuple<ADJacobianType<EdgeOccupiedObservation::Dimension, VertexXnType<0>::Dimension>, ADJacobianType<this->Dimension, VertexXnType<1>::Dimension>> adJacobians;
+
+		number_t * parameters[] = { const_cast<number_t *>(Tcw->estimate().toVector().data()), const_cast<number_t *>(point->estimate().data()) };
+		number_t * jacobians[] = { this->vertexXn<0>()->fixed() ? nullptr : const_cast<number_t *>(std::get<0>(adJacobians).data()),
+									this->vertexXn<1>()->fixed() ? nullptr : const_cast<number_t *>(std::get<1>(adJacobians).data()) };
+		number_t errorValue[EdgeOccupiedObservation::Dimension];
+
+		using AutoDiffDims = ceres::internal::StaticParameterDims<VertexXnType<0>::Dimension, VertexXnType<1>::Dimension>;
+		bool diffState = ceres::internal::AutoDifferentiate<EdgeOccupiedObservation::Dimension, AutoDiffDims, EdgeOccupiedObservation, number_t>(
+				*this, parameters, EdgeOccupiedObservation::Dimension, errorValue, jacobians);
+
+		assert(diffState && "Error during Automatic Differentiation");
+		if (!diffState) {
+			int unused[] = {(this->jacobianOplusXn<0>().setZero(), 0), (this->jacobianOplusXn<1>().setZero(), 0)};
+			(void)unused;
+			return;
+		}
+
+		// copy over the Jacobians (convert row-major -> column-major) for non-fixed vertices
+		int unused[] = {
+			(this->vertexXn<0>()->fixed() ? (this->jacobianOplusXn<0>().setZero(), 0) : (assign(this->jacobianOplusXn<0>(), std::get<0>(adJacobians)), 0)),
+			(this->vertexXn<1>()->fixed() ? (this->jacobianOplusXn<1>().setZero(), 0) : (assign(this->jacobianOplusXn<1>(), std::get<1>(adJacobians)), 0))
+		};
+		(void)unused;
+	}
+
 
 private:
 	const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator_;

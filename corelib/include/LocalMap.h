@@ -94,6 +94,10 @@ public:
 
     inline std::shared_ptr<const Map::Submap2D> getMatchingSubmap2D() { return activeSubmap2D_->submaps().front(); }
 
+    std::vector<std::shared_ptr<const Map::Submap2D>> insertMatchingSubMap2d(const std::vector<Sensor::RangeData> & _rangeDatas);
+
+    inline bool hasMatchingSubmap2D() { return !activeSubmap2D_->submaps().empty(); }
+
 private:
 	/** \brief Find corresponding pairs between two groups of features.
       * \param[in] wordsFrom The a group of features.

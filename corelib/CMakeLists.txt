@@ -9,6 +9,8 @@ set(SRC_FILES
     src/Map/2d/Submap2D.cpp
     src/Optimizer/Optimizer.cpp
     src/Optimizer/OptimizeTypeDefine.cpp
+    src/Sensor/PointCloud.cpp
+    src/Sensor/RangeData.cpp
     src/Estimator.cpp
     src/Extrapolator.cpp
     src/LocalMap.cpp
@@ -31,6 +33,7 @@ include_directories(
     ${OpenCV_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     ${G2O_INCLUDE_DIRS}
+    ${CERES_INCLUDE_DIRS}
 )
 
 add_library(VISFS_corelib ${SRC_FILES})
@@ -38,5 +41,6 @@ target_link_libraries(VISFS_corelib
     ${OpenCV_LIBS}
     ${PCL_LIBRARIES}
     ${G2O_LIBRARIES}
+    ${CERES_LIBRARIES}
     VISFS_utilite
 )

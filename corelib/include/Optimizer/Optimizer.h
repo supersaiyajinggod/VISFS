@@ -88,7 +88,7 @@ public:
         const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
         std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points3D,   // map<feature id, <feature global pose, fixed?>>
         const std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _wordReferences,
-        const std::vector<Sensor::PointCloud> & _pointCloud,
+        const std::vector<Sensor::PointCloud> & _pointClouds,
         const Map::Grid2D & _grid,
         std::vector<std::tuple<std::size_t, std::size_t>> & _outliers   //  tuple<feature id, signature id>
     );  

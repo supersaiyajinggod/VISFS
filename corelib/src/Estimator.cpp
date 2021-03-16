@@ -96,9 +96,9 @@ void Estimator::threadProcess() {
                 signature = signatureThreadBuf_.front();
                 signatureThreadBuf_.pop();
             }
-            // UTimer timer;
+            UTimer timer;
             process(signature);
-            // timer.elapsed("Estimator");
+            timer.elapsed("Estimator");
 
             if (monitor_) {
                 monitor_->addSignature(signature);
@@ -236,8 +236,11 @@ void Estimator::process(Signature & _signature) {
 
         std::size_t rootId = poses.rbegin()->first - 1;
         if (sensorStrategy_ == 3) {
-            // optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, localMap_->getLaserHitPointCloud(_signature.getId()), *(localMap_->getMatchingSubmap2D()->getGrid()), sbaOutliers);
-            optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
+            if (localMap_->hasMatchingSubmap2D()) {
+                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, localMap_->getLaserHitPointCloud(_signature.getId()), *(localMap_->getMatchingSubmap2D()->getGrid()), sbaOutliers);
+            } else {
+                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
+            }    
         } else {
             optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
         }
@@ -359,6 +362,16 @@ void Estimator::process(Signature & _signature) {
         pcl::getTransformation(x, y, 0, 0, 0, yaw, pose);
         currentGlobalPose = Eigen::Isometry3d(pose.matrix());
         LOG_DEBUG << "CurrentGlobalPose After force 3d: \n" << currentGlobalPose.matrix() << std::endl;
+    }
+
+    if (sensorStrategy_ == 3) {
+        std::vector<Sensor::RangeData> rangeDatas = _signature.getPretreatedRangeData();
+        if (!rangeDatas.empty()) {
+            for (auto rangeData : rangeDatas) {
+                Sensor::transformRangeData(rangeData, currentGlobalPose);
+            }
+            localMap_->insertMatchingSubMap2d(rangeDatas);
+        }
     }
 
     std::set<std::size_t> errorFeature;

@@ -81,6 +81,8 @@ struct TimedPointCloudWithIntensities {
 PointCloud trimPointCloud(const PointCloud & _pointCloud, const std::string & _flied,
     const double _intervalBegin = DBL_MIN, const double _intervalEnd = DBL_MAX);
 
+PointCloud transformPointCloud(const PointCloud & _pointCloud, const Eigen::Isometry3d & _transform);
+
 }   // namespace Sensor
 }   // VISFS
 

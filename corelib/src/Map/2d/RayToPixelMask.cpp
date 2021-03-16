@@ -12,9 +12,9 @@ bool isEqual(const Eigen::Array2i & lhs, const Eigen::Array2i & rhs) {
 }
 
 std::vector<Eigen::Array2i> rayToPixelMask(const Eigen::Array2i & _scaledBegin, const Eigen::Array2i & _scaledEnd, int subpixelScale) {
-    assert(_scaledBegin.x() > 0);
-    assert(_scaledBegin.y() > 0);
-    assert(_scaledEnd.y() > 0);
+    assert(_scaledBegin.x() >= 0);
+    assert(_scaledBegin.y() >= 0);
+    assert(_scaledEnd.y() >= 0);
     // For simplicity, we order sacledBegin and scaledEnd by their x coordinate.
     if (_scaledBegin.x() > _scaledEnd.x()) {
         return rayToPixelMask(_scaledEnd, _scaledBegin, subpixelScale);

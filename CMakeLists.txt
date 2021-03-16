@@ -20,7 +20,7 @@ find_package(PCL 1.7 REQUIRED REQUIRED)
 find_package(Cholmod)
 find_package(CSparse)
 find_package(G2O REQUIRED)
-
+find_package(Ceres REQUIRED)
 find_package(Boost 1.65 REQUIRED COMPONENTS
    log
 )
@@ -91,6 +91,12 @@ if(G2O_FOUND)
    message(STATUS " G2O_INCLUDE_DIRS           = ${G2O_INCLUDE_DIRS}")
    message(STATUS " G2O_LIBRARIES              = ${G2O_LIBRARIES}") 
 endif(G2O_FOUND)
+
+if(Ceres_FOUND)
+	message(STATUS " *With Ceres                = YES")
+   message(STATUS " CERES_INCLUDE_DIRS           = ${CERES_INCLUDE_DIRS}")
+   message(STATUS " CERES_LIBRARIES              = ${CERES_LIBRARIES}") 
+endif(Ceres_FOUND)
 
 add_subdirectory(utilite)
 add_subdirectory(corelib)

@@ -135,6 +135,8 @@ public:
     const cv::Mat & getImage() const { return imageLeft_; }
     const cv::Mat & getImageLeft() const { return imageLeft_; }
     const cv::Mat & getImageRight() const { return imageRight_; }
+    const cv::Mat & getSubmap() const { return submap_; }
+    void setSubmap(const cv::Mat & _submap) { submap_ = _submap; }
     const GeometricCamera & getCameraModel() const { return *cameraLeft_; }
     const GeometricCamera & getCameraModelLeft() const { return *cameraLeft_; }
     const GeometricCamera & getCameraModelRight() const { return *cameraRight_; }
@@ -156,6 +158,7 @@ private:
     double timestamp_;
     cv::Mat imageLeft_;
     cv::Mat imageRight_;
+    cv::Mat submap_;
     boost::shared_ptr<GeometricCamera> cameraLeft_;
     boost::shared_ptr<GeometricCamera> cameraRight_;
     Eigen::Isometry3d transformCamera2Robot_;

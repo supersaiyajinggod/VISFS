@@ -734,35 +734,36 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		}
 
 		// Set range points to g2o
-		const int pointStepVertexId = static_cast<int>(_poses.rbegin()->first + 1) + static_cast<int>(_wordReferences.rbegin()->first) + 1;
-		g2o::VertexSE3Expmap * latestPose = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(_poses.rbegin()->first));
-		const Map::MapLimits& limits = _grid.limits();
-		const GridArrayAdapter adapter(_grid);
-		std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator = std::make_shared<ceres::BiCubicInterpolator<GridArrayAdapter>>(adapter);
-		Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << 0.1;
-		int index = 0;
-		for (auto pointCloud : _pointClouds) {
-			for (auto point : pointCloud.points()) {
-				// Set Vertex
-				VertexPoint3D * vRangePoint = new VertexPoint3D();
-				vRangePoint->setEstimate(point.position);
-				vRangePoint->setId(pointStepVertexId + (++index));
-				vRangePoint->setFixed(true);
-				vRangePoint->setMarginalized(true);
-				optimizer.addVertex(vRangePoint);
+		// const int pointStepVertexId = static_cast<int>(_poses.rbegin()->first + 1) + static_cast<int>(_wordReferences.rbegin()->first) + 1;
+		// g2o::VertexSE3Expmap * latestPose = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(_poses.rbegin()->first));
+		// std::shared_ptr<Map::MapLimits> limits = std::make_shared<Map::MapLimits>(_grid.limits());
+		// const GridArrayAdapter adapter(_grid);
+		// std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator = std::make_shared<ceres::BiCubicInterpolator<GridArrayAdapter>>(adapter);
+		// Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << 0.1;
+		// int index = 0;
+		// for (auto pointCloud : _pointClouds) {
+		// 	for (auto point : pointCloud.points()) {
+		// 		// Set Vertex
+		// 		VertexPoint3D * vRangePoint = new VertexPoint3D();
+		// 		vRangePoint->setEstimate(point.position);
+		// 		vRangePoint->setId(pointStepVertexId + (++index));
+		// 		vRangePoint->setFixed(true);
+		// 		vRangePoint->setMarginalized(true);
+		// 		optimizer.addVertex(vRangePoint);
 
-				// Set Edge
-				// EdgeOccupiedObservation * eo = new EdgeOccupiedObservation(interpolator, limits);
-				// eo->setVertex(0, latestPose);
-				// eo->setVertex(1, vRangePoint);
-				// eo->setInformation(informationRangePoint);
+		// 		// Set Edge
+		// 		EdgeOccupiedObservation * eo = new EdgeOccupiedObservation(interpolator, limits);
+		// 		eo->setVertex(0, latestPose);
+		// 		eo->setVertex(1, vRangePoint);
+		// 		eo->setInformation(informationRangePoint);
+		// 		delete eo;
 
-				// if (!optimizer.addEdge(eo)) {
-				// 	delete eo;
-				// 	LOG_ERROR << "Optimizer: Failed adding " << index << "'th observation of grid map";
-				// }
-			}
-		}
+		// 		if (!optimizer.addEdge(eo)) {
+		// 			delete eo;
+		// 			LOG_ERROR << "Optimizer: Failed adding " << index << "'th observation of grid map";
+		// 		}
+		// 	}
+		// }
 
 		// Optimize
 		optimizer.setVerbose(false);

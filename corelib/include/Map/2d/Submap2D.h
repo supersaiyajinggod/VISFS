@@ -11,13 +11,15 @@ namespace Map {
 
 class Submap2D : public Submap {
 public:
-    Submap2D(const Eigen::Vector2d & _origin, std::unique_ptr<Grid2D> _grid, ValueConversionTables * _conversionTables);
+    Submap2D(const Eigen::Isometry3d & _origin, std::unique_ptr<Grid2D> _grid, ValueConversionTables * _conversionTables);
 
     const Grid2D * getGrid() const { grid_.get(); }
 
     void insertRangeData(const Sensor::RangeData & _rangeData, const RangeDataInserterInterface * _rangeDataInserter);
 
     void finish();
+
+    cv::Mat grid2Image() const;
 
 private:
     std::unique_ptr<Grid2D> grid_;
@@ -43,7 +45,7 @@ public:
 
     ActiveSubmaps2D(int _numRangeLimit, GridType _gridType, double _gridResolution, bool _insertFreeSpace, double _hitProbability, double _missProbability);
 
-    std::vector<std::shared_ptr<const Submap2D>> insertRangeData(const Sensor::RangeData & _rangeData);
+    std::vector<std::shared_ptr<const Submap2D>> insertRangeData(const Sensor::RangeData & _rangeData, const Eigen::Isometry3d & _origin);
 
     std::vector<std::shared_ptr<const Submap2D>> submaps() const;
 
@@ -51,7 +53,7 @@ private:
     std::unique_ptr<RangeDataInserterInterface> createRangeDataInserter();
     std::unique_ptr<GridInterface> createGrid(const Eigen::Vector2d & _origin);
     void finishSubmap();
-    void addSubmap(const Eigen::Vector2d & _origin);
+    void addSubmap(const Eigen::Isometry3d & _origin);
 
     int numRangeDataLimit_; // 90
     GridType gridType_; // PROBABILITY

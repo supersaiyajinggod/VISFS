@@ -5,6 +5,7 @@
 #include "Timer.h"
 #include "Stl.h"
 #include "Log.h"
+#include "Map/2d/ProbabilityGrid.h"
 
 #include <opencv2/core/eigen.hpp>
 #include <pcl/common/eigen.h>
@@ -96,9 +97,9 @@ void Estimator::threadProcess() {
                 signature = signatureThreadBuf_.front();
                 signatureThreadBuf_.pop();
             }
-            UTimer timer;
+            // UTimer timer;
             process(signature);
-            timer.elapsed("Estimator");
+            // timer.elapsed("Estimator");
 
             if (monitor_) {
                 monitor_->addSignature(signature);
@@ -130,7 +131,7 @@ void Estimator::laserPretreatment(const Sensor::TimedPointCloudWithIntensities &
         for (auto & point : subdivision) {
             point.time -= timeToSubdivisionEnd;
         }
-        subdivisions.emplace_back(Sensor::TimedPointCloudWithIntensities{subdivision, {}, {}, subdivisionTime});
+        subdivisions.emplace_back(Sensor::TimedPointCloudWithIntensities{subdivision, _pointCloud.origin, {}, subdivisionTime});
     }
     // change the laser scan from the laser frame to the camera frame. 
     // Drop any returns below the minimum range and convert returns beyond the
@@ -370,7 +371,8 @@ void Estimator::process(Signature & _signature) {
             for (auto rangeData : rangeDatas) {
                 Sensor::transformRangeData(rangeData, currentGlobalPose);
             }
-            localMap_->insertMatchingSubMap2d(rangeDatas);
+            auto submap = localMap_->insertMatchingSubMap2d(rangeDatas, currentGlobalPose).front();
+            _signature.setSubmap(submap->grid2Image());
         }
     }
 

@@ -9,6 +9,7 @@ set(HEAD_DIR ${PROJECT_SOURCE_DIR}/../../../../corelib/include)
 set(UTILITIES_HEAD ${PROJECT_SOURCE_DIR}/../../../../utilite/include)
 
 find_package(Eigen3 3.2.0 REQUIRED)
+find_package(OpenCV REQUIRED)
 
 set(Boost_COMPONENTS unit_test_framework) 
 find_package(Boost 1.65 REQUIRED COMPONENTS ${Boost_COMPONENTS})
@@ -52,6 +53,7 @@ include_directories(
     ${HEAD_DIR}
     ${UTILITIES_HEAD}
     ${EIGEN3_INCLUDE_DIR}
+    ${OpenCV_INCLUDE_DIRS}
 )
 
 add_executable(${PROJECT_NAME}
@@ -64,4 +66,5 @@ add_executable(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME}
     ${Boost_LIBRARIES}
+    ${OpenCV_LIBS}
 )

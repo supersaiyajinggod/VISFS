@@ -75,7 +75,7 @@ public:
 class EdgeOccupiedObservation : public g2o::BaseBinaryEdge<1, double, g2o::VertexSE3Expmap, VertexPoint3D> {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	EdgeOccupiedObservation(const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> & _interpolator, const Map::MapLimits & _limits) :
+	EdgeOccupiedObservation(const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> & _interpolator, const std::shared_ptr<Map::MapLimits> & _limits) :
 		interpolator_(_interpolator),
 		limits_(_limits) {}
 
@@ -107,8 +107,8 @@ public:
 		Eigen::Matrix<T, 3, 1> Pw = Twc * Pc;
 
 		interpolator_->Evaluate(
-			(limits_.max().x() - Pw[0]) / limits_.resolution() - 0.5 + static_cast<double>(kPadding),
-			(limits_.max().y() - Pw[1]) / limits_.resolution() - 0.5 + static_cast<double>(kPadding),
+			(limits_->max().x() - Pw[0]) / limits_->resolution() - 0.5 + static_cast<double>(kPadding),
+			(limits_->max().y() - Pw[1]) / limits_->resolution() - 0.5 + static_cast<double>(kPadding),
 			&error[0]
 		);
 
@@ -173,7 +173,7 @@ public:
 
 private:
 	const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator_;
-	const Map::MapLimits limits_;
+	const std::shared_ptr<Map::MapLimits> limits_;
 
 };
 

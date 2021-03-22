@@ -351,9 +351,9 @@ const std::vector<Sensor::PointCloud> LocalMap::getLaserHitPointCloud(std::size_
     return result;
 }
 
-std::vector<std::shared_ptr<const Map::Submap2D>> LocalMap::insertMatchingSubMap2d(const std::vector<Sensor::RangeData> & _rangeDatas) {
+std::vector<std::shared_ptr<const Map::Submap2D>> LocalMap::insertMatchingSubMap2d(const std::vector<Sensor::RangeData> & _rangeDatas, const Eigen::Isometry3d & _globalPose) {
     for (auto rangeData : _rangeDatas) {
-        activeSubmap2D_->insertRangeData(rangeData);
+        activeSubmap2D_->insertRangeData(rangeData, _globalPose);
     }
     return activeSubmap2D_->submaps();
 }

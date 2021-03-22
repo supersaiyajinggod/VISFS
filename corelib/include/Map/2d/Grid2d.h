@@ -7,6 +7,7 @@
 #include "Map/2d/MapLimits.h"
 
 #include <Eigen/Geometry>
+#include <opencv2/opencv.hpp>
 
 namespace VISFS {
 namespace Map {
@@ -65,6 +66,8 @@ public:
     virtual void growLimits(const Eigen::Vector2d & _point);
 
     virtual std::unique_ptr<Grid2D> computeCroppedGrid() const = 0;
+
+    cv::Mat grid2Image() const;
 
 protected:
     void growLimits(const Eigen::Vector2d & _point, const std::vector<std::vector<uint16_t> *> & _grids,

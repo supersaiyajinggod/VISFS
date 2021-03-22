@@ -94,7 +94,7 @@ public:
 
     inline std::shared_ptr<const Map::Submap2D> getMatchingSubmap2D() { return activeSubmap2D_->submaps().front(); }
 
-    std::vector<std::shared_ptr<const Map::Submap2D>> insertMatchingSubMap2d(const std::vector<Sensor::RangeData> & _rangeDatas);
+    std::vector<std::shared_ptr<const Map::Submap2D>> insertMatchingSubMap2d(const std::vector<Sensor::RangeData> & _rangeDatas, const Eigen::Isometry3d & _globalPose);
 
     inline bool hasMatchingSubmap2D() { return !activeSubmap2D_->submaps().empty(); }
 

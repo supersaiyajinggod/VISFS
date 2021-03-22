@@ -102,13 +102,13 @@ void System::inputPrimarySensorData(const double _time, const cv::Mat & _imageLe
     Eigen::Isometry3d globalWheelPose(Eigen::Isometry3d(Eigen::Matrix4d::Zero()));
     Signature signature;
 
-    UTimer timer;
+    // UTimer timer;
 	if (claheSwitch_) {
 		cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
 		clahe->apply(_imageLeft, _imageLeft);
 		clahe->apply(_imageRight, _imageRight);
 	}
-	timer.elapsed("CLAHE");
+	// timer.elapsed("CLAHE");
 
     extrapolator_->extrapolatorPose(_time, globalWheelPose, guessPose);
 

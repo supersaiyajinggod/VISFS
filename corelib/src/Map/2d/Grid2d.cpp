@@ -64,5 +64,16 @@ void Grid2D::growLimits(const Eigen::Vector2d & _point, const std::vector<std::v
     }
 }
 
+cv::Mat Grid2D::grid2Image() const {
+    cv::Mat image(limits_.cellLimits().numYcells, limits_.cellLimits().numXcells, CV_8UC1, cv::Scalar(0));
+    for (int i = 0; i < image.rows; ++i) {
+        for (int j = 0; j < image.cols; ++j) {
+            image.at<u_char>(i, j) = static_cast<u_char>(std::ceil(valueToCorrespondenceCost(correspondenceCostCells()[i*image.rows + j]) * 255) / 1);
+        }
+    }
+
+    return image;
+}
+
 }   // namespace Map
 }   // namespace VISFS

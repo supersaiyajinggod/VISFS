@@ -69,6 +69,7 @@ void ProbabilityGridRangeDataInserter2D::insert(const Sensor::RangeData & _range
     assert(probabilityGrid != nullptr);
     castRays(_rangeData, hitTable_, missTable_, true, probabilityGrid);
     probabilityGrid->finishUpdate();
+    // probabilityGrid->grid2Image();
 }
 
 ProbabilityGridRangeDataInserter2D::ProbabilityGridRangeDataInserter2D(const double _hitProbability, const double _missProbability) :

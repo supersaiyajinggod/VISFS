@@ -75,9 +75,16 @@ void Monitor::process(Signature & _signature) {
             }
         }
 
+        auto submap = _signature.getSubmap();
+        if (sensorStrategy_ == 3 && !submap.empty()) {
+            cv::namedWindow("Submap");
+            cv::imshow("Submap", submap);
+            cv::waitKey(5);
+        }
+
         cv::namedWindow("Monitor", CV_WINDOW_NORMAL);
         cv::imshow("Monitor", stitch);
-        cv::waitKey(10);
+        cv::waitKey(5);
 
     } else if (sensorStrategy_ == 1) {          // RGBD
 

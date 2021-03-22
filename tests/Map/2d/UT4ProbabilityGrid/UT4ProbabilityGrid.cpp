@@ -119,5 +119,18 @@ BOOST_AUTO_TEST_CASE(CorrectCropping) {
     BOOST_CHECK_EQUAL(limits.numYcells, 200);
 }
 
-}    
+BOOST_AUTO_TEST_CASE(GRID2IMAGE) {
+    ValueConversionTables conversionTables;
+    ProbabilityGrid probabilityGrid(MapLimits(0.05, Eigen::Vector2d(10.0, 10.0), CellLimits(400, 400)), &conversionTables);
+
+    for (const Eigen::Array2i & xyIndex : XYIndexRangeIterator(Eigen::Array2i(100, 100), Eigen::Array2i(299, 299))) {
+        probabilityGrid.setProbability(xyIndex, kMaxProbability);
+    }
+
+    cv::Mat image = probabilityGrid.grid2Image();
 }
+
+
+
+}   // Map    
+}   // VISFS

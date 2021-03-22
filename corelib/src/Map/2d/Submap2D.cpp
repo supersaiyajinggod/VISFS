@@ -6,8 +6,8 @@
 namespace VISFS {
 namespace Map {
 
-Submap2D::Submap2D(const Eigen::Vector2d & _origin, std::unique_ptr<Grid2D> _grid, ValueConversionTables * _conversionTables) :
-    Submap(Eigen::Isometry3d(Eigen::Matrix4d::Identity()).pretranslate(Eigen::Vector3d(_origin.x(), _origin.y(), 0.))),
+Submap2D::Submap2D(const Eigen::Isometry3d & _origin, std::unique_ptr<Grid2D> _grid, ValueConversionTables * _conversionTables) :
+    Submap(_origin),
     grid_(std::move(_grid)),
     conversionTables_(_conversionTables) {
 }
@@ -36,17 +36,29 @@ ActiveSubmaps2D::ActiveSubmaps2D(int _numRangeLimit, GridType _gridType, double 
     rangeDataInserter_(createRangeDataInserter()) {
 }
 
-std::vector<std::shared_ptr<const Submap2D>> ActiveSubmaps2D::insertRangeData(const Sensor::RangeData & _rangeData) {
+std::vector<std::shared_ptr<const Submap2D>> ActiveSubmaps2D::insertRangeData(const Sensor::RangeData & _rangeData, const Eigen::Isometry3d & _origin) {
     if (submaps_.empty() || submaps_.back()->getNumRangeData() == numRangeDataLimit_) {
-        addSubmap(_rangeData.origin.head<2>());
+        addSubmap(_origin);
     }
     for (auto & submap : submaps_) {
-        submap->insertRangeData(_rangeData, rangeDataInserter_.get());
+        auto transform = submap->localPose().inverse() * _origin;
+        auto rangeDataInSubmap = Sensor::transformRangeData(_rangeData, transform);
+        submap->insertRangeData(rangeDataInSubmap, rangeDataInserter_.get());
     }
     if (submaps_.front()->getNumRangeData() == 2 * numRangeDataLimit_) {
         submaps_.front()->finish();
     }
     return submaps();
+}
+
+cv::Mat Submap2D::grid2Image() const {
+    if (grid_ != nullptr) {
+        return grid_->grid2Image();
+    } else {
+        std::cout << "Can not change the grid to image, because the grid object is nullptr." << std::endl;
+        return cv::Mat();
+    }
+        
 }
 
 std::vector<std::shared_ptr<const Submap2D>> ActiveSubmaps2D::submaps() const {
@@ -74,14 +86,14 @@ std::unique_ptr<GridInterface> ActiveSubmaps2D::createGrid(const Eigen::Vector2d
     }
 }
 
-void ActiveSubmaps2D::addSubmap(const Eigen::Vector2d & _origin) {
+void ActiveSubmaps2D::addSubmap(const Eigen::Isometry3d & _origin) {
     if (submaps_.size() >= 2) {
         assert(submaps_.front()->getInsertionStatus());
         submaps_.erase(submaps_.begin());
     }
     submaps_.push_back(
         std::make_unique<Submap2D>(_origin,
-            std::unique_ptr<Grid2D>(static_cast<Grid2D *>(createGrid(_origin).release())),
+            std::unique_ptr<Grid2D>(static_cast<Grid2D *>(createGrid(_origin.translation().head<2>()).release())),
             &conversionTables_
         )
     );

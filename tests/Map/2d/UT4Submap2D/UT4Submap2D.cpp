@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_CASE(TheRightNumberOfRangeDataAreInserted) {
     std::set<std::shared_ptr<const Submap2D>> allSubmaps;
 
     for (int i = 0; i != 1000; ++i) {
-        auto insertionSubmaps = submaps.insertRangeData({Eigen::Vector3d::Zero(), {}, {}});
+        auto insertionSubmaps = submaps.insertRangeData({Eigen::Vector3d::Zero(), {}, {}}, Eigen::Isometry3d::Identity());
         for (const auto & submap : insertionSubmaps) {
             allSubmaps.insert(submap);
         }

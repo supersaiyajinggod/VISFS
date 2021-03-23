@@ -44,6 +44,21 @@ public:
 		// Index values are row major and the top left has Eigen::Array2i::Zero()
 		// and contains (centered_max_x, centered_max_y). We need to flip and
 		// rotate.
+		// real
+		// (maxX, maxY)
+		// |-------------
+		// |
+		// |	(0.0, 0.0)
+		// |
+		// |			(minX, minY)
+
+		// index
+		// (0, 0)
+		// |-------------
+		// |
+		// |
+		// |
+		// |			(maxIndexY, maxIndexX)		
 		return Eigen::Array2i(
 			std::lround((max_.y() - _point.y())/resolution_ - 0.5),
 			std::lround((max_.x() - _point.x())/resolution_ - 0.5));

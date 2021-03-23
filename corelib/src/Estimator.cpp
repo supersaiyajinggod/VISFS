@@ -238,7 +238,7 @@ void Estimator::process(Signature & _signature) {
         std::size_t rootId = poses.rbegin()->first - 1;
         if (sensorStrategy_ == 3) {
             if (localMap_->hasMatchingSubmap2D()) {
-                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, localMap_->getLaserHitPointCloud(_signature.getId()), *(localMap_->getMatchingSubmap2D()->getGrid()), sbaOutliers);
+                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, localMap_->getLaserHitPointCloud(_signature.getId()), localMap_->getMatchingSubmap2D(), sbaOutliers);
             } else {
                 optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
             }    

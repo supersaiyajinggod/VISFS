@@ -12,7 +12,7 @@
 #include "Parameters.h"
 #include "CameraModels/GeometricCamera.h"
 #include "Sensor/PointCloud.h"
-#include "Map/2d/Grid2d.h"
+#include "Map/2d/Submap2D.h"
 
 namespace VISFS {
 namespace Optimizer {
@@ -89,7 +89,7 @@ public:
         std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points3D,   // map<feature id, <feature global pose, fixed?>>
         const std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _wordReferences,
         const std::vector<Sensor::PointCloud> & _pointClouds,
-        const Map::Grid2D & _grid,
+        const std::shared_ptr<const Map::Submap2D> & _submap,
         std::vector<std::tuple<std::size_t, std::size_t>> & _outliers   //  tuple<feature id, signature id>
     );  
 

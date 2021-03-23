@@ -13,7 +13,7 @@ class Submap2D : public Submap {
 public:
     Submap2D(const Eigen::Isometry3d & _origin, std::unique_ptr<Grid2D> _grid, ValueConversionTables * _conversionTables);
 
-    const Grid2D * getGrid() const { grid_.get(); }
+    const Grid2D * getGrid() const { return grid_.get(); }
 
     void insertRangeData(const Sensor::RangeData & _rangeData, const RangeDataInserterInterface * _rangeDataInserter);
 

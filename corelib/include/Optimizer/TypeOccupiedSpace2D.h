@@ -75,9 +75,10 @@ public:
 class EdgeOccupiedObservation : public g2o::BaseBinaryEdge<1, double, g2o::VertexSE3Expmap, VertexPoint3D> {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	EdgeOccupiedObservation(const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> & _interpolator, const std::shared_ptr<Map::MapLimits> & _limits) :
+	EdgeOccupiedObservation(const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> & _interpolator, const std::shared_ptr<Map::MapLimits> & _limits, const Eigen::Isometry3d & _submapOrigin) :
 		interpolator_(_interpolator),
-		limits_(_limits) {}
+		limits_(_limits),
+		submapOrigin_(_submapOrigin) {}
 
 	virtual bool read(std::istream &) {
 		std::cerr << __PRETTY_FUNCTION__ << " not implemented yet" << std::endl;
@@ -103,12 +104,14 @@ public:
 		Tcw.prerotate(q);
 		Tcw.pretranslate(t);
 		auto Twc = Tcw.inverse();
+		auto Two = submapOrigin_.cast<T>();
+		auto Toc = Two.inverse() * Twc;
 		const Eigen::Matrix<T, 3, 1> Pc(point[0], point[1], point[2]);
-		Eigen::Matrix<T, 3, 1> Pw = Twc * Pc;
+		Eigen::Matrix<T, 3, 1> Po = Toc * Pc;
 
 		interpolator_->Evaluate(
-			(limits_->max().x() - Pw[0]) / limits_->resolution() - 0.5 + static_cast<double>(kPadding),
-			(limits_->max().y() - Pw[1]) / limits_->resolution() - 0.5 + static_cast<double>(kPadding),
+			(limits_->max().x() - Po[0]) / limits_->resolution() - 0.5 + static_cast<double>(kPadding),
+			(limits_->max().y() - Po[1]) / limits_->resolution() - 0.5 + static_cast<double>(kPadding),
 			&error[0]
 		);
 
@@ -174,6 +177,7 @@ public:
 private:
 	const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator_;
 	const std::shared_ptr<Map::MapLimits> limits_;
+	const Eigen::Isometry3d submapOrigin_;
 
 };
 

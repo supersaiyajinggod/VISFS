@@ -2,6 +2,7 @@ dependence
 opencv
 eigen
 g2o
+ceres
 ros
 
 debug
@@ -16,3 +17,11 @@ When need to add a new feature to this repo,
 2. work on a new branch assosiate with new issues.
 3. pull request merge to develop.
 4. When test stable merge to master.
+
+
+To fix the conflict with g2o installed by ros, which used by rtabmap.
+Compile the g2o to a static librarry.
+Set the options:
+BUILD_LGPL_SHARED_LIBS=OFF
+BUILD_SHARED_LIBS=OFF
+CMAKE_CXX_FLAGS=-fPIC

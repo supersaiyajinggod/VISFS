@@ -200,7 +200,7 @@ void Estimator::process(Signature & _signature) {
     }
 
     // process laser
-    if (sensorStrategy_ == 3) {
+    if (sensorStrategy_ >= 3) {
         std::vector<Sensor::RangeData> rangeData;
         laserPretreatment(_signature.getTimedPointCloudWithIntensities(), _signature.getTransformLaser2Camera(), rangeData);
         _signature.setPretreatedRangeData(rangeData);
@@ -242,6 +242,21 @@ void Estimator::process(Signature & _signature) {
             } else {
                 optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
             }    
+        } else if (sensorStrategy_ == 4) {  // laser + wheel
+            if (localMap_->hasMatchingSubmap2D()) {
+                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, localMap_->getLaserHitPointCloud(_signature.getId()), localMap_->getMatchingSubmap2D(), sbaOutliers);
+            } else {
+                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
+                LOG_ERROR << "No submap 2d.";
+            }
+        } else if (sensorStrategy_ == 5) {  // laser
+            if (localMap_->hasMatchingSubmap2D()) {
+                links.clear();
+                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, localMap_->getLaserHitPointCloud(_signature.getId()), localMap_->getMatchingSubmap2D(), sbaOutliers);
+            } else {
+                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
+                LOG_ERROR << "No submap 2d.";
+            }
         } else {
             optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
         }
@@ -365,7 +380,7 @@ void Estimator::process(Signature & _signature) {
         LOG_DEBUG << "CurrentGlobalPose After force 3d: \n" << currentGlobalPose.matrix() << std::endl;
     }
 
-    if (sensorStrategy_ == 3) {
+    if (sensorStrategy_ >= 3) {
         std::vector<Sensor::RangeData> rangeDatas = _signature.getPretreatedRangeData();
         if (!rangeDatas.empty()) {
             for (auto rangeData : rangeDatas) {
@@ -373,6 +388,8 @@ void Estimator::process(Signature & _signature) {
             }
             auto submap = localMap_->insertMatchingSubMap2d(rangeDatas, currentGlobalPose).front();
             _signature.setSubmap(submap->grid2Image());
+        } else {
+            LOG_WARN << "Range datas is empty.";
         }
     }
 

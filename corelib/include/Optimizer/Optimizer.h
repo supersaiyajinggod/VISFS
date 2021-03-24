@@ -78,6 +78,8 @@ public:
      * \param[in] cameraModels The camera models.
      * \param[in&out] points3D The points in space.
      * \param[in] wordReferences The points3D in images.
+     * \param[in] pointClouds The range points from laser.
+     * \param[in] submap The submap constructed by several point clouds.
      * \param[out] outliers The outliers of the pair of local point and signature.
      * \author eddy
      */
@@ -92,6 +94,24 @@ public:
         const std::shared_ptr<const Map::Submap2D> & _submap,
         std::vector<std::tuple<std::size_t, std::size_t>> & _outliers   //  tuple<feature id, signature id>
     );  
+
+    /** \brief Optimize the local maps. Used in visual, odometry and laser local fusion.
+     * \param[in] rootId Fixed pose.
+     * \param[in] poses Poses to optimize.
+     * \param[in] links The link infomation bwtween poses.
+     * \param[in] cameraModels The camera models.
+     * \param[out] outliers The outliers of the pair of local point and signature.
+     * \author eddy
+     */
+    std::map<std::size_t, Eigen::Isometry3d> localOptimize(
+        std::size_t _rootId,     // fixed pose
+        const std::map<std::size_t, Eigen::Isometry3d> & _poses,    // map<pose index, transform>
+        const std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links,  // map<link index, tuple<the from pose index, the to pose index, transform, infomation matrix>>
+        const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
+        const std::vector<Sensor::PointCloud> & _pointClouds,
+        const std::shared_ptr<const Map::Submap2D> & _submap,
+        std::vector<std::tuple<std::size_t, std::size_t>> & _outliers   //  tuple<feature id, signature id>
+    ); 
 
 private:
     int iterations_;

@@ -116,7 +116,7 @@ void System::inputPrimarySensorData(const double _time, const cv::Mat & _imageLe
         signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, transformCamera2Robot_, transformLaser2Robot_, guessPose, Eigen::Isometry3d(Eigen::Matrix4d::Zero()), _timedPointCloud);
     } else if (sensorStrategy_ == 2) {      // stereo + wheel
         signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, transformCamera2Robot_, transformLaser2Robot_, guessPose, globalWheelPose, _timedPointCloud);
-    } else if (sensorStrategy_ == 3) {      // stereo + laser + wheel
+    } else if (sensorStrategy_ >= 3) {      // stereo + laser + wheel
         signature = Signature(_time, _imageLeft, _imageRight, cameraLeft_, cameraRight_, transformCamera2Robot_, transformLaser2Robot_, guessPose, globalWheelPose, _timedPointCloud);
     }
 
@@ -124,7 +124,7 @@ void System::inputPrimarySensorData(const double _time, const cv::Mat & _imageLe
 }
 
 void System::inputWheelOdometry(const double _time, const Eigen::Isometry3d & _pose, const Eigen::Isometry3d & _velocity) {
-    if (sensorStrategy_ == 2 || sensorStrategy_ == 3) {
+    if (sensorStrategy_ >2) {
         extrapolator_->addOdometry(_time, _pose, _velocity);
     } else {
         LOG_WARN << "System no need for wheel Odometry, please check prameters.";

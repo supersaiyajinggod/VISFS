@@ -874,5 +874,164 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 	return optimizedPoses;
 }
 
+std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
+    std::size_t _rootId,     // fixed pose
+    const std::map<std::size_t, Eigen::Isometry3d> & _poses,    // map<pose index, transform>
+    const std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links,  // map<link index, tuple<the from pose index, the to pose index, transform, infomation matrix>>
+	const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
+    const std::vector<Sensor::PointCloud> & _pointClouds,
+    const std::shared_ptr<const Map::Submap2D> & _submap,
+    std::vector<std::tuple<std::size_t, std::size_t>> & _outliers) {
+
+	std::map<std::size_t, Eigen::Isometry3d> optimizedPoses;
+	if (_poses.size() >= 2 && iterations_ > 0 && _poses.begin()->first > 0) {
+		g2o::SparseOptimizer optimizer;
+		std::unique_ptr<g2o::BlockSolver_6_3::LinearSolverType> linearSolver;
+		if (solver_ == 3) {
+			linearSolver = g2o::make_unique<g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>>();
+		} else if (solver_ == 2) {
+			linearSolver = g2o::make_unique<g2o::LinearSolverPCG<g2o::BlockSolver_6_3::PoseMatrixType>>();
+		}
+#ifdef G2O_HAVE_CHOLMOD
+		else if (solver_ == 1) {
+			linearSolver = g2o::make_unique<g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>>();
+		}
+#endif
+#ifdef G2O_HAVE_CSPARSE
+		else if (solver_ == 0) {
+			linearSolver = g2o::make_unique<g2o::LinearSolverCSparse<g2o::BlockSolver_6_3::PoseMatrixType>>();
+		}
+#endif
+
+		if (optimizer_ == 0) {
+			optimizer.setAlgorithm(new g2o::OptimizationAlgorithmLevenberg(g2o::make_unique<g2o::BlockSolver_6_3>(std::move(linearSolver))));
+		} else if (optimizer_ == 1) {
+			optimizer.setAlgorithm(new g2o::OptimizationAlgorithmGaussNewton(g2o::make_unique<g2o::BlockSolver_6_3>(std::move(linearSolver))));
+		}
+
+		// Set poses to g2o
+		for (auto iter = _poses.begin(); iter != _poses.end(); ++iter) {
+			if (iter->first > 0) {
+				const GeometricCamera & cameraModel = *_cameraModels.front();
+				// Twc = Twr * Trc
+				Eigen::Isometry3d cameraPose = iter->second * cameraModel.getTansformImageToRobot();
+
+				g2o::VertexSE3Expmap * vCam = new g2o::VertexSE3Expmap();
+				// Tcw = Twc.inverse()
+				cameraPose = cameraPose.inverse();
+				vCam->setEstimate(g2o::SE3Quat(cameraPose.linear(), cameraPose.translation()));
+				vCam->setId(iter->first);
+				vCam->setFixed(_rootId >= 0 && iter->first == _rootId);
+				optimizer.addVertex(vCam);
+			}
+		}
+
+		// Set edges to g2o
+		for (auto iter = _links.begin(); iter != _links.end(); ++iter) {
+			auto [fromId, toId, transfrom, information] = iter->second;
+
+			if (fromId > 0 && toId > 0 && uContains(_poses, fromId) && uContains(_poses, toId)) {
+				if(fromId == toId) {
+					// TODO
+				} else {
+					const GeometricCamera & cameraModels = *_cameraModels.front();
+					Eigen::Isometry3d Tri = cameraModels.getTansformImageToRobot();
+					//Tc1c2 = Tcr * Tr1r2 * Trc
+					Eigen::Isometry3d Tc1c2 = Tri.inverse()*transfrom*Tri;
+					Eigen::Isometry3d Tc2c1 = Tc1c2.inverse();
+
+					g2o::EdgeSE3Expmap * e = new g2o::EdgeSE3Expmap();
+					g2o::VertexSE3Expmap * v1 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(fromId));
+					g2o::VertexSE3Expmap * v2 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(toId));
+					e->setVertex(0, v1);
+					e->setVertex(1, v2);
+					e->setMeasurement(g2o::SE3Quat(Tc2c1.linear(), Tc2c1.translation()));
+					e->setInformation(information);
+
+					if (!optimizer.addEdge(e)) {
+						delete e;
+						LOG_ERROR << "Optimizer: Failed adding constraint between " << fromId << " and " << toId << ", skipping.";
+						return optimizedPoses;
+					}
+				}
+			}
+		}
+
+		// Set range points to g2o
+		const int pointStepVertexId = static_cast<int>(_poses.rbegin()->first + 1);
+		g2o::VertexSE3Expmap * latestPose = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(_poses.rbegin()->first));
+		std::shared_ptr<Map::MapLimits> limits = std::make_shared<Map::MapLimits>(_submap->getGrid()->limits());
+		const GridArrayAdapter adapter(*_submap->getGrid());
+		auto submapOrigin = _submap->localPose();
+		std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator = std::make_shared<ceres::BiCubicInterpolator<GridArrayAdapter>>(adapter);
+		Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << (1.0 / 100000000000000.0);
+		int index = 0;
+		for (auto pointCloud : _pointClouds) {
+			for (auto point : pointCloud.points()) {
+				// Set Vertex
+				VertexPoint3D * vRangePoint = new VertexPoint3D();
+				vRangePoint->setEstimate(point.position);
+				vRangePoint->setId(pointStepVertexId + (++index));
+				vRangePoint->setFixed(true);
+				vRangePoint->setMarginalized(true);
+				optimizer.addVertex(vRangePoint);
+
+				// Set Edge
+				EdgeOccupiedObservation * eo = new EdgeOccupiedObservation(interpolator, limits, submapOrigin);
+				eo->setVertex(0, latestPose);
+				eo->setVertex(1, vRangePoint);
+				eo->setInformation(informationRangePoint);
+
+				if (!optimizer.addEdge(eo)) {
+					delete eo;
+					LOG_ERROR << "Optimizer: Failed adding " << index << "'th observation of grid map";
+				}
+			}
+		}
+
+		// Optimize
+		optimizer.setVerbose(false);
+		optimizer.initializeOptimization();
+		assert(optimizer.verifyInformationMatrices());
+
+		optimizer.optimize(iterations_);
+
+		// Optimize end.
+		if (optimizer.activeRobustChi2() > 1000000000000.0) {
+			LOG_ERROR << "g2o: Large optimization error detected in the second time optimize, aborting optimization!";
+			return optimizedPoses;
+		}
+		// Update poses
+		for (auto iter = _poses.begin(); iter != _poses.end(); ++iter) {
+			if (iter->first > 0) {
+				const g2o::VertexSE3Expmap * v = dynamic_cast<const g2o::VertexSE3Expmap *>(optimizer.vertex(iter->first));
+				if (v) {
+					Eigen::Isometry3d t(v->estimate().to_homogeneous_matrix());
+					// Twc = Tcw.inverse()
+					t = t.inverse();
+					// remove transform camera to robot
+					const GeometricCamera & cameraModel = *_cameraModels.front();
+					t = t * cameraModel.getTansformImageToRobot().inverse();
+					if (t.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) {
+						LOG_WARN << "Optimized pose " << iter->first << " is null.";
+						optimizedPoses.clear();
+						return optimizedPoses;
+					}
+					optimizedPoses.emplace(iter->first, t);
+				} else {
+					LOG_WARN << "Vertex (pose) " << iter->first << " not found!";
+				}
+			}
+		}
+
+	} else if (_poses.size() == 1 || iterations_ <= 0) {
+		optimizedPoses = _poses;
+	} else {
+		LOG_ERROR << "This method should be called at least with 1 pose!";
+	}
+
+	return optimizedPoses;
+}
+
 }	// Optimizer
 }   // VISFS

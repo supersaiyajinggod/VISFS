@@ -137,7 +137,7 @@ typedef std::pair<std::string, std::string> ParametersPair;
  */
 
 class Parameters {
-    VISFS_PARAM(System,     SensorStrategy,         int,    0,      "System use sensors type: 0 stereo, 1 rgbd, 2 stereo + wheel, 3 stereo + laser + wheel");
+    VISFS_PARAM(System,     SensorStrategy,         int,    0,      "System use sensors type: 0 stereo, 1 rgbd, 2 stereo + wheel, 3 stereo + laser + wheel, 4 laser + wheel, 5 laser");
     VISFS_PARAM(System,     WheelOdometryFreq,      int,    100,    "The frequence of wheel odometry.");
     VISFS_PARAM(System,     Monitor,                bool,   false,  "Monitor");
 	VISFS_PARAM(System,		CLAHE,					bool,	false,	"CLAHE");

@@ -28,10 +28,10 @@ public:
         if (row < kPadding || column < kPadding || row >= NumRows() - kPadding ||
             column >= NumCols() - kPadding) {
             *value = Map::kMaxCorrespondenceCost;
-      } else {
-        *value = static_cast<double>(grid_.getCorrespondenceCost(
+      	} else {
+        	*value = static_cast<double>(grid_.getCorrespondenceCost(
             Eigen::Array2i(column - kPadding, row - kPadding)));
-      }
+      	}
     }
 
     int NumRows() const {
@@ -75,10 +75,11 @@ public:
 class EdgeOccupiedObservation : public g2o::BaseBinaryEdge<1, double, g2o::VertexSE3Expmap, VertexPoint3D> {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	EdgeOccupiedObservation(const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> & _interpolator, const std::shared_ptr<Map::MapLimits> & _limits, const Eigen::Isometry3d & _submapOrigin) :
+	EdgeOccupiedObservation(const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> & _interpolator, const std::shared_ptr<Map::MapLimits> & _limits,
+		const Eigen::Isometry3d _transformImageToRobot) :
 		interpolator_(_interpolator),
 		limits_(_limits),
-		submapOrigin_(_submapOrigin) {}
+		transformImageToRobot_(_transformImageToRobot) {}
 
 	virtual bool read(std::istream &) {
 		std::cerr << __PRETTY_FUNCTION__ << " not implemented yet" << std::endl;
@@ -100,14 +101,14 @@ public:
 
 		const Eigen::Quaternion<T> q(pose[6], pose[3], pose[4], pose[5]);
 		const Eigen::Matrix<T, 3, 1> t(pose[0], pose[1], pose[2]);
-		Eigen::Transform<T, 3, 1> Tcw = Eigen::Transform<T, 3, 1>::Identity();
-		Tcw.prerotate(q);
-		Tcw.pretranslate(t);
-		auto Twc = Tcw.inverse();
-		auto Two = submapOrigin_.cast<T>();
-		auto Toc = Two.inverse() * Twc;
+		Eigen::Transform<T, 3, 1> Tiw = Eigen::Transform<T, 3, 1>::Identity();
+		Tiw.prerotate(q);
+		Tiw.pretranslate(t);
+		auto Twc = Tiw.inverse() * transformImageToRobot_.inverse().cast<T>();
+		// auto Two = submapOrigin_.cast<T>();
+		// auto Toc = Two.inverse() * Twc;
 		const Eigen::Matrix<T, 3, 1> Pc(point[0], point[1], point[2]);
-		Eigen::Matrix<T, 3, 1> Po = Toc * Pc;
+		Eigen::Matrix<T, 3, 1> Po = Twc * Pc;
 
 		interpolator_->Evaluate(
 			(limits_->max().x() - Po[0]) / limits_->resolution() - 0.5 + static_cast<double>(kPadding),
@@ -177,7 +178,7 @@ public:
 private:
 	const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator_;
 	const std::shared_ptr<Map::MapLimits> limits_;
-	const Eigen::Isometry3d submapOrigin_;
+	const Eigen::Isometry3d transformImageToRobot_;	// Trc
 
 };
 

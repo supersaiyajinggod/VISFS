@@ -41,8 +41,9 @@ std::vector<std::shared_ptr<const Submap2D>> ActiveSubmaps2D::insertRangeData(co
         addSubmap(_origin);
     }
     for (auto & submap : submaps_) {
-        auto transform = submap->localPose().inverse() * _origin;
-        auto rangeDataInSubmap = Sensor::transformRangeData(_rangeData, transform);
+        // auto transform = submap->localPose().inverse() * _origin;
+        // auto rangeDataInSubmap = Sensor::transformRangeData(_rangeData, transform);
+        auto rangeDataInSubmap = Sensor::transformRangeData(_rangeData, _origin);
         submap->insertRangeData(rangeDataInSubmap, rangeDataInserter_.get());
     }
     if (submaps_.front()->getNumRangeData() == 2 * numRangeDataLimit_) {

@@ -124,7 +124,7 @@ void System::inputPrimarySensorData(const double _time, const cv::Mat & _imageLe
 }
 
 void System::inputWheelOdometry(const double _time, const Eigen::Isometry3d & _pose, const Eigen::Isometry3d & _velocity) {
-    if (sensorStrategy_ >2) {
+    if (sensorStrategy_ >=2) {
         extrapolator_->addOdometry(_time, _pose, _velocity);
     } else {
         LOG_WARN << "System no need for wheel Odometry, please check prameters.";

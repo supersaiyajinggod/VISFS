@@ -738,10 +738,10 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		g2o::VertexSE3Expmap * latestPose = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(_poses.rbegin()->first));
 		std::shared_ptr<Map::MapLimits> limits = std::make_shared<Map::MapLimits>(_submap->getGrid()->limits());
 		const GridArrayAdapter adapter(*_submap->getGrid());
-		auto submapOrigin = _submap->localPose();
 		std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator = std::make_shared<ceres::BiCubicInterpolator<GridArrayAdapter>>(adapter);
-		Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << (1.0 / 100000000000000.0);
+		Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << (1.0);
 		int index = 0;
+		const GeometricCamera & cameraModel = *_cameraModels.front();
 		for (auto pointCloud : _pointClouds) {
 			for (auto point : pointCloud.points()) {
 				// Set Vertex
@@ -753,7 +753,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 				optimizer.addVertex(vRangePoint);
 
 				// Set Edge
-				EdgeOccupiedObservation * eo = new EdgeOccupiedObservation(interpolator, limits, submapOrigin);
+				EdgeOccupiedObservation * eo = new EdgeOccupiedObservation(interpolator, limits, cameraModel.getTansformImageToRobot());
 				eo->setVertex(0, latestPose);
 				eo->setVertex(1, vRangePoint);
 				eo->setInformation(informationRangePoint);
@@ -962,10 +962,10 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		g2o::VertexSE3Expmap * latestPose = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(_poses.rbegin()->first));
 		std::shared_ptr<Map::MapLimits> limits = std::make_shared<Map::MapLimits>(_submap->getGrid()->limits());
 		const GridArrayAdapter adapter(*_submap->getGrid());
-		auto submapOrigin = _submap->localPose();
 		std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator = std::make_shared<ceres::BiCubicInterpolator<GridArrayAdapter>>(adapter);
-		Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << (1.0 / 100000000000000.0);
+		Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << (10.0);
 		int index = 0;
+		const GeometricCamera & cameraModel = *_cameraModels.front();
 		for (auto pointCloud : _pointClouds) {
 			for (auto point : pointCloud.points()) {
 				// Set Vertex
@@ -977,7 +977,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 				optimizer.addVertex(vRangePoint);
 
 				// Set Edge
-				EdgeOccupiedObservation * eo = new EdgeOccupiedObservation(interpolator, limits, submapOrigin);
+				EdgeOccupiedObservation * eo = new EdgeOccupiedObservation(interpolator, limits, cameraModel.getTansformImageToRobot());
 				eo->setVertex(0, latestPose);
 				eo->setVertex(1, vRangePoint);
 				eo->setInformation(informationRangePoint);

@@ -739,7 +739,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		std::shared_ptr<Map::MapLimits> limits = std::make_shared<Map::MapLimits>(_submap->getGrid()->limits());
 		const GridArrayAdapter adapter(*_submap->getGrid());
 		std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator = std::make_shared<ceres::BiCubicInterpolator<GridArrayAdapter>>(adapter);
-		Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << (1.0);
+		Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << (10.0);
 		int index = 0;
 		const GeometricCamera & cameraModel = *_cameraModels.front();
 		for (auto pointCloud : _pointClouds) {

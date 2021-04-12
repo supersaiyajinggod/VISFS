@@ -10,7 +10,7 @@ ProbabilityGrid::ProbabilityGrid(const MapLimits & _limits, ValueConversionTable
 void ProbabilityGrid::setProbability(const Eigen::Array2i & _cellIndex, const double _probability) {
 	uint16_t & cell = (*mutableCorrespondenceCostCells())[toFlatIndex(_cellIndex)];
 	assert(cell == kUnknownProbabilityValue);
-	cell = correspondenceCostToValue(probabilityToCorrespondceCost(_probability));
+	cell = correspondenceCostToValue(probabilityToCorrespondenceCost(_probability));
 	mutableKnownCellsBox()->extend(_cellIndex.matrix());
 }
 

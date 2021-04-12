@@ -29,7 +29,7 @@ inline double probabilityFromOdds(const double _odds) {
     return _odds / (_odds + 1.0);
 }
 
-inline double probabilityToCorrespondceCost(const double _probability) {
+inline double probabilityToCorrespondenceCost(const double _probability) {
     return 1.0 - _probability;
 }
 
@@ -83,7 +83,7 @@ inline uint16_t probabilityValueToCorrespondenceCostValue(uint16_t _probabilityV
 		updateCarry = true;
 	}
 	uint16_t result = correspondenceCostToValue(
-		probabilityToCorrespondceCost(valueToProbability(_probabilityValue)));
+		probabilityToCorrespondenceCost(valueToProbability(_probabilityValue)));
 	if (updateCarry) result += kUpdateMarker;
 	return result;
 }

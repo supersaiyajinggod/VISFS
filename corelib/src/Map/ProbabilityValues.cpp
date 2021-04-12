@@ -62,9 +62,9 @@ std::vector<uint16_t> computeLookupTableToApplyOdds(const double _odds) {
 std::vector<uint16_t> computeLookupTableToApplyCorrespondenceCostOdds(const double _odds) {
     std::vector<uint16_t> result;
     result.reserve(kValueCount);
-    result.emplace_back(correspondenceCostToValue(probabilityToCorrespondceCost(probabilityFromOdds(_odds))) + kUpdateMarker);
+    result.emplace_back(correspondenceCostToValue(probabilityToCorrespondenceCost(probabilityFromOdds(_odds))) + kUpdateMarker);
     for (int cell = 1; cell != kValueCount; ++cell) {
-        result.emplace_back(correspondenceCostToValue(probabilityToCorrespondceCost(probabilityFromOdds(_odds * odds(correspondenceCostToProbability((*kValueToCorrespondenceCost)[cell]))))) + kUpdateMarker);
+        result.emplace_back(correspondenceCostToValue(probabilityToCorrespondenceCost(probabilityFromOdds(_odds * odds(correspondenceCostToProbability((*kValueToCorrespondenceCost)[cell]))))) + kUpdateMarker);
     }
     return result;
 }

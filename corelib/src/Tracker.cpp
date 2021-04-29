@@ -46,7 +46,7 @@ Tracker::Tracker(const ParametersMap & _parameters) :
 Tracker::~Tracker() {}
 
 void Tracker::inputSignature(const Signature & _signature) {
-    boost::lock_guard<boost::mutex> lock(mutexDataBuf_);
+    std::lock_guard<std::mutex> lock(mutexDataBuf_);
     signatureBuf_.emplace(_signature);
 }
 
@@ -57,7 +57,7 @@ void Tracker::threadProcess() {
 
         if (!signatureBuf_.empty()) {
             {
-                boost::lock_guard<boost::mutex> lock(mutexDataBuf_);
+                std::lock_guard<std::mutex> lock(mutexDataBuf_);
                 signature = signatureBuf_.front();
                 signatureBuf_.pop(); 
             }
@@ -76,7 +76,7 @@ void Tracker::threadProcess() {
             lastSignature_ = signature;
         }
 
-        boost::this_thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(5));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 }
 

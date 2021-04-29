@@ -5,7 +5,7 @@
 #include <set>
 #include <tuple>
 #include <vector>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
@@ -45,7 +45,7 @@ public:
         std::size_t rootId,     // fixed pose
         const std::map<std::size_t, Eigen::Isometry3d> & _poses,    // map<pose index, transform>
         const std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links,  // map<link index, tuple<the from pose index, the to pose index, transform, infomation matrix>>
-        const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
+        const std::vector<std::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
         std::map<std::size_t, Eigen::Vector3d> & _points3D,
         const std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _wordReferences,
         std::set<std::size_t> & _outliers
@@ -65,7 +65,7 @@ public:
         std::size_t _rootId,     // fixed pose
         const std::map<std::size_t, Eigen::Isometry3d> & _poses,    // map<pose index, transform>
         const std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links,  // map<link index, tuple<the from pose index, the to pose index, transform, infomation matrix>>
-        const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
+        const std::vector<std::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
         std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points3D,   // map<feature id, <feature global pose, fixed?>>
         const std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _wordReferences,
         std::vector<std::tuple<std::size_t, std::size_t>> & _outliers   //  tuple<feature id, signature id>
@@ -87,7 +87,7 @@ public:
         std::size_t _rootId,     // fixed pose
         const std::map<std::size_t, Eigen::Isometry3d> & _poses,    // map<pose index, transform>
         const std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links,  // map<link index, tuple<the from pose index, the to pose index, transform, infomation matrix>>
-        const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
+        const std::vector<std::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
         std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points3D,   // map<feature id, <feature global pose, fixed?>>
         const std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _wordReferences,
         const std::vector<Sensor::PointCloud> & _pointClouds,
@@ -107,7 +107,7 @@ public:
         std::size_t _rootId,     // fixed pose
         const std::map<std::size_t, Eigen::Isometry3d> & _poses,    // map<pose index, transform>
         const std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links,  // map<link index, tuple<the from pose index, the to pose index, transform, infomation matrix>>
-        const std::vector<boost::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
+        const std::vector<std::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
         const std::vector<Sensor::PointCloud> & _pointClouds,
         const std::shared_ptr<const Map::Submap2D> & _submap,
         std::vector<std::tuple<std::size_t, std::size_t>> & _outliers   //  tuple<feature id, signature id>

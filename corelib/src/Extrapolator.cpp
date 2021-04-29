@@ -22,18 +22,18 @@ Extrapolator::Extrapolator(const ParametersMap & _parameters) :
 Extrapolator::~Extrapolator() {}
 
 void Extrapolator::addOdometry(const std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d> & _odom) {
-    boost::lock_guard<boost::mutex> lock(mutexWheelOdometryBuf_);
+    std::lock_guard<std::mutex> lock(mutexWheelOdometryBuf_);
     wheelOdometryBuf_.emplace_back(_odom);
 }
 
 void Extrapolator::addOdometry(const double _time, const Eigen::Isometry3d & _pose, const Eigen::Isometry3d & _velocity) {
-    boost::lock_guard<boost::mutex> lock(mutexWheelOdometryBuf_);
+    std::lock_guard<std::mutex> lock(mutexWheelOdometryBuf_);
     wheelOdometryBuf_.emplace_back(std::make_tuple(_time, _pose, _velocity));
 }
 
 std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> Extrapolator::getApproximateOdometry(const double _time) {
     std::vector<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> vOdom;
-    boost::lock_guard<boost::mutex> lock(mutexWheelOdometryBuf_);
+    std::lock_guard<std::mutex> lock(mutexWheelOdometryBuf_);
 
     double bestScore = 1.0;
     std::list<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>>::iterator bestCandidate = wheelOdometryBuf_.begin();

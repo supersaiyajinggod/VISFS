@@ -1,5 +1,6 @@
 #include <pcl/common/eigen.h>
 #include <pcl/common/common.h>
+#include <pthread.h>
 #include "System.h"
 #include "Conversion.h"
 #include "Timer.h"
@@ -44,23 +45,23 @@ System::System(const ParametersMap & _parameters) :
     if (monitorSwitch_) {
         monitor_ = new Monitor(_parameters);
         estimator_->setMonitor(monitor_);
-        threadMonitor_ = new boost::thread(boost::bind(&Monitor::threadProcess, monitor_));
+        threadMonitor_ = new std::thread(std::bind(&Monitor::threadProcess, monitor_));
     }
 
-    threadTracker_ = new boost::thread(boost::bind(&Tracker::threadProcess, tracker_));
-    threadEstimator_ = new boost::thread(boost::bind(&Estimator::threadProcess, estimator_));
+    threadTracker_ = new std::thread(std::bind(&Tracker::threadProcess, tracker_));
+    threadEstimator_ = new std::thread(std::bind(&Estimator::threadProcess, estimator_));
 }
 
 System::~System() {
     if (monitorSwitch_) {
-        threadMonitor_->interrupt();
+        pthread_cancel(threadMonitor_->native_handle());
         threadMonitor_->join();
         delete monitor_;
         monitor_ = nullptr;
     }
 
-    threadTracker_->interrupt();
-    threadEstimator_->interrupt();
+    pthread_cancel(threadTracker_->native_handle());
+    pthread_cancel(threadEstimator_->native_handle());
     threadTracker_->join();
     threadEstimator_->join();
     delete tracker_;
@@ -69,7 +70,7 @@ System::~System() {
     delete logger_;
 }
 
-void System::init(const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight,
+void System::init(const std::shared_ptr<GeometricCamera> & _cameraLeft, const std::shared_ptr<GeometricCamera> & _cameraRight,
                 const Eigen::Isometry3d & _transformCamera2Robot, const Eigen::Isometry3d & _transformLaser2Robot) {
     cameraLeft_ = _cameraLeft;
     cameraRight_ = _cameraRight;
@@ -86,9 +87,9 @@ void System::init(const double fxl, const double fyl, const double cxl, const do
     Kl << fxl, 0.0, cxl, 0.0, fyl, cyl, 0, 0, 1;
     Kr << fxr, 0.0, cxr, 0.0, fyr, cyr, 0, 0, 1;
     GeometricCamera * cameraLeft = new PinholeModel(Kl, baseline);
-    boost::shared_ptr<GeometricCamera> spcameraLeft(cameraLeft);
+    std::shared_ptr<GeometricCamera> spcameraLeft(cameraLeft);
     GeometricCamera * cameraRight = new PinholeModel(Kr, baseline);
-    boost::shared_ptr<GeometricCamera> spcameraRight(cameraRight);
+    std::shared_ptr<GeometricCamera> spcameraRight(cameraRight);
     cameraLeft_ = spcameraLeft;
     cameraRight_ = spcameraRight;
     transformCamera2Robot_ = _transformCamera2Robot;

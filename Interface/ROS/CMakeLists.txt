@@ -60,7 +60,7 @@ find_package(Boost 1.65 REQUIRED COMPONENTS
 
 find_package(PCL REQUIRED)
 
-find_package(OpenCV 3.2 REQUIRED)
+find_package(OpenCV REQUIRED)
 if(NOT OpenCV_FOUND)
     find_package(OpenCV 2.4.3 REQUIRED)
     if(NOT OpenCV_FOUND)

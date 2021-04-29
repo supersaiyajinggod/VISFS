@@ -16,7 +16,7 @@ Signature::Signature() :
     deltaGuess_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())),
     wheelOdom_(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) {}
 
-Signature::Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight,
+Signature::Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const std::shared_ptr<GeometricCamera> & _cameraLeft, const std::shared_ptr<GeometricCamera> & _cameraRight,
                 const Eigen::Isometry3d & _transformCamera2Robot, const Eigen::Isometry3d & _transformLaser2Robot,
                 const Eigen::Isometry3d & _guessPose, const Eigen::Isometry3d & _wheelOdom, const Sensor::TimedPointCloudWithIntensities & _timedPointCloud) :
     timestamp_(_timestamp), imageLeft_(_imageLeft), imageRight_(_imageRight), cameraLeft_(_cameraLeft), cameraRight_(_cameraRight),

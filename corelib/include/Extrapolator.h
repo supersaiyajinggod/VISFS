@@ -4,8 +4,8 @@
 #include <tuple>
 #include <vector>
 #include <list>
+#include <mutex>
 #include <Eigen/Geometry>
-#include <boost/thread.hpp>
 
 #include "Parameters.h"
 
@@ -60,7 +60,7 @@ private:
     double previousTimeStamp_;
 
     // data buf
-    boost::mutex mutexWheelOdometryBuf_;
+    std::mutex mutexWheelOdometryBuf_;
     std::list<std::tuple<double, Eigen::Isometry3d, Eigen::Isometry3d>> wheelOdometryBuf_;  // timestamp, pose, velocity
 
     int sensorStrategy_;    // 0 Stereo, 1 rgbd, 2 stereo + wheel.

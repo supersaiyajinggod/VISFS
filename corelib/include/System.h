@@ -6,7 +6,8 @@
 #include <cstdarg>
 
 #include <opencv2/core/core.hpp>
-#include <boost/thread.hpp>
+#include <thread>
+#include <mutex>
 
 #include "Parameters.h"
 #include "Tracker.h"
@@ -26,7 +27,7 @@ public:
     System(const ParametersMap & _parameters = ParametersMap());
     ~System();
 
-    void init(const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight,
+    void init(const std::shared_ptr<GeometricCamera> & _cameraLeft, const std::shared_ptr<GeometricCamera> & _cameraRight,
                     const Eigen::Isometry3d & _transformCamera2Robot, const Eigen::Isometry3d & _transformLaser2Robot);
     void init(const double fxl, const double fyl, const double cxl, const double cyl, const double fxr, const double fyr,
                 const double cxr, const double cyr, const double baseline,
@@ -53,19 +54,19 @@ public:
 
 private:
     Tracker * tracker_;
-    boost::thread * threadTracker_;
+    std::thread * threadTracker_;
     Estimator * estimator_;
-    boost::thread * threadEstimator_;
+    std::thread * threadEstimator_;
     Monitor * monitor_;
-    boost::thread * threadMonitor_;
+    std::thread * threadMonitor_;
 
     Logger * logger_;
     int logLevel_;
 	bool console_;
 	std::string logFolder_;
 
-    boost::shared_ptr<GeometricCamera> cameraLeft_;
-    boost::shared_ptr<GeometricCamera> cameraRight_;
+    std::shared_ptr<GeometricCamera> cameraLeft_;
+    std::shared_ptr<GeometricCamera> cameraRight_;
     Eigen::Isometry3d transformCamera2Robot_;
     Eigen::Isometry3d transformLaser2Robot_;
 

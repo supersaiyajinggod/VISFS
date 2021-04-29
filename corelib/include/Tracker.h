@@ -1,8 +1,6 @@
 #ifndef VISFS_TRACKER
 #define VISFS_TRACKER
 
-#include <boost/thread.hpp>
-
 #include "Parameters.h"
 #include "Signature.h"
 #include "Estimator.h"
@@ -92,7 +90,7 @@ private:
     TrackingMethod trackingMethod_;
     std::size_t globalFeatureId_;
 
-    boost::mutex mutexDataBuf_;
+    std::mutex mutexDataBuf_;
     std::queue<Signature> signatureBuf_;
 
     Estimator * estimator_;

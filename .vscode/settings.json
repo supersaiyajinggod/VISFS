@@ -66,6 +66,11 @@
         "queue": "cpp",
         "core": "cpp",
         "any": "cpp",
-        "geometry": "cpp"
+        "geometry": "cpp",
+        "condition_variable": "cpp",
+        "mutex": "cpp",
+        "shared_mutex": "cpp",
+        "variant": "cpp",
+        "bit": "cpp"
     }
 }

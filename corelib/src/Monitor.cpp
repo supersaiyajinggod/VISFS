@@ -1,3 +1,5 @@
+#include <opencv2/highgui/highgui_c.h>
+
 #include "Monitor.h"
 #include "Stl.h"
 
@@ -10,7 +12,7 @@ Monitor::Monitor(const ParametersMap & _parameters) :
 }
 
 void Monitor::addSignature(const Signature & _signature) {
-    boost::lock_guard<boost::mutex> lock(mutexDataRW_);
+    std::lock_guard<std::mutex> lock(mutexDataRW_);
     signatureBuf_.emplace(_signature);
 }
 
@@ -20,7 +22,7 @@ void Monitor::threadProcess() {
 
         if (!signatureBuf_.empty()) {
             {
-                boost::lock_guard<boost::mutex> lock(mutexDataRW_);
+                std::lock_guard<std::mutex> lock(mutexDataRW_);
                 signature = signatureBuf_.front();
                 signatureBuf_.pop();
             }
@@ -28,7 +30,7 @@ void Monitor::threadProcess() {
             process(signature);
         }
 
-        boost::this_thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(5));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 }
 

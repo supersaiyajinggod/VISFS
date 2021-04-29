@@ -11,7 +11,8 @@
                 "${workspaceFolder}/Interface/ROS/include",
                 "${workspaceFolder}/corelib/include",
                 "${workspaceFolder}/utilite/include",
-                "/opt/ros/melodic/include/**"
+                "/opt/ros/melodic/include/**",
+                "/opt/ros/noetic/include/**"
             ],
             "name": "ROS",
             "intelliSenseMode": "gcc-x64",

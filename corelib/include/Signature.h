@@ -3,7 +3,7 @@
 
 #include <map>
 #include <vector>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <opencv2/opencv.hpp>
@@ -94,7 +94,7 @@ class Signature {
 public:
     static std::size_t nextId_;
     Signature();
-    Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const boost::shared_ptr<GeometricCamera> & _cameraLeft, const boost::shared_ptr<GeometricCamera> & _cameraRight,
+    Signature(const double & _timestamp, const cv::Mat & _imageLeft, const cv::Mat & _imageRight, const std::shared_ptr<GeometricCamera> & _cameraLeft, const std::shared_ptr<GeometricCamera> & _cameraRight,
                 const Eigen::Isometry3d & _transformCamera2Robot, const Eigen::Isometry3d & _transformLaser2Robot,
                 const Eigen::Isometry3d & _guessPose, const Eigen::Isometry3d & _wheelOdom, const Sensor::TimedPointCloudWithIntensities & _timedPointCloud);
 
@@ -140,9 +140,9 @@ public:
     const GeometricCamera & getCameraModel() const { return *cameraLeft_; }
     const GeometricCamera & getCameraModelLeft() const { return *cameraLeft_; }
     const GeometricCamera & getCameraModelRight() const { return *cameraRight_; }
-    const boost::shared_ptr<GeometricCamera> & getCameraModelPtr() const { return cameraLeft_; }
-    const boost::shared_ptr<GeometricCamera> & getCameraModelLeftPtr() const { return cameraLeft_; }
-    const boost::shared_ptr<GeometricCamera> & getCameraModelRightPtr() const { return cameraRight_; }
+    const std::shared_ptr<GeometricCamera> & getCameraModelPtr() const { return cameraLeft_; }
+    const std::shared_ptr<GeometricCamera> & getCameraModelLeftPtr() const { return cameraLeft_; }
+    const std::shared_ptr<GeometricCamera> & getCameraModelRightPtr() const { return cameraRight_; }
     const Eigen::Isometry3d & getTransformCamera2Robot() const { return transformCamera2Robot_; }
     const Eigen::Isometry3d & getTransformLaser2Robot() const { return transformLaser2Robot_; }
     const Eigen::Isometry3d & getTransformLaser2Camera() const { return transformLaser2Camera_; }
@@ -159,8 +159,8 @@ private:
     cv::Mat imageLeft_;
     cv::Mat imageRight_;
     cv::Mat submap_;
-    boost::shared_ptr<GeometricCamera> cameraLeft_;
-    boost::shared_ptr<GeometricCamera> cameraRight_;
+    std::shared_ptr<GeometricCamera> cameraLeft_;
+    std::shared_ptr<GeometricCamera> cameraRight_;
     Eigen::Isometry3d transformCamera2Robot_;
     Eigen::Isometry3d transformLaser2Robot_;
     Eigen::Isometry3d transformLaser2Camera_;

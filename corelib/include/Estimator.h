@@ -2,7 +2,8 @@
 #define VISFS_ESTIMATOR
 
 #include <queue>
-#include <boost/thread.hpp>
+#include <thread>
+#include <mutex>
 
 #include "Signature.h"
 #include "Optimizer/Optimizer.h"
@@ -41,11 +42,11 @@ private:
     std::vector<std::size_t> findCorrespondences(const std::map<std::size_t, cv::Point3f> & _words3dFrom, const std::map<std::size_t, cv::KeyPoint> & _words2dTo);
 
     std::queue<Signature> signatureThreadBuf_;
-    boost::mutex mutexDataRW_;
+    std::mutex mutexDataRW_;
     std::queue<Signature> processResultBuf_;
-    boost::mutex mutexResultRW_;
+    std::mutex mutexResultRW_;
     std::set<std::size_t> outliersBuf_;
-    boost::mutex mutexOutliersRw_;
+    std::mutex mutexOutliersRw_;
 
     Optimizer::Optimizer * optimizer_;
     LocalMap * localMap_;

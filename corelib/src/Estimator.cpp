@@ -58,18 +58,18 @@ Estimator::~Estimator() {
 }
 
 void Estimator::inputSignature(const Signature & _signature) {
-    boost::lock_guard<boost::mutex> lock(mutexDataRW_);
+    std::lock_guard<std::mutex> lock(mutexDataRW_);
     signatureThreadBuf_.emplace(_signature);
 }
 
 void Estimator::outputSignature(const Signature & _signature) {
-    boost::lock_guard<boost::mutex> lock(mutexResultRW_);
+    std::lock_guard<std::mutex> lock(mutexResultRW_);
     processResultBuf_.emplace(_signature);
 }
 
 Signature Estimator::getEstimatedSignature() {
     Signature signature;
-    boost::lock_guard<boost::mutex> lock(mutexResultRW_);
+    std::lock_guard<std::mutex> lock(mutexResultRW_);
     if (!processResultBuf_.empty()) {
         signature = processResultBuf_.front();
         processResultBuf_.pop();
@@ -78,12 +78,12 @@ Signature Estimator::getEstimatedSignature() {
 }
 
 void Estimator::outputOutliers(const std::set<std::size_t> & _outliers) {
-    boost::lock_guard<boost::mutex> lock(mutexOutliersRw_);
+    std::lock_guard<std::mutex> lock(mutexOutliersRw_);
     outliersBuf_ = _outliers;
 }
 
 std::set<std::size_t> Estimator::getOutliers() {
-    boost::lock_guard<boost::mutex> lock(mutexOutliersRw_);
+    std::lock_guard<std::mutex> lock(mutexOutliersRw_);
     return outliersBuf_;
 }
 
@@ -93,7 +93,7 @@ void Estimator::threadProcess() {
 
         if (!signatureThreadBuf_.empty()) {
             {
-                boost::lock_guard<boost::mutex> lock(mutexDataRW_);
+                std::lock_guard<std::mutex> lock(mutexDataRW_);
                 signature = signatureThreadBuf_.front();
                 signatureThreadBuf_.pop();
             }
@@ -109,7 +109,7 @@ void Estimator::threadProcess() {
             outputSignature(signature);
         }
         
-        boost::this_thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(5));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 }
 
@@ -220,7 +220,7 @@ void Estimator::process(Signature & _signature) {
     if (!transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && inliers.size() > minInliers_ && localMap_->checkMapAvaliable()) {
         std::map<std::size_t, Eigen::Isometry3d> poses;
         std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> links;
-        std::vector<boost::shared_ptr<GeometricCamera>> cameraModels;
+        std::vector<std::shared_ptr<GeometricCamera>> cameraModels;
         // std::map<std::size_t, std::map<std::size_t, Optimizer::FeatureBA>> wordReferences;
         // std::set<std::size_t> outliers;
 

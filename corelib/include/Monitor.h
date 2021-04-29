@@ -2,7 +2,8 @@
 #define VISFS_MONITOR
 
 #include <queue>
-#include <boost/thread.hpp>
+#include <thread>
+#include <mutex>
 
 #include "Signature.h"
 #include "Parameters.h"
@@ -21,7 +22,7 @@ private:
     int sensorStrategy_;    // 0: stereo, 1: rgbd.
 
     std::queue<Signature> signatureBuf_;
-    boost::mutex mutexDataRW_;
+    std::mutex mutexDataRW_;
 };
 
 }   // namespace

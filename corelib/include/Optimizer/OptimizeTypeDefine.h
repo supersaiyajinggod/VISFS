@@ -5,12 +5,213 @@
 #include <g2o/core/base_binary_edge.h>
 #include <g2o/core/eigen_types.h>
 #include <g2o/types/slam3d/se3quat.h>
+#include <g2o/types/sba/types_sba.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 
 namespace VISFS {
 namespace Optimizer {
+
+class CameraPose {
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	CameraPose() {
+		t_.setZero();
+		q_.setIdentity();
+	}
+
+	CameraPose(const Eigen::Quaterniond & _q, const Eigen::Vector3d & _t) :
+		q_(_q), t_(_t) {
+		normalizeRotation();
+	}
+
+	CameraPose(const Eigen::Matrix3d & _r, const Eigen::Vector3d & _t) :
+		t_(_t) {
+		q_ = Eigen::Quaterniond(_r);
+		normalizeRotation();
+	}
+
+    void normalizeRotation() {
+        if (q_.w() < 0) {
+        	q_.coeffs() *= -1;
+        }
+        q_.normalize();
+    }
+
+	void update(const double * pdelta);
+
+	Eigen::Vector3d map(const Eigen::Vector3d & pw) const {
+		return q_ * pw + t_;
+	}
+
+	Eigen::Quaterniond getRotation() const {
+		return q_;
+	}
+
+	Eigen::Vector3d getTranslation() const {
+		return t_;
+	}
+
+    inline Eigen::Matrix<double, 7, 1, Eigen::ColMajor> toVector() const {
+        Eigen::Matrix<double, 7, 1, Eigen::ColMajor> v;
+        v[0] = t_(0);
+        v[1] = t_(1);
+        v[2] = t_(2);
+        v[3] = q_.x();
+        v[4] = q_.y();
+        v[5] = q_.z();
+        v[6] = q_.w();
+        return v;
+    }
+
+    inline void fromVector(const Eigen::Matrix<double, 7, 1, Eigen::ColMajor> & v){
+    	q_ = Eigen::Quaterniond(v[6], v[3], v[4], v[5]);
+        t_ = Eigen::Vector3d(v[0], v[1], v[2]);
+    }
+
+	Eigen::Matrix<double, 4, 4, Eigen::ColMajor> toHomogeneousMatrix() const {
+		Eigen::Matrix<double, 4, 4, Eigen::ColMajor> homogeneousMatrix;
+		homogeneousMatrix.setIdentity();
+		homogeneousMatrix.block(0,0,3,3) = getRotation().toRotationMatrix();
+		homogeneousMatrix.col(3).head(3) = getTranslation();
+
+		return homogeneousMatrix;
+	}
+
+protected:
+	Eigen::Vector3d t_;
+	Eigen::Quaterniond q_;
+};
+
+class VertexPose : public g2o::BaseVertex<6, CameraPose> {
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	VertexPose() {}
+
+	VertexPose(const Eigen::Quaterniond & _q, const Eigen::Vector3d & _t) {
+		setEstimate(CameraPose(_q, _t));
+	}
+
+	virtual bool read(std::istream & is) { return false; }
+	
+	virtual bool write(std::ostream & os) const { return false; }
+
+	virtual void setToOriginImpl() { _estimate = CameraPose(); }
+
+	virtual void oplusImpl(const double * update_) {
+		_estimate.update(update_);
+		updateCache();
+	}
+
+};
+
+class EdgeStereo : public g2o::BaseBinaryEdge<3, Eigen::Vector3d, g2o::VertexPointXYZ, VertexPose> {
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	EdgeStereo() {}
+
+	virtual bool read(std::istream & is) { return false; }
+
+	virtual bool write(std::ostream & os) const { return false; }
+
+	void computeError() {
+		const g2o::VertexPointXYZ * point = dynamic_cast<const g2o::VertexPointXYZ *>(_vertices[0]);
+		const VertexPose * pose = dynamic_cast<const VertexPose *>(_vertices[1]);
+		const Eigen::Vector3d obs(_measurement);
+		_error = obs - project(pose->estimate().map(point->estimate()));
+	}
+
+	virtual void linearizeOplus() {
+		const g2o::VertexPointXYZ * point = dynamic_cast<const g2o::VertexPointXYZ *>(_vertices[0]);
+		const VertexPose * pose = dynamic_cast<const VertexPose *>(_vertices[1]);
+
+		const Eigen::Matrix3d & Rcw = pose->estimate().getRotation().toRotationMatrix();
+		const Eigen::Vector3d & tcw = pose->estimate().getTranslation();
+		const Eigen::Vector3d & Pc = pose->estimate().map(point->estimate());
+		const double x = tcw[0];
+		const double y = tcw[1];
+		const double z = tcw[2];
+		const double z_2 = z * z;
+
+		_jacobianOplusXi(0, 0) = -fx * Rcw(0, 0) / z + fx * x * Rcw(2, 0) / z_2;
+		_jacobianOplusXi(0, 1) = -fx * Rcw(0, 1) / z + fx * x * Rcw(2, 1) / z_2;
+		_jacobianOplusXi(0, 2) = -fx * Rcw(0, 2) / z + fx * x * Rcw(2, 2) / z_2;
+
+		_jacobianOplusXi(1, 0) = -fy * Rcw(1, 0) / z + fy * y * Rcw(2, 0) / z_2;
+		_jacobianOplusXi(1, 1) = -fy * Rcw(1, 1) / z + fy * y * Rcw(2, 1) / z_2;
+		_jacobianOplusXi(1, 2) = -fy * Rcw(1, 2) / z + fy * y * Rcw(2, 2) / z_2;
+
+		_jacobianOplusXi(2, 0) = _jacobianOplusXi(0, 0) - bf * Rcw(2, 0) / z_2;
+		_jacobianOplusXi(2, 1) = _jacobianOplusXi(0, 1) - bf * Rcw(2, 1) / z_2;
+		_jacobianOplusXi(2, 2) = _jacobianOplusXi(0, 2) - bf * Rcw(2, 2) / z_2;
+
+		_jacobianOplusXj(1, 0) = (1 + y * y / z_2) * fy;
+		_jacobianOplusXj(1, 1) = -x * y / z_2 * fy;
+		_jacobianOplusXj(1, 2) = -x / z * fy;
+		_jacobianOplusXj(1, 3) = 0;
+		_jacobianOplusXj(1, 4) = -1. / z * fy;
+		_jacobianOplusXj(1, 5) = y / z_2 * fy;
+
+		_jacobianOplusXj(2, 0) = _jacobianOplusXj(0, 0) - bf * y / z_2;
+  		_jacobianOplusXj(2, 1) = _jacobianOplusXj(0, 1) + bf * x / z_2;
+		_jacobianOplusXj(2, 2) = _jacobianOplusXj(0, 2);
+		_jacobianOplusXj(2, 3) = _jacobianOplusXj(0, 3);
+		_jacobianOplusXj(2, 4) = 0;
+		_jacobianOplusXj(2, 5) = _jacobianOplusXj(0, 5) - bf / z_2;
+
+	}
+
+	Eigen::Vector3d project(const Eigen::Vector3d & pc) const {
+		const double invZ = 1.0 / pc[2];
+		Eigen::Vector3d res;
+		res[0] = pc[0] * invZ * fx + cx;
+		res[1] = pc[1] * invZ * fy + cy;
+		res[2] = res[0] - bf * invZ;
+		return res;
+	}
+
+	double fx, fy, cx, cy, bf;
+
+};
+
+
+class EdgePoseConstraint : public g2o::BaseBinaryEdge<6, g2o::SE3Quat, VertexPose, VertexPose> {
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	EdgePoseConstraint() {}
+
+	virtual bool read(std::istream & is) { return false; }
+
+	virtual bool write(std::ostream & os) const { return false; }
+
+	virtual void setMeasurement(const g2o::SE3Quat & measurement) {
+		_measurement = measurement;
+	}
+
+	virtual double initialEstimatePossible(const g2o::OptimizableGraph &, g2o::OptimizableGraph::Vertex *) { return 1.0; }
+
+	virtual bool setMeasurementData(const double * d) {
+		Eigen::Map<const g2o::Vector7> v(d);
+		_measurement.fromVector(v);
+		return true;
+	}
+
+	virtual bool getMeasurementData(double * d) const {
+		Eigen::Map<g2o::Vector7> v(d);
+		v = _measurement.toVector();
+		return true;
+	}
+
+	virtual int measurementDimension() const { return 7; }
+	void computeError();
+
+	virtual void linearizeOplus();
+};
 
 /**
  * \brief SE3 Vertex parameterized internally with a transformation matrix

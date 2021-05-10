@@ -142,7 +142,7 @@ void odomInfoToROS(const VISFS::TrackInfo & _trackInfo, const VISFS::EstimateInf
 	transformToGeometryMsg(_estimateInfo.transform, _msg.transform);
 	transformToGeometryMsg(_estimateInfo.transformFiltered, _msg.transformFiltered);
 	transformToGeometryMsg(_estimateInfo.transformGroundTruth, _msg.transformGroundTruth);
-	transformToGeometryMsg(_estimateInfo.guessVelocity, _msg.guessVelocity);
+	// transformToGeometryMsg(_estimateInfo.guessVelocity, _msg.guessVelocity);
 
     keys = uKeys(_estimateInfo.localMap);
     std::vector<int> localMapKeys(keys.size());

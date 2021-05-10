@@ -37,8 +37,8 @@
     <param name="left/image_transport" 	type="string"       value="compressed"/>
 	<param name="right/image_transport" type="string"       value="compressed"/>
 
-    <param name="subscribe_wheel_odom"  type="bool"         value="true"/>
-    <param name="subscribe_laser_scan"  type="bool"         value="true"/>
+    <param name="subscribe_wheel_odom"  type="bool"         value="false"/>
+    <param name="subscribe_laser_scan"  type="bool"         value="false"/>
     <param name="approx_sync"           type="bool"			value="true"/>
 	<param name="queue_size"			type="int"			value="10"/>
     <param name="camera_frame_id"       type="string"       value="camera_link"/>
@@ -49,13 +49,13 @@
     <param name="base_line"             type="double"       value="0.0502569"/>
     <!-- <param name="base_line"             type="double"       value="0.051569"/> -->
 
-    <param name="System/SensorStrategy"             type="int"          value="3"/>
+    <param name="System/SensorStrategy"             type="int"          value="0"/>
     <param name="System/Monitor"                    type="bool"         value="true"/>
     <param name="System/CLAHE"                      type="bool"         value="true"/>
     <param name="System/LogLevel"                   type="int"          value="1"/>     <!--0-DEBUG, 1-INFO, 2-WARN, 3-ERROR, 5-FATAL-->
     <param name="System/LogOnConsole"               type="bool"         value="true"/>
     <param name="System/LogFolder"                  type="string"       value="/home/eddy/Documents/VISFS/logs"/>
-    <param name="Tracker/MaxFeatures"               type="int"          value="120"/>
+    <param name="Tracker/MaxFeatures"               type="int"          value="100"/>
     <param name="Tracker/QualityLevel"              type="double"       value="0.05"/>
     <param name="Tracker/MinDistance"               type="int"          value="40"/>
     <param name="Tracker/FlowBack"                  type="bool"         value="true"/>
@@ -74,7 +74,7 @@
     <param name="Estimator/MinLaserRange"           type="double"       value="0.1"/>
     <param name="Estimator/MaxLaserRange"           type="double"       value="30.0"/>
     <param name="Estimator/MissingDataRayLength"    type="double"       value="5.0"/>
-    <param name="Optimizer/Solver"                  type="int"          value="3"/>
+    <param name="Optimizer/Solver"                  type="int"          value="0"/>
     <param name="Optimizer/PixelVariance"           type="double"       value="1.5"/>
     <param name="Optimizer/Iterations"              type="int"          value="20"/>
     <param name="Optimizer/RobustKernelDelta"       type="double"       value="10.0"/>

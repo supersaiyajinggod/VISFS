@@ -87,10 +87,10 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 				// Twc = Twr * Trc
 				Eigen::Isometry3d cameraPose = iter->second * cameraModel.getTansformImageToRobot();
 
-				g2o::VertexSE3Expmap * vCam = new g2o::VertexSE3Expmap();
+				VertexPose * vCam = new VertexPose();
 				// Tcw = Twc.inverse()
 				cameraPose = cameraPose.inverse();
-				vCam->setEstimate(g2o::SE3Quat(cameraPose.linear(), cameraPose.translation()));
+				vCam->setEstimate(CameraPose(cameraPose.linear(), cameraPose.translation()));
 				vCam->setId(iter->first);
 				vCam->setFixed(rootId >= 0 && iter->first == rootId);
 				optimizer.addVertex(vCam);
@@ -109,13 +109,13 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 					Eigen::Isometry3d Tri = cameraModels.getTansformImageToRobot();
 					//Tc1c2 = Tcr * Tr1r2 * Trc
 					Eigen::Isometry3d Tc1c2 = Tri.inverse()*transfrom*Tri;
-					Eigen::Isometry3d Tc2c1 = Tc1c2.inverse();
-					g2o::EdgeSE3Expmap * e = new g2o::EdgeSE3Expmap();
-					g2o::VertexSE3Expmap * v1 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(fromId));
-					g2o::VertexSE3Expmap * v2 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(toId));
+
+					EdgePoseConstraint * e = new EdgePoseConstraint();
+					VertexPose * v1 = dynamic_cast<VertexPose *>(optimizer.vertex(fromId));
+					VertexPose * v2 = dynamic_cast<VertexPose *>(optimizer.vertex(toId));
 					e->setVertex(0, v1);
 					e->setVertex(1, v2);
-					e->setMeasurement(g2o::SE3Quat(Tc2c1.linear(), Tc2c1.translation()));
+					e->setMeasurement(g2o::SE3Quat(Tc1c2.linear(), Tc1c2.translation()));
 					e->setInformation(information);
 
 					if (!optimizer.addEdge(e)) {
@@ -152,13 +152,13 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 						// std::cout << "Add observation pt: " << vpt3d->id()-stepVertexId << " to cam= " << cameraId << " with " << pt.kpt.pt.x << " " << pt.kpt.pt.y << " depth= " << depth << std::endl;
 
 						g2o::OptimizableGraph::Edge * e;
-						g2o::VertexSE3Expmap * vCam = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(cameraId));
+						VertexPose * vCam = dynamic_cast<VertexPose *>(optimizer.vertex(cameraId));
 						if (_cameraModels.size() > 1) {
 							baseLine = cameraModel.getBaseLine();
 						}
 						if (std::isfinite(depth) && depth > 0.0 && baseLine > 0.0) {
 							// Stereo
-							g2o::EdgeStereoSE3ProjectXYZ * es = new g2o::EdgeStereoSE3ProjectXYZ();
+							EdgeStereo * es = new EdgeStereo();
 							float disparity = static_cast<float>(baseLine * K(0, 0) / depth);
 							Eigen::Vector3d obs(pt.kpt.pt.x, pt.kpt.pt.y, pt.kpt.pt.x - disparity);
 							es->setMeasurement(obs);
@@ -230,10 +230,10 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 						++outliersCount;
 						double d = 0.0;
 
-						if (dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter) != 0) {
-							d = dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[0] - dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[2];
+						if (dynamic_cast<EdgeStereo *>(*iter) != 0) {
+							d = dynamic_cast<EdgeStereo *>(*iter)->measurement()[0] - dynamic_cast<EdgeStereo *>(*iter)->measurement()[2];
 						}
-						// std::cout << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((EdgeStereoSE3PointXYZ*)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2() << std::endl;
+						// std::cout << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((EdgeStereo*)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2() << std::endl;
 						
 						Eigen::Vector3d pt3d;
 						pt3d = _points3D.at((*iter)->vertex(0)->id() - stepVertexId);
@@ -268,9 +268,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::poseOptimize(
 		// Update poses
 		for (auto iter = _poses.begin(); iter != _poses.end(); ++iter) {
 			if (iter->first > 0) {
-				const g2o::VertexSE3Expmap * v = dynamic_cast<const g2o::VertexSE3Expmap *>(optimizer.vertex(iter->first));
+				const VertexPose * v = dynamic_cast<const VertexPose *>(optimizer.vertex(iter->first));
 				if (v) {
-					Eigen::Isometry3d t(v->estimate().to_homogeneous_matrix());
+					Eigen::Isometry3d t(v->estimate().toHomogeneousMatrix());
 					// Twc = Tcw.inverse()
 					t = t.inverse();
 					// remove transform camera to robot
@@ -353,10 +353,10 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 				// Twc = Twr * Trc
 				Eigen::Isometry3d cameraPose = iter->second * cameraModel.getTansformImageToRobot();
 
-				g2o::VertexSE3Expmap * vCam = new g2o::VertexSE3Expmap();
+				VertexPose * vCam = new VertexPose();
 				// Tcw = Twc.inverse()
 				cameraPose = cameraPose.inverse();
-				vCam->setEstimate(g2o::SE3Quat(cameraPose.linear(), cameraPose.translation()));
+				vCam->setEstimate(CameraPose(cameraPose.linear(), cameraPose.translation()));
 				vCam->setId(iter->first);
 				vCam->setFixed(_rootId >= 0 && iter->first == _rootId);
 				optimizer.addVertex(vCam);
@@ -375,14 +375,13 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 					Eigen::Isometry3d Tri = cameraModels.getTansformImageToRobot();
 					//Tc1c2 = Tcr * Tr1r2 * Trc
 					Eigen::Isometry3d Tc1c2 = Tri.inverse()*transfrom*Tri;
-					Eigen::Isometry3d Tc2c1 = Tc1c2.inverse();
 
-					g2o::EdgeSE3Expmap * e = new g2o::EdgeSE3Expmap();
-					g2o::VertexSE3Expmap * v1 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(fromId));
-					g2o::VertexSE3Expmap * v2 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(toId));
+					EdgePoseConstraint * e = new EdgePoseConstraint();
+					VertexPose * v1 = dynamic_cast<VertexPose *>(optimizer.vertex(fromId));
+					VertexPose * v2 = dynamic_cast<VertexPose *>(optimizer.vertex(toId));
 					e->setVertex(0, v1);
 					e->setVertex(1, v2);
-					e->setMeasurement(g2o::SE3Quat(Tc2c1.linear(), Tc2c1.translation()));
+					e->setMeasurement(g2o::SE3Quat(Tc1c2.linear(), Tc1c2.translation()));
 					e->setInformation(information);
 
 					if (!optimizer.addEdge(e)) {
@@ -405,7 +404,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 				g2o::VertexPointXYZ* vpt3d = new g2o::VertexPointXYZ();
 				vpt3d->setEstimate(pointPose);
 				vpt3d->setId(stepVertexId + id);
-				vpt3d->setFixed(fixSymbol);
+				vpt3d->setFixed(false);
 				vpt3d->setMarginalized(true);
 				optimizer.addVertex(vpt3d);
 
@@ -421,13 +420,13 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 						// std::cout << "Add observation pt: " << vpt3d->id()-stepVertexId << " to cam= " << cameraId << " with " << pt.kpt.pt.x << " " << pt.kpt.pt.y << " depth= " << depth << std::endl;
 
 						g2o::OptimizableGraph::Edge * e;
-						g2o::VertexSE3Expmap * vCam = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(cameraId));
+						VertexPose * vCam = dynamic_cast<VertexPose *>(optimizer.vertex(cameraId));
 						if (_cameraModels.size() > 1) {
 							baseLine = cameraModel.getBaseLine();
 						}
 						if (std::isfinite(depth) && depth > 0.0 && baseLine > 0.0) {
 							// Stereo
-							g2o::EdgeStereoSE3ProjectXYZ * es = new g2o::EdgeStereoSE3ProjectXYZ();
+							EdgeStereo * es = new EdgeStereo();
 							float disparity = static_cast<float>(baseLine * K(0, 0) / depth);
 							Eigen::Vector3d obs(pt.kpt.pt.x, pt.kpt.pt.y, pt.kpt.pt.x - disparity);
 							es->setMeasurement(obs);
@@ -496,11 +495,11 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 					++outliersCount;
 					double d = 0.0;
 
-					if (dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter) != 0) {
-						d = dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[0] - dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[2];
+					if (dynamic_cast<EdgeStereo *>(*iter) != 0) {
+						d = dynamic_cast<EdgeStereo *>(*iter)->measurement()[0] - dynamic_cast<EdgeStereo *>(*iter)->measurement()[2];
 					}
 
-					// LOG_INFO << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((g2o::EdgeStereoSE3ProjectXYZ *)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2();
+					// LOG_INFO << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((EdgeStereo *)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2();
 
 					_outliers.emplace_back(std::make_tuple<std::size_t, std::size_t>((*iter)->vertex(0)->id() - stepVertexId, (*iter)->vertex(1)->id()));
 
@@ -528,9 +527,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		// Update poses
 		for (auto iter = _poses.begin(); iter != _poses.end(); ++iter) {
 			if (iter->first > 0) {
-				const g2o::VertexSE3Expmap * v = dynamic_cast<const g2o::VertexSE3Expmap *>(optimizer.vertex(iter->first));
+				const VertexPose * v = dynamic_cast<const VertexPose *>(optimizer.vertex(iter->first));
 				if (v) {
-					Eigen::Isometry3d t(v->estimate().to_homogeneous_matrix());
+					Eigen::Isometry3d t(v->estimate().toHomogeneousMatrix());
 					// Twc = Tcw.inverse()
 					t = t.inverse();
 					// remove transform camera to robot
@@ -560,9 +559,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 					iter->second = std::make_tuple(v->estimate(), fixSymbol);
 				}
 			} else {
-				auto [oldPose, fixSymbol] = iter->second;
-				oldPose[0] = oldPose[1] = oldPose[2] = std::numeric_limits<float>::quiet_NaN();
-				iter->second = std::make_tuple(oldPose, fixSymbol);
+				// auto [oldPose, fixSymbol] = iter->second;
+				// oldPose[0] = oldPose[1] = oldPose[2] = std::numeric_limits<float>::quiet_NaN();
+				// iter->second = std::make_tuple(oldPose, fixSymbol);
 			}
 		}
 
@@ -620,10 +619,10 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 				// Twc = Twr * Trc
 				Eigen::Isometry3d cameraPose = iter->second * cameraModel.getTansformImageToRobot();
 
-				g2o::VertexSE3Expmap * vCam = new g2o::VertexSE3Expmap();
+				VertexPose * vCam = new VertexPose();
 				// Tcw = Twc.inverse()
 				cameraPose = cameraPose.inverse();
-				vCam->setEstimate(g2o::SE3Quat(cameraPose.linear(), cameraPose.translation()));
+				vCam->setEstimate(CameraPose(cameraPose.linear(), cameraPose.translation()));
 				vCam->setId(iter->first);
 				vCam->setFixed(_rootId >= 0 && iter->first == _rootId);
 				optimizer.addVertex(vCam);
@@ -642,14 +641,13 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 					Eigen::Isometry3d Tri = cameraModels.getTansformImageToRobot();
 					//Tc1c2 = Tcr * Tr1r2 * Trc
 					Eigen::Isometry3d Tc1c2 = Tri.inverse()*transfrom*Tri;
-					Eigen::Isometry3d Tc2c1 = Tc1c2.inverse();
 
-					g2o::EdgeSE3Expmap * e = new g2o::EdgeSE3Expmap();
-					g2o::VertexSE3Expmap * v1 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(fromId));
-					g2o::VertexSE3Expmap * v2 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(toId));
+					EdgePoseConstraint * e = new EdgePoseConstraint();
+					VertexPose * v1 = dynamic_cast<VertexPose *>(optimizer.vertex(fromId));
+					VertexPose * v2 = dynamic_cast<VertexPose *>(optimizer.vertex(toId));
 					e->setVertex(0, v1);
 					e->setVertex(1, v2);
-					e->setMeasurement(g2o::SE3Quat(Tc2c1.linear(), Tc2c1.translation()));
+					e->setMeasurement(g2o::SE3Quat(Tc1c2.linear(), Tc1c2.translation()));
 					e->setInformation(information);
 
 					if (!optimizer.addEdge(e)) {
@@ -688,13 +686,13 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 						// std::cout << "Add observation pt: " << vpt3d->id()-stepVertexId << " to cam= " << cameraId << " with " << pt.kpt.pt.x << " " << pt.kpt.pt.y << " depth= " << depth << std::endl;
 
 						g2o::OptimizableGraph::Edge * e;
-						g2o::VertexSE3Expmap * vCam = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(cameraId));
+						VertexPose * vCam = dynamic_cast<VertexPose *>(optimizer.vertex(cameraId));
 						if (_cameraModels.size() > 1) {
 							baseLine = cameraModel.getBaseLine();
 						}
 						if (std::isfinite(depth) && depth > 0.0 && baseLine > 0.0) {
 							// Stereo
-							g2o::EdgeStereoSE3ProjectXYZ * es = new g2o::EdgeStereoSE3ProjectXYZ();
+							EdgeStereo * es = new EdgeStereo();
 							float disparity = static_cast<float>(baseLine * K(0, 0) / depth);
 							Eigen::Vector3d obs(pt.kpt.pt.x, pt.kpt.pt.y, pt.kpt.pt.x - disparity);
 							es->setMeasurement(obs);
@@ -735,7 +733,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 
 		// Set range points to g2o
 		const int pointStepVertexId = static_cast<int>(_poses.rbegin()->first + 1) + static_cast<int>(_wordReferences.rbegin()->first) + 1;
-		g2o::VertexSE3Expmap * latestPose = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(_poses.rbegin()->first));
+		VertexPose * latestPose = dynamic_cast<VertexPose *>(optimizer.vertex(_poses.rbegin()->first));
 		std::shared_ptr<Map::MapLimits> limits = std::make_shared<Map::MapLimits>(_submap->getGrid()->limits());
 		const GridArrayAdapter adapter(*_submap->getGrid());
 		std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator = std::make_shared<ceres::BiCubicInterpolator<GridArrayAdapter>>(adapter);
@@ -795,11 +793,11 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 					++outliersCount;
 					double d = 0.0;
 
-					if (dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter) != 0) {
-						d = dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[0] - dynamic_cast<g2o::EdgeStereoSE3ProjectXYZ *>(*iter)->measurement()[2];
+					if (dynamic_cast<EdgeStereo *>(*iter) != 0) {
+						d = dynamic_cast<EdgeStereo *>(*iter)->measurement()[0] - dynamic_cast<EdgeStereo *>(*iter)->measurement()[2];
 					}
 
-					// LOG_INFO << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((g2o::EdgeStereoSE3ProjectXYZ *)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2();
+					// LOG_INFO << "Ignoring edge " << (*iter)->vertex(0)->id()-stepVertexId << "<->" << (*iter)->vertex(1)->id() << " d: " << d << "  var: " << 1.0/((EdgeStereo *)(*iter))->information()(0,0) << " kernel: " << (*iter)->robustKernel()->delta() << " chi2: " << (*iter)->chi2();
 
 					_outliers.emplace_back(std::make_tuple<std::size_t, std::size_t>((*iter)->vertex(0)->id() - stepVertexId, (*iter)->vertex(1)->id()));
 
@@ -827,9 +825,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		// Update poses
 		for (auto iter = _poses.begin(); iter != _poses.end(); ++iter) {
 			if (iter->first > 0) {
-				const g2o::VertexSE3Expmap * v = dynamic_cast<const g2o::VertexSE3Expmap *>(optimizer.vertex(iter->first));
+				const VertexPose * v = dynamic_cast<const VertexPose *>(optimizer.vertex(iter->first));
 				if (v) {
-					Eigen::Isometry3d t(v->estimate().to_homogeneous_matrix());
+					Eigen::Isometry3d t(v->estimate().toHomogeneousMatrix());
 					// Twc = Tcw.inverse()
 					t = t.inverse();
 					// remove transform camera to robot
@@ -916,10 +914,10 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 				// Twc = Twr * Trc
 				Eigen::Isometry3d cameraPose = iter->second * cameraModel.getTansformImageToRobot();
 
-				g2o::VertexSE3Expmap * vCam = new g2o::VertexSE3Expmap();
+				VertexPose * vCam = new VertexPose();
 				// Tcw = Twc.inverse()
 				cameraPose = cameraPose.inverse();
-				vCam->setEstimate(g2o::SE3Quat(cameraPose.linear(), cameraPose.translation()));
+				vCam->setEstimate(CameraPose(cameraPose.linear(), cameraPose.translation()));
 				vCam->setId(iter->first);
 				vCam->setFixed(_rootId >= 0 && iter->first == _rootId);
 				optimizer.addVertex(vCam);
@@ -938,14 +936,13 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 					Eigen::Isometry3d Tri = cameraModels.getTansformImageToRobot();
 					//Tc1c2 = Tcr * Tr1r2 * Trc
 					Eigen::Isometry3d Tc1c2 = Tri.inverse()*transfrom*Tri;
-					Eigen::Isometry3d Tc2c1 = Tc1c2.inverse();
 
-					g2o::EdgeSE3Expmap * e = new g2o::EdgeSE3Expmap();
-					g2o::VertexSE3Expmap * v1 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(fromId));
-					g2o::VertexSE3Expmap * v2 = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(toId));
+					EdgePoseConstraint * e = new EdgePoseConstraint();
+					VertexPose * v1 = dynamic_cast<VertexPose *>(optimizer.vertex(fromId));
+					VertexPose * v2 = dynamic_cast<VertexPose *>(optimizer.vertex(toId));
 					e->setVertex(0, v1);
 					e->setVertex(1, v2);
-					e->setMeasurement(g2o::SE3Quat(Tc2c1.linear(), Tc2c1.translation()));
+					e->setMeasurement(g2o::SE3Quat(Tc1c2.linear(), Tc1c2.translation()));
 					e->setInformation(information);
 
 					if (!optimizer.addEdge(e)) {
@@ -959,7 +956,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 
 		// Set range points to g2o
 		const int pointStepVertexId = static_cast<int>(_poses.rbegin()->first + 1);
-		g2o::VertexSE3Expmap * latestPose = dynamic_cast<g2o::VertexSE3Expmap *>(optimizer.vertex(_poses.rbegin()->first));
+		VertexPose * latestPose = dynamic_cast<VertexPose *>(optimizer.vertex(_poses.rbegin()->first));
 		std::shared_ptr<Map::MapLimits> limits = std::make_shared<Map::MapLimits>(_submap->getGrid()->limits());
 		const GridArrayAdapter adapter(*_submap->getGrid());
 		std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator = std::make_shared<ceres::BiCubicInterpolator<GridArrayAdapter>>(adapter);
@@ -1004,9 +1001,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		// Update poses
 		for (auto iter = _poses.begin(); iter != _poses.end(); ++iter) {
 			if (iter->first > 0) {
-				const g2o::VertexSE3Expmap * v = dynamic_cast<const g2o::VertexSE3Expmap *>(optimizer.vertex(iter->first));
+				const VertexPose * v = dynamic_cast<const VertexPose *>(optimizer.vertex(iter->first));
 				if (v) {
-					Eigen::Isometry3d t(v->estimate().to_homogeneous_matrix());
+					Eigen::Isometry3d t(v->estimate().toHomogeneousMatrix());
 					// Twc = Tcw.inverse()
 					t = t.inverse();
 					// remove transform camera to robot

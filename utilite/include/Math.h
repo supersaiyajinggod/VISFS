@@ -338,6 +338,47 @@ Eigen::Matrix<typename Derived::Scalar, 4, 4> QuaternionRight(const Eigen::Quate
 	return ans;
 }
 
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 3, 3> expSO3(const Eigen::MatrixBase<Derived> & w) {
+	const typename Derived::Scalar d2 = w[0]*w[0] + w[1]*w[1] + w[2]*w[2];
+	const typename Derived::Scalar d = sqrt(d2);
+	
+	Eigen::Matrix<typename Derived::Scalar, 3, 3> W, ans;
+	W << static_cast<typename Derived::Scalar>(0.0), -w[2], w[1], w[2], static_cast<typename Derived::Scalar>(0.0),
+			-w[0], -w[1], w[0], static_cast<typename Derived::Scalar>(0.0);
+	
+	Eigen::Matrix<typename Derived::Scalar, 3, 3> identity;
+	identity << static_cast<typename Derived::Scalar>(1.0), static_cast<typename Derived::Scalar>(0.0), static_cast<typename Derived::Scalar>(0.0), static_cast<typename Derived::Scalar>(0.0), static_cast<typename Derived::Scalar>(1.0),
+			static_cast<typename Derived::Scalar>(0.0), static_cast<typename Derived::Scalar>(0.0), static_cast<typename Derived::Scalar>(0.0), static_cast<typename Derived::Scalar>(1.0);
+
+	if (d < static_cast<typename Derived::Scalar>(1e-5)) {
+		Eigen::Matrix<typename Derived::Scalar, 3, 3> res = identity + W + 0.5*W*W;
+		const Eigen::Quaternion<typename Derived::Scalar> q = Eigen::Quaternion<typename Derived::Scalar>(res);
+		return q.normalized().toRotationMatrix();
+	} else {
+		Eigen::Matrix<typename Derived::Scalar, 3, 3> res = identity + W*sin(d)/d + W*W*(static_cast<typename Derived::Scalar>(1.0)-cos(d))/d2;
+		const Eigen::Quaternion<typename Derived::Scalar> q = Eigen::Quaternion<typename Derived::Scalar>(res);
+		return q.normalized().toRotationMatrix();
+	}
+}
+
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 3, 1> logSO3(const Eigen::Matrix<typename Derived::Scalar, 3, 3> & R) {
+	const typename Derived::Scalar tr = R(0, 0) + R(1, 1) + R(2, 2);
+	Eigen::Matrix<typename Derived::Scalar, 3, 1> w;
+	w << (R(2, 1)-R(1, 2))/2, (R(0,2)-R(2,0))/2, (R(1,0)-R(0,1))/2;
+	const typename Derived::Scalar costheta = (tr - static_cast<typename Derived::Scalar>(1.0))*static_cast<typename Derived::Scalar>(0.5);
+	if (costheta > 1 || costheta < -1)
+		return w;
+	const typename Derived::Scalar theta = acos(costheta);
+	const typename Derived::Scalar s = sin(theta);
+	if (fabs(s) < static_cast<typename Derived::Scalar>(1e-5)) {
+		return w;
+	} else {
+		return theta*w/s;
+	}
+}
+
 /** \brief Calculate the angle between two vectors.
   * \param[in] _v1 The first vector.
   * \param[in] _v2 The second vector.

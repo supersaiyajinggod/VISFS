@@ -43,7 +43,7 @@ public:
 	void update(const double * pdelta);
 
 	Eigen::Vector3d map(const Eigen::Vector3d & pw) const {
-		return q_ * pw + t_;
+		return q_.toRotationMatrix() * pw + t_;
 	}
 
 	Eigen::Quaterniond getRotation() const {
@@ -149,19 +149,26 @@ public:
 		_jacobianOplusXi(2, 1) = _jacobianOplusXi(0, 1) - bf * Rcw(2, 1) / z_2;
 		_jacobianOplusXi(2, 2) = _jacobianOplusXi(0, 2) - bf * Rcw(2, 2) / z_2;
 
-		_jacobianOplusXj(1, 0) = (1 + y * y / z_2) * fy;
-		_jacobianOplusXj(1, 1) = -x * y / z_2 * fy;
-		_jacobianOplusXj(1, 2) = -x / z * fy;
-		_jacobianOplusXj(1, 3) = 0;
-		_jacobianOplusXj(1, 4) = -1. / z * fy;
-		_jacobianOplusXj(1, 5) = y / z_2 * fy;
+		_jacobianOplusXj(0, 0) = -1. / z * fx;
+		_jacobianOplusXj(0, 1) = 0.;
+		_jacobianOplusXj(0, 2) = x / z_2 * fx;
+		_jacobianOplusXj(0, 3) = x * y / z_2 * fx;
+		_jacobianOplusXj(0, 4) = -(1. + (x * x / z_2)) * fx;
+		_jacobianOplusXj(0, 5) = y / z * fx;
 
-		_jacobianOplusXj(2, 0) = _jacobianOplusXj(0, 0) - bf * y / z_2;
-  		_jacobianOplusXj(2, 1) = _jacobianOplusXj(0, 1) + bf * x / z_2;
-		_jacobianOplusXj(2, 2) = _jacobianOplusXj(0, 2);
-		_jacobianOplusXj(2, 3) = _jacobianOplusXj(0, 3);
-		_jacobianOplusXj(2, 4) = 0;
-		_jacobianOplusXj(2, 5) = _jacobianOplusXj(0, 5) - bf / z_2;
+		_jacobianOplusXj(1, 0) = 0.;
+		_jacobianOplusXj(1, 1) = -1. / z * fy;
+		_jacobianOplusXj(1, 2) = y / z_2 * fy;
+		_jacobianOplusXj(1, 3) = (1. + y * y / z_2) * fy;
+		_jacobianOplusXj(1, 4) = -x * y / z_2 * fy;
+		_jacobianOplusXj(1, 5) = -x / z * fy;
+
+		_jacobianOplusXj(2, 0) = _jacobianOplusXj(0, 0);
+  		_jacobianOplusXj(2, 1) = 0.;
+		_jacobianOplusXj(2, 2) = _jacobianOplusXj(0, 2) - bf / z_2;
+		_jacobianOplusXj(2, 3) = _jacobianOplusXj(0, 3) - bf * y / z_2;
+		_jacobianOplusXj(2, 4) = _jacobianOplusXj(0, 4) + bf * x / z_2;
+		_jacobianOplusXj(2, 5) = _jacobianOplusXj(0, 5);
 
 	}
 

@@ -5,12 +5,8 @@ namespace VISFS {
 namespace Optimizer {
 
 void CameraPose::update(const double * pdelta) {
-	Eigen::Vector3d dr, dt;
-	dr << pdelta[0], pdelta[1], pdelta[2];
-	dt << pdelta[3], pdelta[4], pdelta[5];
-
-	t_ += q_.toRotationMatrix() * dt;
-	q_ = Eigen::Quaterniond(q_.toRotationMatrix() * expSO3(dr));
+	t_ += Eigen::Vector3d(pdelta[0], pdelta[1], pdelta[2]);
+	q_ =  Eigen::Quaterniond(0, pdelta[3], pdelta[4], pdelta[5]) * q_;
 	q_.normalize();
 }
 
@@ -65,12 +61,12 @@ void EdgePoseConstraint::linearizeOplus() {
 	_jacobianOplusXi.setZero();
 	_jacobianOplusXi.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
 	_jacobianOplusXi.block<3, 3>(0, 3) = -skewSymmetric(sQ1*(sQ2.inverse()*(-sP2)));
-	_jacobianOplusXi.block<3, 3>(3, 3) = (QuaternionLeft(sQ2)*QuaternionRight(sQ1.inverse()*mQ12)).bottomRightCorner<3, 3>();
+	_jacobianOplusXi.block<3, 3>(3, 3) = (QuaternionLeft(sQ2*sQ1.inverse())*QuaternionRight(mQ12)).bottomRightCorner<3, 3>();
 
 	_jacobianOplusXj.setZero();
 	_jacobianOplusXj.block<3, 3>(0, 0) = -(sQ1*sQ2.inverse()).toRotationMatrix();
 	_jacobianOplusXj.block<3, 3>(0, 3) = sQ1.toRotationMatrix()*skewSymmetric(sQ2.inverse()*(-sP2));
-	_jacobianOplusXj.block<3, 3>(3, 3) = -(QuaternionLeft(sQ2)*QuaternionRight(sQ1.inverse()*mQ12)).bottomRightCorner<3, 3>();
+	_jacobianOplusXj.block<3, 3>(3, 3) = -(QuaternionLeft(mQ12.inverse()*sQ1*sQ2.inverse())).bottomRightCorner<3, 3>();
 
 	// std::cout << "_jacobianOplusXi: \n" << _jacobianOplusXi.matrix() << std::endl;
 	// std::cout << "_jacobianOplusXj: \n" << _jacobianOplusXj.matrix() << std::endl;

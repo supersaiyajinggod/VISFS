@@ -559,9 +559,9 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 					iter->second = std::make_tuple(v->estimate(), fixSymbol);
 				}
 			} else {
-				// auto [oldPose, fixSymbol] = iter->second;
-				// oldPose[0] = oldPose[1] = oldPose[2] = std::numeric_limits<float>::quiet_NaN();
-				// iter->second = std::make_tuple(oldPose, fixSymbol);
+				auto [oldPose, fixSymbol] = iter->second;
+				oldPose[0] = oldPose[1] = oldPose[2] = std::numeric_limits<float>::quiet_NaN();
+				iter->second = std::make_tuple(oldPose, fixSymbol);
 			}
 		}
 

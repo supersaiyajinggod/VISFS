@@ -6,7 +6,10 @@ namespace Optimizer {
 
 void CameraPose::update(const double * pdelta) {
 	t_ += Eigen::Vector3d(pdelta[0], pdelta[1], pdelta[2]);
-	q_ =  Eigen::Quaterniond(0, pdelta[3], pdelta[4], pdelta[5]) * q_;
+	Eigen::Quaterniond dq = deltaQ(Eigen::Vector3d(pdelta[3], pdelta[4], pdelta[5]));
+
+	// q_ =  q_ * dq;
+	q_ =  dq * q_;
 	q_.normalize();
 }
 
@@ -58,6 +61,7 @@ void EdgePoseConstraint::linearizeOplus() {
 	const Eigen::Vector3d mP12 = _measurement.translation();
 	const Eigen::Quaterniond mQ12 = _measurement.rotation();
 
+	// Left update
 	_jacobianOplusXi.setZero();
 	_jacobianOplusXi.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
 	_jacobianOplusXi.block<3, 3>(0, 3) = -skewSymmetric(sQ1*(sQ2.inverse()*(-sP2)));
@@ -65,8 +69,19 @@ void EdgePoseConstraint::linearizeOplus() {
 
 	_jacobianOplusXj.setZero();
 	_jacobianOplusXj.block<3, 3>(0, 0) = -(sQ1*sQ2.inverse()).toRotationMatrix();
-	_jacobianOplusXj.block<3, 3>(0, 3) = sQ1.toRotationMatrix()*skewSymmetric(sQ2.inverse()*(-sP2));
+	_jacobianOplusXj.block<3, 3>(0, 3) = sQ1.toRotationMatrix()*sQ2.inverse().toRotationMatrix()*skewSymmetric(-sP2);
 	_jacobianOplusXj.block<3, 3>(3, 3) = -(QuaternionLeft(mQ12.inverse()*sQ1*sQ2.inverse())).bottomRightCorner<3, 3>();
+
+	// Right update
+	// _jacobianOplusXi.setZero();
+	// _jacobianOplusXi.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
+	// _jacobianOplusXi.block<3, 3>(0, 3) = -skewSymmetric(sQ1*(sQ2.inverse()*(-sP2)));
+	// _jacobianOplusXi.block<3, 3>(3, 3) = (QuaternionLeft(sQ2)*QuaternionRight(sQ1.inverse()*mQ12)).bottomRightCorner<3, 3>();
+	
+	// _jacobianOplusXj.setZero();
+	// _jacobianOplusXj.block<3, 3>(0, 0) = -(sQ1*sQ2.inverse()).toRotationMatrix();
+	// _jacobianOplusXj.block<3, 3>(0, 3) = sQ1.toRotationMatrix()*skewSymmetric(sQ2.inverse()*(-sP2));
+	// _jacobianOplusXj.block<3, 3>(3, 3) = -(QuaternionLeft(sQ2)*QuaternionRight(sQ1.inverse()*mQ12)).bottomRightCorner<3, 3>();
 
 	// std::cout << "_jacobianOplusXi: \n" << _jacobianOplusXi.matrix() << std::endl;
 	// std::cout << "_jacobianOplusXj: \n" << _jacobianOplusXj.matrix() << std::endl;

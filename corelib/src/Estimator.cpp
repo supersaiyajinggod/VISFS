@@ -221,10 +221,17 @@ void Estimator::process(Signature & _signature) {
         std::map<std::size_t, Eigen::Isometry3d> poses;
         std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> links;
         std::vector<std::shared_ptr<GeometricCamera>> cameraModels;
-        // std::map<std::size_t, std::map<std::size_t, Optimizer::FeatureBA>> wordReferences;
-        // std::set<std::size_t> outliers;
+        std::vector<Sensor::PointCloud> pointCloud;
+        std::shared_ptr<const Map::Submap2D> submap;
 
         localMap_->getSignaturePoses(poses);
+
+        // {
+        //     for (auto pose : poses) {
+        //         LOG_INFO << "signature id is : " << pose.first << ", before optimization translation is: " << pose.second.translation().transpose();
+        //     }
+        // }
+    
         if (sensorStrategy_ >= 2)
             localMap_->getSignatureLinks(links);
 
@@ -233,33 +240,17 @@ void Estimator::process(Signature & _signature) {
         cameraModels.push_back(_signature.getCameraModelLeftPtr());
         cameraModels.push_back(_signature.getCameraModelRightPtr());
 
-        localMap_->getFeaturePosesAndObservations(points3D, wordReferences);
+        if (sensorStrategy_ != 4 && sensorStrategy_ !=5) {
+            localMap_->getFeaturePosesAndObservations(points3D, wordReferences);
+        }
+
+        if ((sensorStrategy_ == 4 || sensorStrategy_ == 5) && localMap_->hasMatchingSubmap2D()) {
+            pointCloud = localMap_->getLaserHitPointCloud(_signature.getId());
+            submap = localMap_->getMatchingSubmap2D();
+        }
 
         std::size_t rootId = poses.rbegin()->first - 1;
-        if (sensorStrategy_ == 3) {
-            if (localMap_->hasMatchingSubmap2D()) {
-                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, localMap_->getLaserHitPointCloud(_signature.getId()), localMap_->getMatchingSubmap2D(), sbaOutliers);
-            } else {
-                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
-            }    
-        } else if (sensorStrategy_ == 4) {  // laser + wheel
-            if (localMap_->hasMatchingSubmap2D()) {
-                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, localMap_->getLaserHitPointCloud(_signature.getId()), localMap_->getMatchingSubmap2D(), sbaOutliers);
-            } else {
-                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
-                LOG_ERROR << "No submap 2d.";
-            }
-        } else if (sensorStrategy_ == 5) {  // laser
-            if (localMap_->hasMatchingSubmap2D()) {
-                links.clear();
-                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, localMap_->getLaserHitPointCloud(_signature.getId()), localMap_->getMatchingSubmap2D(), sbaOutliers);
-            } else {
-                optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
-                LOG_ERROR << "No submap 2d.";
-            }
-        } else {
-            optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, sbaOutliers);
-        }
+        optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, pointCloud, submap, sbaOutliers);
 
         // if (force3Dof_) {
         //     for (auto pose : optimizedPoses) {

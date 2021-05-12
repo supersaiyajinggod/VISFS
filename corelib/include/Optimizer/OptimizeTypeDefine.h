@@ -119,35 +119,40 @@ public:
 	virtual bool write(std::ostream & os) const { return false; }
 
 	void computeError() {
-		const g2o::VertexPointXYZ * point = dynamic_cast<const g2o::VertexPointXYZ *>(_vertices[0]);
-		const VertexPose * pose = dynamic_cast<const VertexPose *>(_vertices[1]);
-		const Eigen::Vector3d obs(_measurement);
-		_error = obs - project(pose->estimate().map(point->estimate()));
+		const VertexPose *v1 = dynamic_cast<const VertexPose *>(_vertices[1]);
+		const g2o::VertexPointXYZ *v2 = dynamic_cast<const g2o::VertexPointXYZ *>(_vertices[0]);
+		Eigen::Vector3d obs(_measurement);
+		_error = obs - project(v1->estimate().map(v2->estimate()));
+	}
+
+	bool isDepthPositive() {
+		const VertexPose *v1 = dynamic_cast<const VertexPose *>(_vertices[1]);
+		const g2o::VertexPointXYZ *v2 = dynamic_cast<const g2o::VertexPointXYZ *>(_vertices[0]);
+		return (v1->estimate().map(v2->estimate()))(2) > 0;
 	}
 
 	virtual void linearizeOplus() {
-		const g2o::VertexPointXYZ * point = dynamic_cast<const g2o::VertexPointXYZ *>(_vertices[0]);
-		const VertexPose * pose = dynamic_cast<const VertexPose *>(_vertices[1]);
+		const VertexPose *vj = dynamic_cast<const VertexPose *>(_vertices[1]);
+		const g2o::VertexPointXYZ *vi = dynamic_cast<const g2o::VertexPointXYZ *>(_vertices[0]);
+		auto pc = vj->estimate().map(vi->estimate());
+		auto R = vj->estimate().getRotation().toRotationMatrix();;
 
-		const Eigen::Matrix3d & Rcw = pose->estimate().getRotation().toRotationMatrix();
-		const Eigen::Vector3d & tcw = pose->estimate().getTranslation();
-		const Eigen::Vector3d & Pc = pose->estimate().map(point->estimate());
-		const double x = tcw[0];
-		const double y = tcw[1];
-		const double z = tcw[2];
-		const double z_2 = z * z;
+		double x = pc[0];
+		double y = pc[1];
+		double z = pc[2];
+		double z_2 = z * z;
 
-		_jacobianOplusXi(0, 0) = -fx * Rcw(0, 0) / z + fx * x * Rcw(2, 0) / z_2;
-		_jacobianOplusXi(0, 1) = -fx * Rcw(0, 1) / z + fx * x * Rcw(2, 1) / z_2;
-		_jacobianOplusXi(0, 2) = -fx * Rcw(0, 2) / z + fx * x * Rcw(2, 2) / z_2;
+		_jacobianOplusXi(0, 0) = -fx * R(0, 0) / z + fx * x * R(2, 0) / z_2;
+		_jacobianOplusXi(0, 1) = -fx * R(0, 1) / z + fx * x * R(2, 1) / z_2;
+		_jacobianOplusXi(0, 2) = -fx * R(0, 2) / z + fx * x * R(2, 2) / z_2;
 
-		_jacobianOplusXi(1, 0) = -fy * Rcw(1, 0) / z + fy * y * Rcw(2, 0) / z_2;
-		_jacobianOplusXi(1, 1) = -fy * Rcw(1, 1) / z + fy * y * Rcw(2, 1) / z_2;
-		_jacobianOplusXi(1, 2) = -fy * Rcw(1, 2) / z + fy * y * Rcw(2, 2) / z_2;
+		_jacobianOplusXi(1, 0) = -fy * R(1, 0) / z + fy * y * R(2, 0) / z_2;
+		_jacobianOplusXi(1, 1) = -fy * R(1, 1) / z + fy * y * R(2, 1) / z_2;
+		_jacobianOplusXi(1, 2) = -fy * R(1, 2) / z + fy * y * R(2, 2) / z_2;
 
-		_jacobianOplusXi(2, 0) = _jacobianOplusXi(0, 0) - bf * Rcw(2, 0) / z_2;
-		_jacobianOplusXi(2, 1) = _jacobianOplusXi(0, 1) - bf * Rcw(2, 1) / z_2;
-		_jacobianOplusXi(2, 2) = _jacobianOplusXi(0, 2) - bf * Rcw(2, 2) / z_2;
+		_jacobianOplusXi(2, 0) = _jacobianOplusXi(0, 0) - bf * R(2, 0) / z_2;
+		_jacobianOplusXi(2, 1) = _jacobianOplusXi(0, 1) - bf * R(2, 1) / z_2;
+		_jacobianOplusXi(2, 2) = _jacobianOplusXi(0, 2) - bf * R(2, 2) / z_2;
 
 		_jacobianOplusXj(0, 0) = -1. / z * fx;
 		_jacobianOplusXj(0, 1) = 0.;
@@ -164,7 +169,7 @@ public:
 		_jacobianOplusXj(1, 5) = -x / z * fy;
 
 		_jacobianOplusXj(2, 0) = _jacobianOplusXj(0, 0);
-  		_jacobianOplusXj(2, 1) = 0.;
+		_jacobianOplusXj(2, 1) = 0.;
 		_jacobianOplusXj(2, 2) = _jacobianOplusXj(0, 2) - bf / z_2;
 		_jacobianOplusXj(2, 3) = _jacobianOplusXj(0, 3) - bf * y / z_2;
 		_jacobianOplusXj(2, 4) = _jacobianOplusXj(0, 4) + bf * x / z_2;
@@ -184,7 +189,6 @@ public:
 	double fx, fy, cx, cy, bf;
 
 };
-
 
 class EdgePoseConstraint : public g2o::BaseBinaryEdge<6, g2o::SE3Quat, VertexPose, VertexPose> {
 public:

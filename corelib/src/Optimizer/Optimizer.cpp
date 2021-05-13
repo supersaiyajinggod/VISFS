@@ -203,7 +203,8 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 
 		// Set range points to g2o
 		if (!_pointClouds.empty() && _submap != nullptr) {
-			const int pointStepVertexId = static_cast<int>(_poses.rbegin()->first + 1) + static_cast<int>(_wordReferences.rbegin()->first) + 1;
+			const int pointStepVertexId = static_cast<int>(_poses.rbegin()->first + 1)
+					+ (_wordReferences.empty() ? 0 : static_cast<int>(_wordReferences.rbegin()->first)) + 1;
 			VertexPose * latestPose = dynamic_cast<VertexPose *>(optimizer.vertex(_poses.rbegin()->first));
 			std::shared_ptr<Map::MapLimits> limits = std::make_shared<Map::MapLimits>(_submap->getGrid()->limits());
 			const GridArrayAdapter adapter(*_submap->getGrid());

@@ -140,7 +140,7 @@ public:
 	}
 
 	virtual void linearizeOplus() override {
-		const g2o::VertexSE3Expmap * Tcw = dynamic_cast<const g2o::VertexSE3Expmap *>(vertex(0));
+		const VertexPose * Tcw = dynamic_cast<const VertexPose *>(vertex(0));
 		const VertexPoint3D * point = dynamic_cast<const VertexPoint3D *>(vertex(1));
 
 		if (this->allVerticesFixed()) {

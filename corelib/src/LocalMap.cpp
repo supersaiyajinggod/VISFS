@@ -238,12 +238,12 @@ bool LocalMap::getSignaturePoses(std::map<std::size_t, Eigen::Isometry3d> & _pos
 bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links) {
     Eigen::Matrix<double, 6, 6> covariance, information;
     covariance.setZero();
-    covariance(0, 0) = 0.0001;
-    covariance(1, 1) = 0.0001;
-    covariance(2, 2) = 0.0001;
-    covariance(3, 3) = 0.0001;
-    covariance(4, 4) = 0.0001;
-    covariance(5, 5) = 0.0001;
+    covariance(0, 0) = 0.00001;
+    covariance(1, 1) = 0.00001;
+    covariance(2, 2) = 0.00001;
+    covariance(3, 3) = 0.00001;
+    covariance(4, 4) = 0.00001;
+    covariance(5, 5) = 0.00001;
     information = covariance.inverse();
 
     std::size_t i = 1;

@@ -81,7 +81,7 @@ public:
       * \param[out] links The constraint. With map strcture: <link id, <vertex From, vertex To, transform, covariance>>>.  
 	  * \author eddy
       */  
-    bool getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links);
+    bool getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d>> & _links);
 
 	/** \brief Get all features' pose that has been multiple signature observed with each observations.
       * \param[out] points The feature poses. With map strcture: <feature id, feature poses>.

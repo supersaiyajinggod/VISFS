@@ -235,16 +235,16 @@ bool LocalMap::getSignaturePoses(std::map<std::size_t, Eigen::Isometry3d> & _pos
     return true;
 }
 
-bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links) {
-    Eigen::Matrix<double, 6, 6> covariance, information;
-    covariance.setZero();
-    covariance(0, 0) = 0.00001;
-    covariance(1, 1) = 0.00001;
-    covariance(2, 2) = 0.00001;
-    covariance(3, 3) = 0.00001;
-    covariance(4, 4) = 0.00001;
-    covariance(5, 5) = 0.00001;
-    information = covariance.inverse();
+bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d>> & _links) {
+    // Eigen::Matrix<double, 6, 6> covariance, information;
+    // covariance.setZero();
+    // covariance(0, 0) = 0.00001;
+    // covariance(1, 1) = 0.00001;
+    // covariance(2, 2) = 0.00001;
+    // covariance(3, 3) = 0.00001;
+    // covariance(4, 4) = 0.00001;
+    // covariance(5, 5) = 0.00001;
+    // information = covariance.inverse();
 
     std::size_t i = 1;
     for (auto iter = signatures_.begin();;) {
@@ -255,7 +255,7 @@ bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, st
 
         if ((!fromPose.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) && (!toPose.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())))) {
             auto transform = fromPose.inverse()*toPose;
-            _links.emplace(i, std::make_tuple(fromId, toId, transform, information));
+            _links.emplace(i, std::make_tuple(fromId, toId, transform));
         }
         
         if (++i == signatures_.size())

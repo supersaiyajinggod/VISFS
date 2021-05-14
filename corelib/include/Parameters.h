@@ -185,6 +185,8 @@ class Parameters {
     VISFS_PARAM(Optimizer,  Solver,                 int,       0,   "0=csparse 1=cholmod 2=pcg 3=Eigen");
     VISFS_PARAM(Optimizer,  Optimizer,              int,       0,   "0=Levenberg 1=GaussNewton");
     VISFS_PARAM(Optimizer,  PixelVariance,          double,  1.5,   "Pixel variance used for bundle adjustment.");
+    VISFS_PARAM(Optimizer,  OdometryCovariance,     double,  0.00005,   "Odometry covaraince used for local optimize.");
+    VISFS_PARAM(Optimizer,  LaserCovariance,        double,  0.1,       "Laser covariance used for local optimize.");
     VISFS_PARAM(Optimizer,  RobustKernelDelta,      double,  8.0,   "Robust kernel delta used for bundle adjustment (0 means don't use robust kernel). Observations with chi2 over this threshold will be ignored in the second optimization pass.");
 
     VISFS_PARAM(Map,        2dNumRangeData,         int,    90,     "The limits used to insert range data into new submaps, when reaches the limits, the new map will use to scan-match, the old need to destory.");

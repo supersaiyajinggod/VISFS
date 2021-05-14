@@ -34,12 +34,16 @@ Optimizer::Optimizer(const ParametersMap & _parameters) :
 	solver_(Parameters::defaultOptimizerSolver()),
 	optimizer_(Parameters::defaultOptimizerOptimizer()),
 	pixelVariance_(Parameters::defaultOptimizerPixelVariance()),
+	odometryCovariance_(Parameters::defaultOptimizerOdometryCovariance()),
+	laserCovariance_(Parameters::defaultOptimizerLaserCovariance()),
 	robustKernelDelta_(Parameters::defaultOptimizerRobustKernelDelta()) {
 	
 	Parameters::parse(_parameters, Parameters::kOptimizerIterations(), iterations_);
 	Parameters::parse(_parameters, Parameters::kOptimizerSolver(), solver_);
 	Parameters::parse(_parameters, Parameters::kOptimizerOptimizer(), optimizer_);
 	Parameters::parse(_parameters, Parameters::kOptimizerPixelVariance(), pixelVariance_);
+	Parameters::parse(_parameters, Parameters::kOptimizerOdometryCovariance(), odometryCovariance_);
+	Parameters::parse(_parameters, Parameters::kOptimizerLaserCovariance(), laserCovariance_);
 	Parameters::parse(_parameters, Parameters::kOptimizerRobustKernelDelta(), robustKernelDelta_);
 
 }
@@ -47,7 +51,7 @@ Optimizer::Optimizer(const ParametersMap & _parameters) :
 std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
     std::size_t _rootId,     // fixed pose
     const std::map<std::size_t, Eigen::Isometry3d> & _poses,    // map<pose index, transform>
-    const std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> & _links,  // map<link index, tuple<the from pose index, the to pose index, transform, infomation matrix>>
+    const std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d>> & _links,  // map<link index, tuple<the from pose index, the to pose index, transform, infomation matrix>>
     const std::vector<std::shared_ptr<GeometricCamera>> & _cameraModels, // vector camera model left and right
     std::map<std::size_t, std::tuple<Eigen::Vector3d, bool>> & _points3D,
     const std::map<std::size_t, std::map<std::size_t, FeatureBA>> & _wordReferences,
@@ -100,8 +104,14 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 		}
 
 		// Set edges to g2o
+		Eigen::Matrix<double, 6, 6> informationOdometry;
+		informationOdometry.setZero();
+		for (int i = 0; i < 6; ++i) {
+			informationOdometry(i, i) = 1. / odometryCovariance_;
+		}
+
 		for (auto iter = _links.begin(); iter != _links.end(); ++iter) {
-			auto [fromId, toId, transfrom, information] = iter->second;
+			auto [fromId, toId, transfrom] = iter->second;
 
 			if (fromId > 0 && toId > 0 && uContains(_poses, fromId) && uContains(_poses, toId)) {
 				if(fromId == toId) {
@@ -118,7 +128,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 					e->setVertex(0, v1);
 					e->setVertex(1, v2);
 					e->setMeasurement(g2o::SE3Quat(Tc1c2.linear(), Tc1c2.translation()));
-					e->setInformation(information);
+					e->setInformation(informationOdometry);
 
 					if (!optimizer.addEdge(e)) {
 						delete e;
@@ -209,7 +219,7 @@ std::map<std::size_t, Eigen::Isometry3d> Optimizer::localOptimize(
 			std::shared_ptr<Map::MapLimits> limits = std::make_shared<Map::MapLimits>(_submap->getGrid()->limits());
 			const GridArrayAdapter adapter(*_submap->getGrid());
 			std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator = std::make_shared<ceres::BiCubicInterpolator<GridArrayAdapter>>(adapter);
-			Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << (10.0);
+			Eigen::Matrix<double, 1, 1> informationRangePoint; informationRangePoint << (1. / laserCovariance_);
 			int index = 0;
 			const GeometricCamera & cameraModel = *_cameraModels.front();
 			for (auto pointCloud : _pointClouds) {

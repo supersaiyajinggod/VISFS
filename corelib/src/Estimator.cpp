@@ -219,7 +219,7 @@ void Estimator::process(Signature & _signature) {
     std::vector<std::tuple<std::size_t, std::size_t>> sbaOutliers;
     if (!transform.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())) && inliers.size() > minInliers_ && localMap_->checkMapAvaliable()) {
         std::map<std::size_t, Eigen::Isometry3d> poses;
-        std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d, Eigen::Matrix<double, 6, 6>>> links;
+        std::map<std::size_t,std::tuple<std::size_t, std::size_t, Eigen::Isometry3d>> links;
         std::vector<std::shared_ptr<GeometricCamera>> cameraModels;
         std::vector<Sensor::PointCloud> pointCloud;
         std::shared_ptr<const Map::Submap2D> submap;

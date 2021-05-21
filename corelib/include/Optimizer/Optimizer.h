@@ -56,9 +56,15 @@ public:
     );  
 
 private:
-    int iterations_;
+    enum Framework {
+        G2O     =   0,
+        CERES   =   1
+    }; 
+
+    int framework_;
     int solver_;
-    int optimizer_;
+    int trustRegion_;
+    int iterations_;
     double pixelVariance_;
     double odometryCovariance_;
     double laserCovariance_;

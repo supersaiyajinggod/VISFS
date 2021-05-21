@@ -74,11 +74,13 @@
     <param name="Estimator/MinLaserRange"           type="double"       value="0.1"/>
     <param name="Estimator/MaxLaserRange"           type="double"       value="30.0"/>
     <param name="Estimator/MissingDataRayLength"    type="double"       value="5.0"/>
+    <param name="Optimizer/Framework"               type="int"          value="0"/> 
     <param name="Optimizer/Solver"                  type="int"          value="0"/>
+    <param name="Optimizer/TrustRegion"             type="int"          value="0"/>
+    <param name="Optimizer/Iterations"              type="int"          value="20"/>
     <param name="Optimizer/PixelVariance"           type="double"       value="1.5"/>
     <param name="Optimizer/OdometryCovariance"      type="double"       value="0.00004"/>
     <param name="Optimizer/LaserCovariance"         type="double"       value="0.1"/>
-    <param name="Optimizer/Iterations"              type="int"          value="20"/>
     <param name="Optimizer/RobustKernelDelta"       type="double"       value="10.0"/>
 </node>
 

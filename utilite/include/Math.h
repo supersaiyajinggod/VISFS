@@ -307,7 +307,13 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> skewSymmetric(const Eigen::MatrixB
   */
 template <typename Derived>
 Eigen::Quaternion<typename Derived::Scalar> QuaternionPositify(const Eigen::QuaternionBase<Derived> & _q) {
-	return _q;
+  	Eigen::Quaternion<typename Derived::Scalar> q;
+  	q = _q;
+	if (q.w() < 0) {
+		q.coeffs() *= -1;
+	}
+	q.normalize();
+	return q;
 }
 
 /** \brief Calculate left multiplication operator of quaternion.

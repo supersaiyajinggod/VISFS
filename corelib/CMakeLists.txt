@@ -8,7 +8,11 @@ set(SRC_FILES
     src/Map/2d/RayToPixelMask.cpp
     src/Map/2d/Submap2D.cpp
     src/Optimizer/Optimizer.cpp
-    src/Optimizer/OptimizeTypeDefine.cpp
+    src/Optimizer/g2o/OptimizeTypeDefine.cpp
+    src/Optimizer/ceres/LocalParameterization.cpp
+    src/Optimizer/ceres/OccupiedSpace2dFactor.cpp
+    src/Optimizer/ceres/PoseConstraintFactor.cpp
+    src/Optimizer/ceres/StereoObservationFactor.cpp
     src/Sensor/PointCloud.cpp
     src/Sensor/RangeData.cpp
     src/Estimator.cpp

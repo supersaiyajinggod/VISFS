@@ -250,7 +250,10 @@ void Estimator::process(Signature & _signature) {
         }
 
         std::size_t rootId = poses.rbegin()->first - 1;
+        // UTimer timer;
         optimizedPoses = optimizer_->localOptimize(rootId, poses, links, cameraModels, points3D, wordReferences, pointCloud, submap, sbaOutliers);
+        // auto dt = timer.elapsed();
+        // LOG_ERROR << "Signature id: " <<_signature.getId() << " optimize time cost : " << dt;
 
         // if (force3Dof_) {
         //     for (auto pose : optimizedPoses) {
@@ -259,6 +262,12 @@ void Estimator::process(Signature & _signature) {
         //         Eigen::Affine3d poseForce;
         //         pcl::getTransformation(x, y, 0, 0, 0, yaw, poseForce);
         //         pose.second = Eigen::Isometry3d(poseForce.matrix());             
+        //     }
+        // }
+
+        // {
+        //     for (auto pose : optimizedPoses) {
+        //         LOG_INFO << "signature id is : " << pose.first << ", after optimization translation is: " << pose.second.translation().transpose();
         //     }
         // }
 
@@ -288,12 +297,6 @@ void Estimator::process(Signature & _signature) {
                 // std::cout << "currentGlobalPose: \n" << currentGlobalPose.matrix() << std::endl;
                 // std::cout << "transform: \n" << transform.matrix() << std::endl;
             }
-
-            // {
-            //     for (auto pose : optimizedPoses) {
-            //         LOG_INFO << "signature id is : " << pose.first << ", after optimization translation is: " << pose.second.translation().transpose();
-            //     }
-            // }
 
             // covariance = computeCovariance(words3dFrom, _signature.getWords3d(), transform, inliers);
             covariance = cv::Mat::eye(6, 6, CV_64FC1);

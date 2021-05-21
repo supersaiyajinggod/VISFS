@@ -181,9 +181,10 @@ class Parameters {
     VISFS_PARAM(Estimator,  MaxLaserRange,          double, 30.0,   "The maximum range the laser is avaliable.");
     VISFS_PARAM(Estimator,  MissingDataRayLength,   double, 5.0,    "The cast ray length of missing data.");
 
+    VISFS_PARAM(Optimizer,  Framework,              int,       0,   "0=g2o, 1=ceres.");
+    VISFS_PARAM(Optimizer,  Solver,                 int,       0,   "For g2o: 0=csparse 1=cholmod 2=pcg 3=Eigen. For ceres: 0=DENSE_SCHUR 1=DENSE_NORMAL_CHOLESKY 2=DENSE_QR.");
+    VISFS_PARAM(Optimizer,  TrustRegion,            int,       0,   "For g2o: 0=Levenberg 1=GaussNewton. For ceres: 0=Levenberg 1=DOGLEG.");
     VISFS_PARAM(Optimizer,  Iterations,             int,      10,   "Optimization iterations.");
-    VISFS_PARAM(Optimizer,  Solver,                 int,       0,   "0=csparse 1=cholmod 2=pcg 3=Eigen");
-    VISFS_PARAM(Optimizer,  Optimizer,              int,       0,   "0=Levenberg 1=GaussNewton");
     VISFS_PARAM(Optimizer,  PixelVariance,          double,  1.5,   "Pixel variance used for bundle adjustment.");
     VISFS_PARAM(Optimizer,  OdometryCovariance,     double,  0.00005,   "Odometry covaraince used for local optimize.");
     VISFS_PARAM(Optimizer,  LaserCovariance,        double,  0.1,       "Laser covariance used for local optimize.");

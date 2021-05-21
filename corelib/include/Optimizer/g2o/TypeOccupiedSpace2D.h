@@ -12,7 +12,7 @@
 #include "Sensor/PointCloud.h"
 #include "Map/2d/Grid2d.h"
 #include "Map/ProbabilityValues.h"
-#include "Optimizer/OptimizeTypeDefine.h"
+#include "Optimizer/g2o/OptimizeTypeDefine.h"
 
 namespace VISFS {
 namespace Optimizer {
@@ -80,7 +80,8 @@ public:
 		const Eigen::Isometry3d _transformImageToRobot) :
 		interpolator_(_interpolator),
 		limits_(_limits),
-		transformImageToRobot_(_transformImageToRobot) {}
+		transformImageToRobot_(_transformImageToRobot),
+		transformRobotToImage_(_transformImageToRobot.inverse()) {}
 
 	virtual bool read(std::istream &) {
 		std::cerr << __PRETTY_FUNCTION__ << " not implemented yet" << std::endl;
@@ -105,7 +106,7 @@ public:
 		Eigen::Transform<T, 3, 1> Tiw = Eigen::Transform<T, 3, 1>::Identity();
 		Tiw.prerotate(q);
 		Tiw.pretranslate(t);
-		auto Twc = Tiw.inverse() * transformImageToRobot_.inverse().cast<T>();
+		auto Twc = Tiw.inverse() * transformRobotToImage_.cast<T>();
 		// auto Two = submapOrigin_.cast<T>();
 		// auto Toc = Two.inverse() * Twc;
 		const Eigen::Matrix<T, 3, 1> Pc(point[0], point[1], point[2]);
@@ -180,6 +181,7 @@ private:
 	const std::shared_ptr<ceres::BiCubicInterpolator<GridArrayAdapter>> interpolator_;
 	const std::shared_ptr<Map::MapLimits> limits_;
 	const Eigen::Isometry3d transformImageToRobot_;	// Trc
+	const Eigen::Isometry3d transformRobotToImage_;
 
 };
 

@@ -1,4 +1,4 @@
-#include "Optimizer/OptimizeTypeDefine.h"
+#include "Optimizer/g2o/OptimizeTypeDefine.h"
 #include "Math.h"
 
 namespace VISFS {

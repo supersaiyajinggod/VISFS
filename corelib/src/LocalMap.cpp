@@ -255,7 +255,8 @@ bool LocalMap::getSignatureLinks(std::map<std::size_t,std::tuple<std::size_t, st
 
         if ((!fromPose.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero()))) && (!toPose.isApprox(Eigen::Isometry3d(Eigen::Matrix4d::Zero())))) {
             auto transform = fromPose.inverse()*toPose;
-            _links.emplace(i, std::make_tuple(fromId, toId, transform));
+            // _links.emplace(i, std::make_tuple(fromId, toId, transform));
+            _links.emplace(std::piecewise_construct, std::forward_as_tuple(i), std::forward_as_tuple(fromId, toId, transform));
         }
         
         if (++i == signatures_.size())

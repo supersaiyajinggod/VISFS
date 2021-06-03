@@ -1,0 +1,23 @@
+<launch>
+    <node pkg="tf" type="static_transform_publisher" name="camera_tf_broadcaster" args="0 0 0 0 0 0 base_link camera_link 50" />
+
+    <!-- <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_madgwick" output="screen" respawn="false" >
+        <param name="fixed_frame"               type="string"   value="odom" />
+        <param name="use_mag"                   type="bool"     value="false" />
+        <param name="publish_tf"                type="bool"     value="true" />
+        <param name="world_frame"               type="string"   value="enu" />
+        <param name="orientation_stddev"        type="double"   value="0.05" />
+        
+        <remap from="imu/data_raw"              to="/camera/imu"/>
+    </node> -->
+
+    <node pkg="imu_complementary_filter" type="complementary_filter_node" name="complementary_filter_gain_node" output="screen" respawn="false" >
+        <param name="do_bias_estimation"         type="bool"    value="true"/>
+        <param name="do_adaptive_gain"           type="bool"    value="true"/>
+        <param name="use_mag"                    type="bool"    value="false"/>
+        <param name="publish_tf"                 type="bool"    value="true"/>
+        
+        <remap from="imu/data_raw"              to="/camera/imu"/>
+    </node>
+
+</launch>
